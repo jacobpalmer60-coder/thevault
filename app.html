@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Vault - Sleeper x RosterAudit</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com">
+  </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -84,7 +85,7 @@
     <div id="tabsBar" class="flex items-center gap-2 mb-4 hidden">
       <button id="tabTeams" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">League Overview</button>
       <button id="tabValues" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-[#120a00]/60 text-amber-200/80 border border-amber-800/50/50 hover:bg-[#120a00]">Player Values</button>
-      <a href="trade.html" target="_blank" id="openTrade" class="ml-auto px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30">Trade Calculator ↗</a>
+      <button id="tabTrade" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-[#120a00]/60 text-amber-200/80 border border-amber-800/50/50 hover:bg-[#120a00]">Trade Calculator</button>
     </div>
 
     <!-- Teams View -->
@@ -164,6 +165,56 @@
           </table>
         </div>
         <div id="raEmpty" class="p-8 text-center text-amber-300/70 text-sm">Click "Load Values" to pull the latest RosterAudit rankings.</div>
+      </div>
+    </div>
+
+    
+    <!-- Trade Calculator View -->
+    <div id="tradeView" class="hidden">
+      <div class="grid xl:grid-cols-[1fr_380px_1fr] gap-5 items-start">
+        <!-- Side A -->
+        <section class="rounded-2xl border border-amber-900/30 bg-[#0b1220]/80 flex flex-col min-h-[600px]">
+          <div class="p-4 border-b border-amber-900/30 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 grid place-items-center text-emerald-400 font-bold">A</div>
+              <h2 class="font-semibold text-amber-200">Side A</h2>
+            </div>
+            <button id="clearA" class="text-xs px-2.5 py-1 rounded-lg bg-[#120a00] hover:bg-[#1a0f00] border border-amber-900/40 transition">Clear</button>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="relative">
+              <input id="searchA" placeholder="Search player..." class="w-full h-11 pl-10 pr-3 rounded-xl bg-[#070b14] border border-amber-900/40 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm" />
+              <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-amber-700" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <div id="resultsA" class="absolute z-30 mt-1 w-full rounded-xl border border-amber-900/40 bg-[#0b1220] shadow-xl max-h-64 overflow-auto hidden"></div>
+            </div>
+            <div class="flex gap-2">
+              <select id="pickYearA" class="flex-1 h-10 px-2 rounded-lg bg-[#070b14] border border-amber-900/40 text-sm"><option>2026</option><option selected>2027</option><option>2028</option><option>2029</option></select>
+              <select id="pickRoundA" class="w-20 h-10 px-2 rounded-lg bg-[#070b14] border border-amber-900/40 text-sm"><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option></select>
+              <select id="pickSlotA" class="w-24 h-10 px-2 rounded-lg bg-[#070b14] border border-amber-900/40 text-sm"><option>Early</option><option selected>Mid</option><option>Late</option></select>
+              <button id="addPickA" class="h-10 px-3 rounded-lg bg-[#120a00] border border-amber-900/40 hover:bg-[#1a0f00] text-sm">+ Pick</button>
+            </div>
+          </div>
+          <div id="listA" class="flex-1 px-3 pb-3 space-y-1 overflow-auto"></div>
+          <div class="p-4 border-t border-amber-900/30 grid grid-cols-3 gap-3 text-center">
+            <div><div class="text-[11px] uppercase text-amber-700">Value</div><div id="totalValA" class="mono text-lg font-semibold text-amber-300">0</div></div>
+            <div><div class="text-[11px] uppercase text-amber-700">PPG</div><div id="totalPpgA" class="mono text-lg font-semibold text-amber-300">0.0</div></div>
+            <div><div class="text-[11px] uppercase text-amber-700">Avg Age</div><div id="totalAgeA" class="mono text-lg font-semibold text-amber-300">—</div></div>
+          </div>
+        </section>
+        <!-- Analysis -->
+        <section class="rounded-2xl border border-amber-900/30 bg-[#0b1220]/80 p-5 sticky top-[104px]">
+          <h3 class="font-semibold text-amber-200 mb-4">Trade Analysis</h3>
+          <div class="space-y-4">
+            <div><div class="flex justify-between text-xs mb-1"><span class="text-emerald-400">Side A</span><span class="text-sky-400">Side B</span></div><div class="h-3 rounded-full bg-[#070b14] border border-amber-900/40 overflow-hidden flex"><div id="barA" class="bg-emerald-500 h-full transition-all" style="width:50%"></div><div id="barB" class="bg-sky-500 h-full transition-all" style="width:50%"></div></div><div class="flex justify-between mono text-xs mt-1"><span id="barALabel" class="text-emerald-400">0</span><span id="barBLabel" class="text-sky-400">0</span></div></div>
+            <div class="rounded-xl bg-[#070b14] border border-amber-900/40 p-4"><div class="text-[11px] uppercase text-amber-700 mb-1">Value Differential</div><div id="valueDiff" class="mono text-2xl font-semibold">+0</div><div id="pctDiff" class="text-xs text-amber-600 mt-0.5">0.0%</div></div>
+            <div class="rounded-xl bg-[#070b14] border border-amber-900/40 p-4"><div class="text-[11px] uppercase text-amber-700 mb-2">Fairness</div><div id="fairnessBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium">Fair Trade</div><div id="fairnessSub" class="text-xs text-amber-600 mt-1">—</div></div>
+            <div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] uppercase text-amber-700 mb-1">Top Assets A</div><div id="topA" class="space-y-1"></div></div><div><div class="text-[11px] uppercase text-amber-700 mb-1">Top Assets B</div><div id="topB" class="space-y-1"></div></div></div>
+          </div>
+        </section>
+        <!-- Side B -->
+        <section class="rounded-2xl border border-amber-900/30 bg-[#0b1220]/80 flex flex-col min-h-[600px]">
+          <div class="p-4 border-b border-amber-900/30 flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg bg-sky-500/15 border border-sky-500/30 grid place-items-center text-sky-400 font-bold">B</div><h2 class="font-semibold text-amber-200">Side B</h2></div><button id="clearB" class="text-xs px-2.5 py-1 rounded-lg bg-[#120a00] hover:bg-[#1a0f00] border border-amber-900/40 transition">Clear</button></div>
+          <div class="p-4 space-y-3"><div class="relative"><input id="searchB" placeholder="Search player..." class="w-full h-11 pl-10 pr-3 rounded-xl bg-[#070b14] border border-amber-900/40 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 outline-none text-sm" /><svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-amber-700" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><div id="resultsB" class="absolute z-30 mt-1 w-full rounded-xl border border-amber-900/40 bg-[#0b1220] shadow-xl max-h-64 overflow-auto hidden"></div></div><div class="flex gap-2"><select id="pickYearB" class="flex-1 h-10 px-2 rounded-lg bg-[#070b14] border border-amber-900/40 text-sm"><option>2026</option><option selected>2027</option><option>2028</option><option>2029</option></select><select id="pickRoundB" class="w-20 h-10 px-2 rounded-lg bg-[#070b14] border border-amber-900/40 text-sm"><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option></select><select id="pickSlotB" class="w-24 h-10 px-2 rounded-lg bg-[#070b14] border border-amber-900/40 text-sm"><option>Early</option><option selected>Mid</option><option>Late</option></select><button id="addPickB" class="h-10 px-3 rounded-lg bg-[#120a00] border border-amber-900/40 hover:bg-[#1a0f00] text-sm">+ Pick</button></div></div><div id="listB" class="flex-1 px-3 pb-3 space-y-1 overflow-auto"></div><div class="p-4 border-t border-amber-900/30 grid grid-cols-3 gap-3 text-center"><div><div class="text-[11px] uppercase text-amber-700">Value</div><div id="totalValB" class="mono text-lg font-semibold text-amber-300">0</div></div><div><div class="text-[11px] uppercase text-amber-700">PPG</div><div id="totalPpgB" class="mono text-lg font-semibold text-amber-300">0.0</div></div><div><div class="text-[11px] uppercase text-amber-700">Avg Age</div><div id="totalAgeB" class="mono text-lg font-semibold text-amber-300">—</div></div></div></section>
       </div>
     </div>
 
@@ -421,7 +472,7 @@ function expandedRow(team){
           `).join('')}
         </div>
       </div>
-    </td>
+  </td>
   </tr>`;
 }
 
@@ -527,7 +578,7 @@ async function loadLeague(league){
     const picksMap={};
     picks.forEach(p=>{ const key=`${p.season||p.year}_${p.round}`; picksMap[key]=Number(p.mid||p.value_mid||p.value||p.avg||0); });
 
-    state.ra.values=vMap; state.ra.ages=aMap; state.ra.ppg=pMap; state.ra.picks=picksMap; console.log('League Overview PPG map size:', Object.keys(pMap).length);
+    state.ra.values=vMap; state.ra.ages=aMap; state.ra.ppg=pMap; state.ra.picks=picksMap;
     // If values tab is visible, refresh with league format
     if(!document.getElementById("valuesView").classList.contains("hidden")){ loadRAValues(); }
 
@@ -671,14 +722,22 @@ $('#tbody').addEventListener('click', e=>{
 // --- Tabs ---
 const tabTeams = $('#tabTeams');
 const tabValues = $('#tabValues');
+const tabTrade = $('#tabTrade');
 function setTab(which){
   const isTeams = which==='teams';
+  const isValues = which==='values';
+  const isTrade = which==='trade';
   $('#teamsView').classList.toggle('hidden', !isTeams);
-  $('#valuesView').classList.toggle('hidden', isTeams);
-  tabTeams.className = isTeams ? 'px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'px-3 py-1.5 rounded-lg text-sm font-medium bg-[#120a00]/60 text-amber-200/80 border border-amber-800/50/50 hover:bg-[#120a00]';
-  tabValues.className = !isTeams ? 'px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'px-3 py-1.5 rounded-lg text-sm font-medium bg-[#120a00]/60 text-amber-200/80 border border-amber-800/50/50 hover:bg-[#120a00]';
+  $('#valuesView').classList.toggle('hidden', !isValues);
+  $('#tradeView').classList.toggle('hidden', !isTrade);
+  const active = 'px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30';
+  const inactive = 'px-3 py-1.5 rounded-lg text-sm font-medium bg-[#120a00]/60 text-amber-200/80 border border-amber-800/50/50 hover:bg-[#120a00]';
+  tabTeams.className = isTeams ? active : inactive;
+  tabValues.className = isValues ? active : inactive;
+  tabTrade.className = isTrade ? active : inactive;
 }
 tabTeams.addEventListener('click', ()=>setTab('teams'));
+tabTrade.addEventListener('click', ()=>{ setTab('trade'); initTrade(); });
 tabValues.addEventListener('click', ()=>{
     setTab('values');
     // Populate format displays from current league
@@ -912,6 +971,140 @@ if(userParam){
   }, 300);
 }
 
+
+  
+// --- Trade Calculator ---
+const tradeState = { sideA: [], sideB: [], playerIndex: [], initialized:false };
+function initTrade(){
+  if(tradeState.initialized) return;
+  buildTradeIndex();
+  setupTradeUI();
+  tradeState.initialized=true;
+  updateTradeAnalysis();
+}
+function buildTradeIndex(){
+  const idx=[];
+  const sp = state.sleeperPlayers || {};
+  const vMap = state.ra.values || {};
+  const aMap = state.ra.ages || {};
+  const pMap = state.ra.ppg || {};
+  Object.entries(sp).forEach(([id,p])=>{
+    if(!p || !p.position) return;
+    if(!['QB','RB','WR','TE'].includes(p.position)) return;
+    const val = vMap[id] || 0;
+    if(val<100) return;
+    idx.push({
+      id,
+      name: `${p.first_name||''} ${p.last_name||''}`.trim() || p.full_name || '',
+      pos: p.position,
+      team: p.team || 'FA',
+      value: val,
+      ppg: pMap[id] || 0,
+      age: aMap[id] || p.age || 0
+    });
+  });
+  idx.sort((a,b)=>b.value-a.value);
+  tradeState.playerIndex = idx;
+}
+function setupTradeUI(){
+  ['A','B'].forEach(side=>{
+    const search = $(`#search${side}`);
+    const results = $(`#results${side}`);
+    search.addEventListener('input', ()=>{
+      const q = search.value.toLowerCase().trim();
+      if(!q){ results.classList.add('hidden'); return; }
+      const hits = tradeState.playerIndex.filter(p=>p.name.toLowerCase().includes(q)).slice(0,12);
+      if(!hits.length){ results.innerHTML='<div class="p-3 text-sm text-amber-700">No matches</div>'; results.classList.remove('hidden'); return; }
+      results.innerHTML = hits.map(p=>`
+        <button data-id="${p.id}" class="w-full text-left px-3 py-2 hover:bg-amber-900/20 flex items-center gap-2">
+          <span class="w-10 text-[11px] px-1.5 py-0.5 rounded border border-amber-800/50 text-amber-300">${p.pos}</span>
+          <span class="flex-1 text-sm truncate">${p.name}</span>
+          <span class="mono text-xs text-amber-400">${fmtK(p.value)}</span>
+        </button>
+      `).join('');
+      results.classList.remove('hidden');
+      results.querySelectorAll('button').forEach(btn=>{
+        btn.onclick = ()=>{ addTradeAsset(side, btn.dataset.id); results.classList.add('hidden'); search.value=''; };
+      });
+    });
+    document.addEventListener('click', e=>{ if(!search.parentElement.contains(e.target)) results.classList.add('hidden'); });
+    $(`#clear${side}`).onclick = ()=>{ tradeState['side'+side]=[]; renderTradeSide(side); updateTradeAnalysis(); };
+    $(`#addPick${side}`).onclick = ()=>{
+      const yr = $(`#pickYear${side}`).value;
+      const rd = $(`#pickRound${side}`).value.replace('st','').replace('nd','').replace('rd','').replace('th','');
+      const slot = $(`#pickSlot${side}`).value;
+      const baseVal = (state.ra.picks && state.ra.picks[`${yr}_${rd}`]) || (rd==1?5000:rd==2?2000:rd==3?800:400);
+      const mult = slot==='Early'?1.25:slot==='Late'?0.75:1.0;
+      const val = Math.round(baseVal*mult);
+      tradeState['side'+side].push({type:'pick', id:`${yr}_${rd}_${slot}`, name:`${yr} ${rd} Round (${slot})`, pos:'PK', team:'', value:val, ppg:0, age:0});
+      renderTradeSide(side); updateTradeAnalysis();
+    };
+  });
+  renderTradeSide('A'); renderTradeSide('B');
+}
+function addTradeAsset(side,id){
+  const p = tradeState.playerIndex.find(x=>x.id===id);
+  if(!p) return;
+  tradeState['side'+side].push({...p});
+  renderTradeSide(side); updateTradeAnalysis();
+}
+function renderTradeSide(side){
+  const listEl = $(`#list${side}`);
+  const arr = tradeState['side'+side];
+  if(!arr.length){ listEl.innerHTML = `<div class="h-full grid place-items-center text-amber-800 text-sm py-12">No assets added</div>`; }
+  else {
+    listEl.innerHTML = arr.map((a,i)=>`
+      <div class="group flex items-center gap-2 px-2 py-2 rounded-xl bg-[#070b14] border border-amber-900/40 hover:border-amber-800/60 transition">
+        <div class="w-8 text-center"><span class="px-1.5 py-0.5 rounded border text-[10px] font-medium border-amber-800/50 text-amber-300">${a.pos||'PK'}</span></div>
+        <div class="flex-1 min-w-0"><div class="text-sm font-medium truncate leading-tight text-amber-100">${a.name}</div><div class="text-[11px] text-amber-700">${a.team||''}${a.age?' • '+Number(a.age).toFixed(1)+'y':''}</div></div>
+        <div class="text-right mr-2"><div class="mono text-xs text-amber-400">${fmtK(a.value)}</div><div class="mono text-[11px] text-amber-700">${a.ppg?Number(a.ppg).toFixed(1):'—'}</div></div>
+        <button data-remove="${side}" data-idx="${i}" class="opacity-60 group-hover:opacity-100 w-7 h-7 grid place-items-center rounded-lg hover:bg-red-500/10 hover:text-red-400 transition">✕</button>
+      </div>
+    `).join('');
+    listEl.querySelectorAll('[data-remove]').forEach(btn=>{
+      btn.onclick = ()=>{ const idx=+btn.dataset.idx; tradeState['side'+side].splice(idx,1); renderTradeSide(side); updateTradeAnalysis(); };
+    });
+  }
+  const totalVal = arr.reduce((s,a)=>s+a.value,0);
+  const totalPpg = arr.reduce((s,a)=>s+(a.ppg||0),0);
+  const ages = arr.filter(a=>a.age>0).map(a=>Number(a.age));
+  const avgAge = ages.length? ages.reduce((s,a)=>s+a,0)/ages.length : 0;
+  $(`#totalVal${side}`).textContent = fmtK(totalVal);
+  $(`#totalPpg${side}`).textContent = totalPpg.toFixed(1);
+  $(`#totalAge${side}`).textContent = avgAge?avgAge.toFixed(1):'—';
+}
+function updateTradeAnalysis(){
+  const aVal = tradeState.sideA.reduce((s,a)=>s+a.value,0);
+  const bVal = tradeState.sideB.reduce((s,a)=>s+a.value,0);
+  const total = aVal+bVal||1;
+  const aPct = aVal/total*100;
+  $('#barA').style.width = aPct+'%';
+  $('#barB').style.width = (100-aPct)+'%';
+  $('#barALabel').textContent = fmtK(aVal);
+  $('#barBLabel').textContent = fmtK(bVal);
+  const diff = aVal - bVal;
+  const avg = (aVal+bVal)/2||1;
+  const pct = Math.abs(diff)/avg*100;
+  $('#valueDiff').textContent = (diff>=0?'+':'')+fmtK(diff);
+  $('#valueDiff').className = `mono text-2xl font-semibold ${diff>0?'text-emerald-400':diff<0?'text-sky-400':'text-amber-200'}`;
+  $('#pctDiff').textContent = pct.toFixed(1)+'%';
+  const badge = $('#fairnessBadge');
+  const sub = $('#fairnessSub');
+  let label='Add assets to analyze', detail='—';
+  if(aVal>0||bVal>0){
+    if(pct<=5){ label='Fair Trade'; badge.className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium'; detail='Within 5% value'; }
+    else if(pct<=12){ label = diff>0 ? 'Slight Win Side A' : 'Slight Win Side B'; badge.className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium'; detail=`~${pct.toFixed(1)}% edge`; }
+    else { label = diff>0 ? 'Win Side A' : 'Win Side B'; badge.className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-medium'; detail=`${pct.toFixed(1)}% advantage`; }
+  }
+  badge.textContent = label;
+  sub.textContent = detail;
+  const top = arr => [...arr].sort((x,y)=>y.value-x.value).slice(0,3);
+  const renderTop = (arr,el)=>{ const t=top(arr); el.innerHTML = t.length? t.map(a=>`<div class="flex justify-between px-2 py-1 rounded-lg bg-[#070b14] border border-amber-900/40"><span class="truncate text-[13px]">${a.name}</span><span class="mono text-xs text-amber-400">${fmtK(a.value)}</span></div>`).join('') : `<div class="text-xs text-amber-800 px-2">—</div>`; };
+  renderTop(tradeState.sideA, $('#topA'));
+  renderTop(tradeState.sideB, $('#topB'));
+}
+
 </script>
 </body>
 </html>
+  
