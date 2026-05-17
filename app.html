@@ -206,20 +206,22 @@ async function getSleeperPlayers(){
 let sleeperProjCache = null;
 async function getSleeperProjections(season=2026){
   if(sleeperProjCache) return sleeperProjCache;
-  try{
-    let r = await fetch(`https://api.sleeper.app/v1/projections/nfl/${season}?season_type=regular`);
-    if(!r.ok){
-      // fallback to previous season if current not available yet
-      r = await fetch(`https://api.sleeper.app/v1/projections/nfl/${season-1}?season_type=regular`);
-    }
-    if(!r.ok) throw new Error('proj');
-    const j = await r.json();
-    sleeperProjCache = j;
-    return j;
-  }catch(e){
-    sleeperProjCache = {};
-    return {};
+  const trySeasons = [season, season-1, season-2];
+  for(const s of trySeasons){
+    try{
+      const r = await fetch(`https://api.sleeper.app/v1/projections/nfl/${s}?season_type=regular`);
+      if(r.ok){
+        const j = await r.json();
+        if(j && Object.keys(j).length>0){
+          sleeperProjCache = j;
+          sleeperProjCache._seasonUsed = s;
+          return j;
+        }
+      }
+    }catch(e){}
   }
+  sleeperProjCache = {_seasonUsed:null};
+  return sleeperProjCache;
 }
 
 function computeCustomPPG(pid, scoring, pos, projMap){
@@ -542,7 +544,7 @@ async function loadLeague(league){
         if(!groups[pos]) return;
         const val = vMap[pid]||0;
         const age = aMap[pid]||null;
-        const ppg = computeCustomPPG(pid, league.scoring_settings, pos, projMap);
+        const ppg = pMap[pid] || 0;
         const name = sp.full_name || `${sp.first_name||''} ${sp.last_name||''}`.trim();
         groups[pos].push({pid,name,pos,val,age,ppg});
         if(age){ageSum+=age;ageCt++;}
