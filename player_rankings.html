@@ -1047,5 +1047,27 @@ function updateTradeAnalysis(){
 })();
 </script>
 
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const lid = params.get('league_id') || localStorage.getItem('vault_league_id') || '';
+  if(!lid) return;
+  const tryLoad = () => {
+    if(typeof loadLeague === 'function'){
+      fetch(`https://api.sleeper.app/v1/league/${lid}`).then(r=>r.json()).then(league=>{
+        if(league && league.league_id){
+          loadLeague(league);
+          setTimeout(()=>{ if(typeof loadRAValues === 'function') loadRAValues(); }, 800);
+        }
+      }).catch(e=>console.error(e));
+    } else {
+      setTimeout(tryLoad, 300);
+    }
+  };
+  tryLoad();
+})();
+</script>
+
 </body>
 </html>
