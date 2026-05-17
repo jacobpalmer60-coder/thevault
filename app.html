@@ -1056,5 +1056,35 @@ const params = new URLSearchParams(location.search);
 const preLeague = params.get('league_id');
 if(preLeague){ setTimeout(()=> { if(typeof loadLeague==='function') loadLeague(preLeague); }, 300); }
 </script>
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const lid = params.get('league_id') || localStorage.getItem('vault_league_id') || '';
+  if(lid) localStorage.setItem('vault_league_id', lid);
+  // Update nav links to keep league_id
+  document.querySelectorAll('a[href$=".html"]').forEach(a=>{
+    const href = a.getAttribute('href').split('?')[0];
+    if(href.includes('index.html')) return;
+    if(lid) a.href = href + '?league_id=' + lid;
+  });
+  // Auto-load league object then call loadLeague
+  const tryLoad = () => {
+    if(typeof loadLeague === 'function' && lid){
+      fetch(`https://api.sleeper.app/v1/league/${lid}`).then(r=>r.json()).then(league=>{
+        if(league && league.league_id){
+          loadLeague(league);
+        } else {
+          console.error('League not found', league);
+        }
+      }).catch(e=>console.error(e));
+    } else if(lid){
+      setTimeout(tryLoad, 300);
+    }
+  };
+  tryLoad();
+})();
+</script>
+
 </body>
 </html>
