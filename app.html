@@ -472,7 +472,7 @@ function expandedRow(team){
           `).join('')}
         </div>
       </div>
-  </td>
+    </td>
   </tr>`;
 }
 
@@ -1105,6 +1105,40 @@ function updateTradeAnalysis(){
 }
 
 </script>
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const lid = params.get('league_id') || localStorage.getItem('vault_league_id') || '';
+  if(lid) localStorage.setItem('vault_league_id', lid);
+  // Update nav links
+  document.querySelectorAll('a[href$=".html"]').forEach(a=>{
+    const href = a.getAttribute('href').split('?')[0];
+    if(href.includes('index.html')) return;
+    if(lid) a.href = href + '?league_id=' + lid;
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const lid = params.get('league_id') || localStorage.getItem('vault_league_id');
+  if(lid){
+    localStorage.setItem('vault_league_id', lid);
+    // Wait for app to init
+    const tryLoad = () => {
+      if(typeof loadLeague === 'function'){
+        loadLeague(lid);
+      } else {
+        setTimeout(tryLoad, 300);
+      }
+    };
+    setTimeout(tryLoad, 500);
+  }
+})();
+</script>
+
 </body>
 </html>
-  
