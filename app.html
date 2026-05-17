@@ -204,51 +204,7 @@ async function getSleeperPlayers(){
 }
 
 let sleeperProjCache = null;
-async function getSleeperProjections(season=2026){
-  if(sleeperProjCache) return sleeperProjCache;
-  const trySeasons = [season, season-1, season-2];
-  for(const s of trySeasons){
-    try{
-      const r = await fetch(`https://api.sleeper.app/v1/projections/nfl/${s}?season_type=regular`);
-      if(r.ok){
-        const j = await r.json();
-        if(j && Object.keys(j).length>0){
-          sleeperProjCache = j;
-          sleeperProjCache._seasonUsed = s;
-          return j;
-        }
-      }
-    }catch(e){}
-  }
-  sleeperProjCache = {_seasonUsed:null};
-  return sleeperProjCache;
-}
 
-function computeCustomPPG(pid, scoring, pos, projMap){
-  const stats = projMap[pid];
-  if(!stats) return 0;
-  const s = scoring || {};
-  const get = (k)=> Number(stats[k]||0);
-  let pts = 0;
-  pts += get('pass_yd') * (s.pass_yd ?? 0.04);
-  pts += get('pass_td') * (s.pass_td ?? 4);
-  pts += get('pass_int') * (s.pass_int ?? -2);
-  pts += get('pass_2pt') * (s.pass_2pt ?? 2);
-  pts += get('rush_yd') * (s.rush_yd ?? 0.1);
-  pts += get('rush_td') * (s.rush_td ?? 6);
-  pts += get('rush_2pt') * (s.rush_2pt ?? 2);
-  const rec = get('rec');
-  pts += rec * (pos==='TE' && s.rec_te!==undefined ? s.rec_te : (s.rec ?? 0));
-  if(pos==='WR') pts += rec * (s.bonus_rec_wr ?? 0);
-  if(pos==='RB') pts += rec * (s.bonus_rec_rb ?? 0);
-  if(pos==='TE') pts += rec * (s.bonus_rec_te ?? 0);
-  pts += get('rec_yd') * (s.rec_yd ?? 0.1);
-  pts += get('rec_td') * (s.rec_td ?? 6);
-  pts += get('rec_2pt') * (s.rec_2pt ?? 2);
-  pts += get('fum_lost') * (s.fum_lost ?? -2);
-  pts += get('fum_rec_td') * (s.fum_rec_td ?? 6);
-  return pts / 17;
-}
 
 async function fetchRA(url){
   try{
@@ -457,7 +413,6 @@ async function loadLeague(league){
     state.rosters = rosters;
     state.playersMap = players;
     const season = Number(league.season || league._season || new Date().getFullYear());
-    const projMap = await getSleeperProjections(season);
     const fmt = detectFormat(league);
     // Sync Player Values format to league format
     const fmtDisp = document.getElementById("raFormatDisplay");
@@ -526,7 +481,7 @@ async function loadLeague(league){
     const picksMap={};
     picks.forEach(p=>{ const key=`${p.season||p.year}_${p.round}`; picksMap[key]=Number(p.mid||p.value_mid||p.value||p.avg||0); });
 
-    state.ra.values=vMap; state.ra.ages=aMap; state.ra.ppg=pMap; state.ra.picks=picksMap; console.log('League Overview PPG map size:', Object.keys(pMap).length);
+    state.ra.values=vMap; state.ra.ages=aMap; state.ra.ppg=pMap; state.ra.picks=picksMap;
     // If values tab is visible, refresh with league format
     if(!document.getElementById("valuesView").classList.contains("hidden")){ loadRAValues(); }
 
