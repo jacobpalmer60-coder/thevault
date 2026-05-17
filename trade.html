@@ -69,6 +69,15 @@
       </div>
     </div>
   </header>
+<div class="max-w-[1400px] mx-auto px-4 pt-4">
+  <div class="flex items-center gap-2">
+    <a href="index.html" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">Home</a>
+    <a href="app.html" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">League Overview</a>
+    <a href="player_rankings.html" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">Player Rankings</a>
+    <a href="trade.html" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">Trade Calculator</a>
+  </div>
+</div>
+
 
   <main class="max-w-[1400px] mx-auto px-4 py-6 lg:py-8">
     <!-- Status -->
@@ -707,10 +716,11 @@
   }
 
 
-  // Auto-load from URL param
+  // Auto-load from URL param or localStorage
   const params = new URLSearchParams(location.search);
-  const preLeague = params.get('league_id');
+  const preLeague = params.get('league_id') || localStorage.getItem('vault_league_id');
   if(preLeague){
+    localStorage.setItem('vault_league_id', preLeague);
     setTimeout(()=> loadLeague(preLeague), 300);
   }
 
@@ -722,5 +732,20 @@
 
 })();
 </script>
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const lid = params.get('league_id') || localStorage.getItem('vault_league_id') || '';
+  if(lid) localStorage.setItem('vault_league_id', lid);
+  // Update nav links
+  document.querySelectorAll('a[href$=".html"]').forEach(a=>{
+    const href = a.getAttribute('href').split('?')[0];
+    if(href.includes('index.html')) return;
+    if(lid) a.href = href + '?league_id=' + lid;
+  });
+})();
+</script>
+
 </body>
 </html>
