@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Vault - Sleeper x RosterAudit</title>
 <script src="https://cdn.tailwindcss.com">
-  </script>
+  
+// Auto-load league from URL
+const params = new URLSearchParams(location.search);
+const preLeague = params.get('league_id');
+if(preLeague){ setTimeout(()=> { if(typeof loadLeague==='function') loadLeague(preLeague); }, 300); }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -35,74 +40,29 @@
       <span id="raStatus" class="text-[11px] px-2 py-1 rounded-md bg-[#120a00] border border-amber-800/50 text-amber-200/80 mr-2">RA: …</span><a href="https://rosteraudit.com" target="_blank" class="text-xs text-amber-200/80 hover:text-amber-300">rosteraudit.com</a>
     </div>
   </header>
-  
+  <section class="max-w-7xl mx-auto px-4 pt-6" id="introSec">
+    <div class="card rounded-2xl p-6 mb-5">
+      <h2 class="text-2xl font-bold text-amber-300 mb-2">Welcome to The Vault</h2>
+      <p class="text-amber-100/90 leading-relaxed">
+        The Vault is your Sleeper league command center. Enter your Sleeper username to pull all your leagues, then pick one to see:
+      </p>
+      <ul class="list-disc list-inside mt-3 text-amber-200/80 space-y-1">
+        <li>League Overview with team strengths, power rankings, and cap space</li>
+        <li>Auto-detected format (SuperFlex/1QB, PPR, TE Premium amount) and roster breakdown including BN, TAXI, and IR counts</li>
+        <li>Player Values top 1000 with PPG projections that match your league scoring</li>
+        <li>Live values from RosterAudit.com synced to your league format</li>
+      </ul>
+      <p class="text-amber-200/70 text-sm mt-3">Start by entering your Sleeper username below.</p>
+    </div>
+  </section>
 
 
   <main class="max-w-7xl mx-auto px-4 py-6">
     <!-- Controls -->
-    <div class="card rounded-2xl p-4 md:p-5 mb-5">
-      <div class="flex flex-col md:flex-row gap-3 md:items-end">
-        <div class="flex-1">
-          <label class="text-xs text-amber-200/80">Sleeper Username</label>
-          <div class="mt-1 flex gap-2">
-            <input id="username" placeholder="e.g., cooterdoodle" class="w-full bg-[#0b1324] border border-amber-900/40 rounded-xl px-3 py-2.5 outline-none focus:border-amber-500/50" />
-            <button id="loadBtn" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold transition whitespace-nowrap">Load Leagues</button>
-          </div>
-          <p class="text-[11px] text-amber-300/70 mt-1">Loads leagues from 2015–2026 and merges by league.</p>
-        </div>
-        <div class="md:w-[420px]">
-          <label class="text-xs text-amber-200/80">Select League</label>
-          <select id="leagueSelect" class="mt-1 w-full bg-[#0b1324] border border-amber-900/40 rounded-xl px-3 py-2.5 hidden"></select>
-        </div>
-      </div>
-      <div id="status" class="mt-3 text-xs text-amber-200/80 hidden"></div>
-    </div>
-
-    <!-- League Header -->
-    <div id="leagueHeader" class="hidden mb-4">
-      <div class="flex flex-wrap items-center gap-3">
-        <h2 id="leagueName" class="text-xl font-semibold"></h2>
-        <span id="leagueMeta" class="text-xs px-2 py-1 rounded-lg bg-[#120a00]/60 border border-amber-800/50/50"></span>
-        <span id="formatBadge" class="text-xs px-2 py-1 rounded-lg rank-pill"></span>
-      </div>
-    </div>
-
-    <!-- Tabs -->
-    <div id="tabsBar" class="flex items-center gap-2 mb-4 hidden">
-      <button id="tabTeams" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">League Overview</button>
-      <button id="tabValues" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-[#120a00]/60 text-amber-200/80 border border-amber-800/50/50 hover:bg-[#120a00]">Player Values</button>
-      <button id="tabTrade" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-[#120a00]/60 text-amber-200/80 border border-amber-800/50/50 hover:bg-[#120a00]">Trade Calculator</button>
-    </div>
-
-    <!-- Teams View -->
-    <div id="teamsView" class="hidden">
-    <!-- Table -->
-    <div class="card rounded-2xl overflow-hidden">
-      <div class="overflow-x-auto scroll">
-        <table class="w-full text-sm">
-          <thead class="bg-[#0a1222] border-b border-amber-900/40 text-[11px] uppercase tracking-wider text-amber-200/80">
-            <tr>
-              <th class="text-left px-4 py-3 w-10">#</th>
-              <th class="text-left px-4 py-3 min-w-[180px] cursor-pointer" data-sort="team">Team</th>
-              <th class="text-center px-3 py-3 cursor-pointer" data-sort="qb">QB</th>
-              <th class="text-center px-3 py-3 cursor-pointer" data-sort="rb">RB</th>
-              <th class="text-center px-3 py-3 cursor-pointer" data-sort="wr">WR</th>
-              <th class="text-center px-3 py-3 cursor-pointer" data-sort="te">TE</th>
-              <th class="text-center px-3 py-3 cursor-pointer" data-sort="pk">PK</th>
-              <th class="text-right px-4 py-3 cursor-pointer" data-sort="ppg">PPG</th>
-              <th class="text-right px-4 py-3 cursor-pointer" data-sort="value">Value</th>
-              <th class="text-right px-4 py-3 cursor-pointer" data-sort="age">Age</th>
-            </tr>
-          </thead>
-          <tbody id="tbody" class="divide-y divide-slate-900/70"></tbody>
-        </table>
-      </div>
-      <div id="emptyState" class="p-10 text-center text-amber-300/70">Enter a Sleeper username to begin.</div>
-    </div>
-    </div>
+    
 
     <!-- Player Values View -->
-    <div id="valuesView" class="hidden" class="hidden">
+    <div id="valuesView" style="display:none" class="hidden" class="hidden">
       <div class="card rounded-2xl p-4 mb-4">
         <div class="flex flex-col lg:flex-row gap-3 lg:items-end">
           <div class="min-w-[220px]">
@@ -156,7 +116,7 @@
 
     
     <!-- Trade Calculator View -->
-    <div id="tradeView" class="hidden">
+    <div id="tradeView" style="display:none" class="hidden">
       <div class="grid xl:grid-cols-[1fr_380px_1fr] gap-5 items-start">
         <!-- Side A -->
         <section class="rounded-2xl border border-amber-900/30 bg-[#0b1220]/80 flex flex-col min-h-[600px]">
@@ -1090,39 +1050,11 @@ function updateTradeAnalysis(){
   renderTop(tradeState.sideB, $('#topB'));
 }
 
+
+// Auto-load league from URL
+const params = new URLSearchParams(location.search);
+const preLeague = params.get('league_id');
+if(preLeague){ setTimeout(()=> { if(typeof loadLeague==='function') loadLeague(preLeague); }, 300); }
 </script>
-
-<script>
-(function(){
-  const params = new URLSearchParams(location.search);
-  const lid = params.get('league_id') || localStorage.getItem('vault_league_id') || '';
-  if(lid) localStorage.setItem('vault_league_id', lid);
-  // Update nav links
-  document.querySelectorAll('a[href$=".html"]').forEach(a=>{
-    const href = a.getAttribute('href').split('?')[0];
-    if(href.includes('index.html')) return;
-    if(lid) a.href = href + '?league_id=' + lid;
-  });
-})();
-</script>
-
-
-<script>
-(function(){
-  const params = new URLSearchParams(location.search);
-  const lid = params.get('league_id') || localStorage.getItem('vault_league_id');
-  if(!lid) return;
-  localStorage.setItem('vault_league_id', lid);
-  const tryLoad = () => {
-    if(typeof loadLeague === 'function'){
-      loadLeague(lid);
-    } else {
-      setTimeout(tryLoad, 300);
-    }
-  };
-  setTimeout(tryLoad, 500);
-})();
-</script>
-
 </body>
 </html>
