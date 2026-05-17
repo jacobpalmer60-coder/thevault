@@ -4,7 +4,56 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Vault - Sleeper x RosterAudit</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com">
+// Player Inspector
+document.getElementById('inspectBtn')?.addEventListener('click', async ()=>{
+  const name = document.getElementById('playerInspect').value.trim().toLowerCase();
+  const out = document.getElementById('inspectOut');
+  if(!name){ out.textContent = 'Enter a player name'; return; }
+  const players = await getSleeperPlayers();
+  const league = state.currentLeague;
+  if(!league){ out.textContent = 'Load a league first'; return; }
+  const season = Number(league.season || new Date().getFullYear());
+  const projMap = await getSleeperProjections(season);
+  // find player
+  let pid = null, pObj = null;
+  for(const [id,obj] of Object.entries(players)){
+    if(obj.full_name && obj.full_name.toLowerCase() === name){ pid=id; pObj=obj; break; }
+  }
+  if(!pid){
+    for(const [id,obj] of Object.entries(players)){
+      if(obj.full_name && obj.full_name.toLowerCase().includes(name)){ pid=id; pObj=obj; break; }
+    }
+  }
+  if(!pid){ out.textContent = 'Player not found'; return; }
+  const stats = projMap[pid] || {};
+  const sc = league.scoring_settings || {};
+  const pos = pObj.position;
+  const get = k=> Number(stats[k]||0);
+  let pts = 0;
+  const lines = [];
+  const add = (label, val, ptsAdd)=>{ if(val){ lines.push(`${label}: ${val} × ${ptsAdd/val} = ${ptsAdd.toFixed(2)}`); } };
+  const passYdPts = get('pass_yd') * (sc.pass_yd ?? 0.04); pts+=passYdPts; if(get('pass_yd')) lines.push(`Pass Yds: ${get('pass_yd')} × ${sc.pass_yd ?? 0.04} = ${passYdPts.toFixed(2)}`);
+  const passTdPts = get('pass_td') * (sc.pass_td ?? 4); pts+=passTdPts; if(get('pass_td')) lines.push(`Pass TD: ${get('pass_td')} × ${sc.pass_td ?? 4} = ${passTdPts.toFixed(2)}`);
+  const passIntPts = get('pass_int') * (sc.pass_int ?? -2); pts+=passIntPts; if(get('pass_int')) lines.push(`Int: ${get('pass_int')} × ${sc.pass_int ?? -2} = ${passIntPts.toFixed(2)}`);
+  const rushYdPts = get('rush_yd') * (sc.rush_yd ?? 0.1); pts+=rushYdPts; if(get('rush_yd')) lines.push(`Rush Yds: ${get('rush_yd')} × ${sc.rush_yd ?? 0.1} = ${rushYdPts.toFixed(2)}`);
+  const rushTdPts = get('rush_td') * (sc.rush_td ?? 6); pts+=rushTdPts; if(get('rush_td')) lines.push(`Rush TD: ${get('rush_td')} × ${sc.rush_td ?? 6} = ${rushTdPts.toFixed(2)}`);
+  const rec = get('rec');
+  const recPtsPer = pos==='TE' && sc.rec_te!==undefined ? sc.rec_te : (sc.rec ?? 0);
+  const recPts = rec * recPtsPer; pts+=recPts; if(rec) lines.push(`Rec: ${rec} × ${recPtsPer} = ${recPts.toFixed(2)}`);
+  if(pos==='WR' && sc.bonus_rec_wr){ const b = rec * sc.bonus_rec_wr; pts+=b; lines.push(`WR Bonus: ${rec} × ${sc.bonus_rec_wr} = ${b.toFixed(2)}`); }
+  if(pos==='RB' && sc.bonus_rec_rb){ const b = rec * sc.bonus_rec_rb; pts+=b; lines.push(`RB Bonus: ${rec} × ${sc.bonus_rec_rb} = ${b.toFixed(2)}`); }
+  if(pos==='TE' && sc.bonus_rec_te){ const b = rec * sc.bonus_rec_te; pts+=b; lines.push(`TE Bonus: ${rec} × ${sc.bonus_rec_te} = ${b.toFixed(2)}`); }
+  const recYdPts = get('rec_yd') * (sc.rec_yd ?? 0.1); pts+=recYdPts; if(get('rec_yd')) lines.push(`Rec Yds: ${get('rec_yd')} × ${sc.rec_yd ?? 0.1} = ${recYdPts.toFixed(2)}`);
+  const recTdPts = get('rec_td') * (sc.rec_td ?? 6); pts+=recTdPts; if(get('rec_td')) lines.push(`Rec TD: ${get('rec_td')} × ${sc.rec_td ?? 6} = ${recTdPts.toFixed(2)}`);
+  const fumPts = get('fum_lost') * (sc.fum_lost ?? -2); pts+=fumPts; if(get('fum_lost')) lines.push(`Fum Lost: ${get('fum_lost')} × ${sc.fum_lost ?? -2} = ${fumPts.toFixed(2)}`);
+  const ppg = pts/17;
+  out.innerHTML = `<div class="font-semibold text-amber-300 mb-1">${pObj.full_name} (${pos} - ${pObj.team||'FA'})</div>
+  <div class="text-xs text-amber-200/70 mb-2">Season projection from Sleeper • ${season}</div>
+  <div class="mono text-xs bg-[#0b1324] border border-amber-900/30 rounded-lg p-3 whitespace-pre-wrap">${lines.join('\n')}\n\nTotal pts: ${pts.toFixed(2)}\nPPG: ${ppg.toFixed(2)}</div>`;
+});
+
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -144,6 +193,18 @@
         </div>
         <p class="text-[11px] text-amber-300/70 mt-2">Live data from RosterAudit.com — updates from real trades. Values are on the same scale as your league overview.</p>
       </div>
+
+      <div class="card rounded-2xl p-4 mb-4">
+        <div class="flex gap-2 items-end">
+          <div class="flex-1">
+            <label class="text-xs text-amber-200/80">Player Inspector</label>
+            <input id="playerInspect" placeholder="e.g., Brock Bowers" class="mt-1 w-full bg-[#0b1324] border border-amber-900/40 rounded-xl px-3 py-2 text-sm" />
+          </div>
+          <button id="inspectBtn" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold text-sm">Inspect</button>
+        </div>
+        <div id="inspectOut" class="mt-3 text-sm text-amber-100/90"></div>
+      </div>
+
 
       <div class="card rounded-2xl overflow-hidden">
         <div class="overflow-x-auto scroll">
@@ -908,6 +969,55 @@ if(userParam){
     }
   }, 300);
 }
+
+
+// Player Inspector
+document.getElementById('inspectBtn')?.addEventListener('click', async ()=>{
+  const name = document.getElementById('playerInspect').value.trim().toLowerCase();
+  const out = document.getElementById('inspectOut');
+  if(!name){ out.textContent = 'Enter a player name'; return; }
+  const players = await getSleeperPlayers();
+  const league = state.currentLeague;
+  if(!league){ out.textContent = 'Load a league first'; return; }
+  const season = Number(league.season || new Date().getFullYear());
+  const projMap = await getSleeperProjections(season);
+  // find player
+  let pid = null, pObj = null;
+  for(const [id,obj] of Object.entries(players)){
+    if(obj.full_name && obj.full_name.toLowerCase() === name){ pid=id; pObj=obj; break; }
+  }
+  if(!pid){
+    for(const [id,obj] of Object.entries(players)){
+      if(obj.full_name && obj.full_name.toLowerCase().includes(name)){ pid=id; pObj=obj; break; }
+    }
+  }
+  if(!pid){ out.textContent = 'Player not found'; return; }
+  const stats = projMap[pid] || {};
+  const sc = league.scoring_settings || {};
+  const pos = pObj.position;
+  const get = k=> Number(stats[k]||0);
+  let pts = 0;
+  const lines = [];
+  const add = (label, val, ptsAdd)=>{ if(val){ lines.push(`${label}: ${val} × ${ptsAdd/val} = ${ptsAdd.toFixed(2)}`); } };
+  const passYdPts = get('pass_yd') * (sc.pass_yd ?? 0.04); pts+=passYdPts; if(get('pass_yd')) lines.push(`Pass Yds: ${get('pass_yd')} × ${sc.pass_yd ?? 0.04} = ${passYdPts.toFixed(2)}`);
+  const passTdPts = get('pass_td') * (sc.pass_td ?? 4); pts+=passTdPts; if(get('pass_td')) lines.push(`Pass TD: ${get('pass_td')} × ${sc.pass_td ?? 4} = ${passTdPts.toFixed(2)}`);
+  const passIntPts = get('pass_int') * (sc.pass_int ?? -2); pts+=passIntPts; if(get('pass_int')) lines.push(`Int: ${get('pass_int')} × ${sc.pass_int ?? -2} = ${passIntPts.toFixed(2)}`);
+  const rushYdPts = get('rush_yd') * (sc.rush_yd ?? 0.1); pts+=rushYdPts; if(get('rush_yd')) lines.push(`Rush Yds: ${get('rush_yd')} × ${sc.rush_yd ?? 0.1} = ${rushYdPts.toFixed(2)}`);
+  const rushTdPts = get('rush_td') * (sc.rush_td ?? 6); pts+=rushTdPts; if(get('rush_td')) lines.push(`Rush TD: ${get('rush_td')} × ${sc.rush_td ?? 6} = ${rushTdPts.toFixed(2)}`);
+  const rec = get('rec');
+  const recPtsPer = pos==='TE' && sc.rec_te!==undefined ? sc.rec_te : (sc.rec ?? 0);
+  const recPts = rec * recPtsPer; pts+=recPts; if(rec) lines.push(`Rec: ${rec} × ${recPtsPer} = ${recPts.toFixed(2)}`);
+  if(pos==='WR' && sc.bonus_rec_wr){ const b = rec * sc.bonus_rec_wr; pts+=b; lines.push(`WR Bonus: ${rec} × ${sc.bonus_rec_wr} = ${b.toFixed(2)}`); }
+  if(pos==='RB' && sc.bonus_rec_rb){ const b = rec * sc.bonus_rec_rb; pts+=b; lines.push(`RB Bonus: ${rec} × ${sc.bonus_rec_rb} = ${b.toFixed(2)}`); }
+  if(pos==='TE' && sc.bonus_rec_te){ const b = rec * sc.bonus_rec_te; pts+=b; lines.push(`TE Bonus: ${rec} × ${sc.bonus_rec_te} = ${b.toFixed(2)}`); }
+  const recYdPts = get('rec_yd') * (sc.rec_yd ?? 0.1); pts+=recYdPts; if(get('rec_yd')) lines.push(`Rec Yds: ${get('rec_yd')} × ${sc.rec_yd ?? 0.1} = ${recYdPts.toFixed(2)}`);
+  const recTdPts = get('rec_td') * (sc.rec_td ?? 6); pts+=recTdPts; if(get('rec_td')) lines.push(`Rec TD: ${get('rec_td')} × ${sc.rec_td ?? 6} = ${recTdPts.toFixed(2)}`);
+  const fumPts = get('fum_lost') * (sc.fum_lost ?? -2); pts+=fumPts; if(get('fum_lost')) lines.push(`Fum Lost: ${get('fum_lost')} × ${sc.fum_lost ?? -2} = ${fumPts.toFixed(2)}`);
+  const ppg = pts/17;
+  out.innerHTML = `<div class="font-semibold text-amber-300 mb-1">${pObj.full_name} (${pos} - ${pObj.team||'FA'})</div>
+  <div class="text-xs text-amber-200/70 mb-2">Season projection from Sleeper • ${season}</div>
+  <div class="mono text-xs bg-[#0b1324] border border-amber-900/30 rounded-lg p-3 whitespace-pre-wrap">${lines.join('\n')}\n\nTotal pts: ${pts.toFixed(2)}\nPPG: ${ppg.toFixed(2)}</div>`;
+});
 
 </script>
 </body>
