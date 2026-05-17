@@ -715,27 +715,28 @@ async function loadRAValues(){
     const recTd = sc.rec_td || 6;
     const fumLost = sc.fum_lost || -2;
     // Sleeper projections for PPG via bulk endpoint
+// Sleeper projections for PPG via sleeper.com per-player endpoint
     const sleeperPpgMap = {};
     try {
-      // Bulk fetch all projections for 2026 regular season
-      const projUrl = `https://api.sleeper.app/v1/projections/nfl/2026?season_type=regular`;
-      console.log('Fetching projections:', projUrl);
-      const r = await fetch(projUrl, {cache:'no-store'});
-      console.log('Projections response status:', r.status, r.ok);
-      if(r.ok){
-        const allProj = await r.json();
-        console.log('Projections keys count:', Object.keys(allProj).length);
-        console.log('Sample projection:', Object.entries(allProj).slice(0,3));
-        for(const [pid, pdata] of Object.entries(allProj)){
-          const pts = Number(pdata.pts_ppr || pdata.pts_half_ppr || pdata.pts_std || pdata.stats?.pts_ppr || 0);
-          if(pts>0) sleeperPpgMap[pid] = pts / 17;
-        }
-        console.log('PPG map size:', Object.keys(sleeperPpgMap).length);
-      } else {
-        console.warn('Bulk projections fetch failed', r.status);
-        const txt = await r.text().catch(()=> '');
-        console.warn('Response body:', txt.slice(0,200));
+      const ids = allPlayers.slice(0,400).map(p=>p.sleeper_id||p.id).filter(Boolean);
+      console.log('Fetching projections for', ids.length, 'players from api.sleeper.com');
+      const batchSize = 25;
+      for(let i=0;i<ids.length;i+=batchSize){
+        const batch = ids.slice(i,i+batchSize);
+        await Promise.all(batch.map(async id=>{
+          try{
+            const url = `https://api.sleeper.com/projections/nfl/player/${id}?season=2026&season_type=regular&grouping=season`;
+            const r = await fetch(url,{cache:'no-store'});
+            if(!r.ok) return;
+            const data = await r.json();
+            const pts = Number(data.pts_ppr || data.pts_half_ppr || data.pts_std || data.stats?.pts_ppr || data.stats?.pts || 0);
+            if(pts>0) sleeperPpgMap[id] = pts / 17;
+          }catch(e){}
+        }));
+        await new Promise(res=>setTimeout(res,150));
       }
+      console.log('PPG map size:', Object.keys(sleeperPpgMap).length);
+    } catch(e){ console.warn('player proj error',e); }
     } catch(e){ console.warn('player proj error',e); }
     let list = allPlayers.map(p=>{
       const id = p.sleeper_id || p.id;
