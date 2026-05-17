@@ -5,12 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Player Rankings - The Vault</title>
 <script src="https://cdn.tailwindcss.com">
-  
-// Auto-load league from URL
-const params = new URLSearchParams(location.search);
-const preLeague = params.get('league_id');
-if(preLeague){ setTimeout(()=> { if(typeof loadLeague==='function') loadLeague(preLeague); }, 300); }
-</script>
+  </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1109,11 +1104,41 @@ function updateTradeAnalysis(){
   renderTop(tradeState.sideB, $('#topB'));
 }
 
-
-// Auto-load league from URL
-const params = new URLSearchParams(location.search);
-const preLeague = params.get('league_id');
-if(preLeague){ setTimeout(()=> { if(typeof loadLeague==='function') loadLeague(preLeague); }, 300); }
 </script>
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const lid = params.get('league_id') || localStorage.getItem('vault_league_id') || '';
+  if(lid) localStorage.setItem('vault_league_id', lid);
+  // Update nav links
+  document.querySelectorAll('a[href$=".html"]').forEach(a=>{
+    const href = a.getAttribute('href').split('?')[0];
+    if(href.includes('index.html')) return;
+    if(lid) a.href = href + '?league_id=' + lid;
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const lid = params.get('league_id') || localStorage.getItem('vault_league_id');
+  if(lid){
+    localStorage.setItem('vault_league_id', lid);
+    // Wait for app to init
+    const tryLoad = () => {
+      if(typeof loadLeague === 'function'){
+        loadLeague(lid);
+      } else {
+        setTimeout(tryLoad, 300);
+      }
+    };
+    setTimeout(tryLoad, 500);
+  }
+})();
+</script>
+
 </body>
 </html>
