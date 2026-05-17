@@ -719,15 +719,22 @@ async function loadRAValues(){
     try {
       // Bulk fetch all projections for 2026 regular season
       const projUrl = `https://api.sleeper.app/v1/projections/nfl/2026?season_type=regular`;
+      console.log('Fetching projections:', projUrl);
       const r = await fetch(projUrl, {cache:'no-store'});
+      console.log('Projections response status:', r.status, r.ok);
       if(r.ok){
-        const allProj = await r.json(); // { player_id: {stats:{...}, pts_ppr:...}, ...}
+        const allProj = await r.json();
+        console.log('Projections keys count:', Object.keys(allProj).length);
+        console.log('Sample projection:', Object.entries(allProj).slice(0,3));
         for(const [pid, pdata] of Object.entries(allProj)){
           const pts = Number(pdata.pts_ppr || pdata.pts_half_ppr || pdata.pts_std || pdata.stats?.pts_ppr || 0);
           if(pts>0) sleeperPpgMap[pid] = pts / 17;
         }
+        console.log('PPG map size:', Object.keys(sleeperPpgMap).length);
       } else {
         console.warn('Bulk projections fetch failed', r.status);
+        const txt = await r.text().catch(()=> '');
+        console.warn('Response body:', txt.slice(0,200));
       }
     } catch(e){ console.warn('player proj error',e); }
     let list = allPlayers.map(p=>{
