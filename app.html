@@ -297,9 +297,19 @@ body{
     const ppgMap = {};
     const pr = ra.ppgRaw;
     if(Array.isArray(pr)){
-      pr.forEach(p=>{ if(p.player_id) ppgMap[p.player_id]=p.ppg||p.proj_ppg||0; });
+      pr.forEach(p=>{ 
+        const id = p.player_id || p.sleeper_id || p.id;
+        if(id) ppgMap[id]=p.ppg||p.proj_ppg||p.ppg_proj||0; 
+      });
     }else if(pr && pr.players){
-      Object.entries(pr.players).forEach(([id,v])=> ppgMap[id]=v.ppg||0);
+      if(Array.isArray(pr.players)){
+        pr.players.forEach(p=>{
+          const id = p.player_id || p.sleeper_id || p.id;
+          if(id) ppgMap[id]=p.ppg||p.proj_ppg||0;
+        });
+      }else{
+        Object.entries(pr.players).forEach(([id,v])=> ppgMap[id]=v.ppg||0);
+      }
     }
     STATE.valuesMap = valuesMap;
     STATE.ppgMap = ppgMap;
