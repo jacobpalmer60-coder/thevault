@@ -263,7 +263,7 @@ body{
     // RosterAudit parallel with cache
     setProgress('Fetching RosterAudit values…');
     const format = STATE.format;
-    const raCacheKey = `vault_ra_v2_${format}`;
+    const raCacheKey = `vault_ra_${format}`;
     let ra = cacheGet(raCacheKey, 60*60*1000);
     if(!ra){
       const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
@@ -311,22 +311,47 @@ body{
       const ppgMap = {};
       const pr = ra.ppgRaw;
       const addPpg = (id, val) => { if(id) ppgMap[String(id)] = Number(val)||0; };
+      // Build name -> sleeper_id lookup for fallback matching
+      const nameToId = new Map();
+      Object.entries(STATE.players).forEach(([id, pl])=>{
+        if(!pl) return;
+        const fn = (pl.first_name||'').trim().toLowerCase();
+        const ln = (pl.last_name||'').trim().toLowerCase();
+        if(fn && ln) nameToId.set(`${fn} ${ln}`, id);
+        if(pl.full_name) nameToId.set(pl.full_name.trim().toLowerCase(), id);
+      });
+      const getNameKey = (p)=>{
+        const fn = (p.first_name||p.first||'').trim().toLowerCase();
+        const ln = (p.last_name||p.last||'').trim().toLowerCase();
+        if(fn && ln) return `${fn} ${ln}`;
+        const full = (p.full_name||p.player||p.name||'').trim().toLowerCase();
+        return full || null;
+      };
+      const processEntry = (p)=>{
+        let id = p.player_id || p.sleeper_id || p.id;
+        const val = p.ppg || p.proj_ppg || p.value || 0;
+        if(!id){
+          const key = getNameKey(p);
+          if(key && nameToId.has(key)) id = nameToId.get(key);
+        }
+        addPpg(id, val);
+      };
       if(Array.isArray(pr)){
-        pr.forEach(p=>{
-          const id = p.player_id || p.sleeper_id || p.id;
-          const val = p.ppg || p.proj_ppg || p.value || 0;
-          addPpg(id, val);
-        });
+        pr.forEach(processEntry);
       }else if(pr && Array.isArray(pr.rankings)){
-        pr.rankings.forEach(p=>{
-          const id = p.player_id || p.sleeper_id || p.id;
-          const val = p.ppg || p.proj_ppg || p.value || 0;
-          addPpg(id, val);
-        });
+        pr.rankings.forEach(processEntry);
       }else if(pr && pr.players && typeof pr.players === 'object'){
         Object.entries(pr.players).forEach(([id,v])=>{
           const val = (typeof v === 'object') ? (v.ppg||v.proj_ppg||0) : Number(v)||0;
-          addPpg(id, val);
+          let useId = id;
+          if(!STATE.players[useId]){
+            // try name lookup if v has name
+            if(typeof v === 'object'){
+              const key = getNameKey(v);
+              if(key && nameToId.has(key)) useId = nameToId.get(key);
+            }
+          }
+          addPpg(useId, val);
         });
       }else if(pr && typeof pr === 'object'){
         Object.entries(pr).forEach(([id,v])=>{
@@ -635,7 +660,6 @@ body{
         <span class="text-[10px] font-mono text-amber-200/70">${d.pos} ${(d.pct*100).toFixed(0)}%</span>
       </div>
     `).join('');
-    const starterIds = new Set((row.starters||[]).map(s=>s.id));
 
     const cards = POS_ORDER.map(pos=>{
       const stat = row.posStats[pos];
@@ -651,14 +675,10 @@ body{
           </div>`;
         }else{
           const name = (p.info.first_name? p.info.first_name[0]+'. ' : '') + (p.info.last_name||p.info.full_name||'—');
-          const ppg = typeof p.ppg==='number' ? p.ppg : 0;
-          const ageStr = p.age ? `${p.age}y` : '';
-          const ppgStr = ppg > 0 ? `${ppg.toFixed(1)} ppg` : '';
-          const meta = [ageStr, ppgStr].filter(Boolean).join(' • ');
           return `<div class="flex items-center justify-between py-1 px-1.5 rounded hover:bg-amber-500/[.04]">
             <div class="truncate pr-2 leading-tight">
-              <div class="text-[12px] text-amber-100 truncate">${name} ${starterIds.has(p.id)? '<span class="ml-1 text-[9px] px-1 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono">S</span>':''} ${ppg > 0 ? `<span class="ml-1 text-[10px] px-1 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-200/80 font-mono">${ppg.toFixed(1)}</span>` : ''}</div>
-              <div class="text-[10px] text-amber-200/40 font-mono leading-none">${meta}</div>
+              <div class="text-[12px] text-amber-100 truncate">${name}</div>
+              <div class="text-[10px] text-amber-200/40 font-mono leading-none">${p.age? p.age+'y':''}</div>
             </div>
             <div class="font-mono text-[12px] text-amber-200">${compact(p.val)}</div>
           </div>`;
