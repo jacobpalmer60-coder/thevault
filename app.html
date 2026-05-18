@@ -263,7 +263,7 @@ body{
     // RosterAudit parallel with cache
     setProgress('Fetching RosterAudit values…');
     const format = STATE.format;
-    const raCacheKey = `vault_ra_v5_v2_${format}`;
+    const raCacheKey = `vault_ra_v8_v2_${format}`;
     let ra = cacheGet(raCacheKey, 60*60*1000);
     if(!ra){
       const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
@@ -276,20 +276,26 @@ body{
         fetchJSONFallback(ppgAllUrl).catch(()=>([])),
         fetchJSONFallback(picksUrl).catch(()=>([])),
       ]);
-      // Merge ppg sources
-      const mergePpg = (a,b)=>{
+      // Merge ppg sources: rankings + full projections list
+      const mergePpg = (...sources)=>{
         const out = [];
         const seen = new Set();
-        const pushArr = arr=>{
+        const push = (arr)=>{
           if(Array.isArray(arr)){
-            arr.forEach(x=>{ out.push(x); });
+            arr.forEach(x=> out.push(x));
           }else if(arr && Array.isArray(arr.rankings)){
             arr.rankings.forEach(x=> out.push(x));
           }else if(arr && typeof arr==='object'){
-            Object.values(arr).forEach(v=>{ if(v && typeof v==='object') out.push(v); });
+            // projections endpoint may return object with players array
+            if(Array.isArray(arr.players)) arr.players.forEach(x=> out.push(x));
+            else if(Array.isArray(arr.data)) arr.data.forEach(x=> out.push(x));
+            else {
+              // fallback: push values
+              Object.values(arr).forEach(v=>{ if(v && typeof v==='object' && v.sleeper_id) out.push(v); });
+            }
           }
         };
-        pushArr(a); pushArr(b);
+        sources.forEach(push);
         return out;
       };
       const ppgMerged = mergePpg(ppgRaw, ppgAllRaw);
