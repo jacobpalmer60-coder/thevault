@@ -527,39 +527,14 @@ body{
       summaryBar.classList.add('hidden');
     }
     const max = {
-      total: Math.max(...rows.map(r=>r.total||0),1),
       qb: Math.max(...rows.map(r=>r.qb||0),1),
       rb: Math.max(...rows.map(r=>r.rb||0),1),
       wr: Math.max(...rows.map(r=>r.wr||0),1),
       te: Math.max(...rows.map(r=>r.te||0),1),
       picks: Math.max(...rows.map(r=>r.picks||0),1),
     };
-    const ages = rows.map(r=>r.age||0).filter(a=>a>0);
-    const minAge = ages.length ? Math.min(...ages) : 0;
-    const maxAge = ages.length ? Math.max(...ages) : 0;
-    const ageRange = Math.max(1, maxAge - minAge);
-    const heatColorFromT = (t) => {
-      t = Math.max(0, Math.min(1, t));
-      let r,g,b;
-      if(t < 0.5){
-        const t2 = t / 0.5;
-        r = 239 + (234 - 239) * t2;
-        g = 68 + (179 - 68) * t2;
-        b = 68 + (8 - 68) * t2;
-      } else {
-        const t2 = (t - 0.5) / 0.5;
-        r = 234 + (34 - 234) * t2;
-        g = 179 + (197 - 179) * t2;
-        b = 8 + (94 - 8) * t2;
-      }
-      return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
-    };
-    const heatColor = (val, maxVal) => heatColorFromT(Math.max(0, Math.min(1, val / maxVal)));
-    const heatColorAge = (age) => {
-      if(!age) return 'rgb(180,180,180)';
-      const t = (maxAge - age) / ageRange; // younger = greener
-      return heatColorFromT(t);
-    };
+    const rgba = (r,g,b,a)=>`rgba(${r},${g},${b},${a.toFixed(3)})`;
+    const heat = (val, maxVal, r,g,b)=> rgba(r,g,b, Math.min(0.35, (val/maxVal)*0.35));
     const frag = document.createDocumentFragment();
     rows.forEach((row,i)=>{
       const tr = document.createElement('tr');
@@ -577,14 +552,14 @@ body{
           </div>
         </td>
         <td class="px-3 py-3 text-center font-mono text-amber-200/70">${row.rec}</td>
-        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.total,max.total)}">${compact(row.total)}</td>
-        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.qb,max.qb)}">${compact(row.qb)}</td>
-        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.rb,max.rb)}">${compact(row.rb)}</td>
-        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.wr,max.wr)}">${compact(row.wr)}</td>
-        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.te,max.te)}">${compact(row.te)}</td>
-        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.picks,max.picks)}">${compact(row.picks)}</td>
+        <td class="px-3 py-3 text-right font-mono text-amber-100">${compact(row.total)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.QB}" style="background-color:${heat(row.qb,max.qb,96,165,250)}">${compact(row.qb)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.RB}" style="background-color:${heat(row.rb,max.rb,52,211,153)}">${compact(row.rb)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.WR}" style="background-color:${heat(row.wr,max.wr,244,114,182)}">${compact(row.wr)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.TE}" style="background-color:${heat(row.te,max.te,251,191,36)}">${compact(row.te)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.PICKS}" style="background-color:${heat(row.picks,max.picks,167,139,250)}">${compact(row.picks)}</td>
         <td class="px-3 py-3 text-right font-mono text-amber-200/80">${row.ppg? row.ppg.toFixed(1):'—'}</td>
-        <td class="px-4 py-3 text-right font-mono" style="color:${heatColorAge(row.age)}">${fmt1(row.age)}</td>
+        <td class="px-4 py-3 text-right font-mono text-amber-200/70">${fmt1(row.age)}</td>
       `;
       tr.addEventListener('click', e=>{
         if(e.target.closest('button')) return;
@@ -602,7 +577,6 @@ body{
     tableBody.innerHTML='';
     tableBody.appendChild(frag);
   }
-
 
 
   function renderExpanded(row){
@@ -630,10 +604,11 @@ body{
           </div>`;
         }else{
           const name = (p.info.first_name? p.info.first_name[0]+'. ' : '') + (p.info.last_name||p.info.full_name||'—');
+          const meta = [p.age? p.age+'y' : '', p.ppg? p.ppg.toFixed(1)+' ppg' : ''].filter(Boolean).join(' • ');
           return `<div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-amber-500/[.05]">
             <div class="truncate pr-2">
               <div class="text-sm text-amber-100 truncate">${name}</div>
-              <div class="text-[11px] text-amber-200/40 font-mono">${p.age? p.age+'y':''}</div>
+              <div class="text-[11px] text-amber-200/40 font-mono">${meta}</div>
             </div>
             <div class="font-mono text-sm text-amber-200">${compact(p.val)}</div>
           </div>`;
@@ -670,6 +645,7 @@ body{
       </div>
     `;
   }
+
 
   function toggleExpand(rid){
     if(STATE.expanded.has(rid)) STATE.expanded.delete(rid);
