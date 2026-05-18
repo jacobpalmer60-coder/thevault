@@ -200,9 +200,19 @@ body{
       const r = await fetchWithTimeout(url,3000);
       return await r.json();
     }catch(e){
-      const proxy = 'https://api.allorigins.win/raw?url='+encodeURIComponent(url);
-      const r2 = await fetchWithTimeout(proxy,4000);
-      return await r2.json();
+      try{
+        const proxy = 'https://api.allorigins.win/get?url='+encodeURIComponent(url);
+        const r2 = await fetchWithTimeout(proxy,5000);
+        const j = await r2.json();
+        if(j && j.contents){
+          return JSON.parse(j.contents);
+        }
+        return j;
+      }catch(e2){
+        const proxy2 = 'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url);
+        const r3 = await fetchWithTimeout(proxy2,5000);
+        return await r3.json();
+      }
     }
   }
 
@@ -552,7 +562,7 @@ body{
             <span>${stat.avg? stat.avg.toFixed(1)+'y' : '—'}</span>
           </div>
         </div>
-        <div class="p-1.5 space-y-0.5 max-h-[320px] overflow-auto scrollbar-thin">${items}</div>
+        <div class="p-1.5 space-y-0.5 ">${items}</div>
       </div>`;
     }).join('');
 
