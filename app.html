@@ -267,7 +267,7 @@ body{
     let ra = cacheGet(raCacheKey, 60*60*1000);
     if(!ra){
       const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
-      const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings?per_page=500`;
+      const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings`;
       const picksUrl = `https://rosteraudit.com/wp-json/ra/v1/picks`;
       const [valuesRaw, ppgRaw, picksRaw] = await Promise.all([
         fetchJSONFallback(valuesUrl).catch(()=>({})),
@@ -698,9 +698,33 @@ body{
   }
 
 
-  function toggleExpand(rid){
-    if(STATE.expanded.has(rid)) STATE.expanded.delete(rid);
-    else STATE.expanded.add(rid);
+  async function toggleExpand(rid){
+    if(STATE.expanded.has(rid)){
+      STATE.expanded.delete(rid);
+      renderTable();
+      return;
+    }
+    STATE.expanded.add(rid);
+    const row = STATE.rows.find(r=>r.roster_id===rid);
+    if(row){
+      const missing = row.players.filter(p=>!p.ppg || p.ppg===0).map(p=>p.id);
+      if(missing.length){
+        // Fetch player-page for missing PPG from RosterAudit
+        await Promise.all(missing.map(async pid=>{
+          try{
+            const data = await fetchJSONFallback(`https://rosteraudit.com/wp-json/ra/v1/player-page/${pid}`);
+            // Try common fields
+            const ppg = Number(data?.projections?.ppg || data?.projections?.ppg_ppr || data?.ppg || data?.ppg_ppr || data?.dynasty?.ppg || 0);
+            if(ppg>0){
+              STATE.ppgMap[pid]=ppg;
+            }
+          }catch(e){}
+        }));
+        // Rebuild rows with new PPG data
+        buildRows();
+        applySort();
+      }
+    }
     renderTable();
   }
 
