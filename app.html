@@ -260,10 +260,10 @@ body{
     // RosterAudit parallel with cache
     setProgress('Fetching RosterAudit values…');
     const format = STATE.format;
-    const raCacheKey = `vault_ra_${format}`;
+    const raCacheKey = `vault_ra_v2_${format}`;
     let ra = cacheGet(raCacheKey, 60*60*1000);
     if(!ra){
-      const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}&key=ra_9d018b4d4039fa9d914c55fecbd873678cd171a9`;
+      const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
       const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings`;
       const picksUrl = `https://rosteraudit.com/wp-json/ra/v1/picks`;
       const [valuesRaw, ppgRaw, picksRaw] = await Promise.all([
@@ -277,22 +277,12 @@ body{
     // Normalize
     const valuesMap = {};
     const vr = ra.valuesRaw;
-    if(vr && typeof vr === 'object' && !Array.isArray(vr)){
-      // Could be direct map {id:{sf:...,1qb:...}} or {values:{...}}
-      if(vr.values && typeof vr.values === 'object'){
-        Object.assign(valuesMap, vr.values);
-      }else{
-        Object.entries(vr).forEach(([id,v])=>{
-          if(v && typeof v === 'object'){
-            const isSF = STATE.format.startsWith('sf');
-            valuesMap[id] = isSF ? (v.sf || v.superflex || 0) : (v['1qb'] || v.qb || 0);
-          }else if(typeof v === 'number'){
-            valuesMap[id] = v;
-          }
-        });
-      }
+    if(vr && vr.values && typeof vr.values === 'object'){
+      Object.assign(valuesMap, vr.values);
     }else if(Array.isArray(vr)){
       vr.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||v.val||0; });
+    }else if(vr && Array.isArray(vr.data)){
+      vr.data.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||0; });
     }
     const ppgMap = {};
     const pr = ra.ppgRaw;
@@ -302,7 +292,6 @@ body{
       Object.entries(pr.players).forEach(([id,v])=> ppgMap[id]=v.ppg||0);
     }
     STATE.valuesMap = valuesMap;
-    const dbg = document.getElementById('debugInfo'); if(dbg) dbg.textContent = `RA loaded: values=${Object.keys(valuesMap).length} ppg=${Object.keys(ppgMap).length} picks=${STATE.picksData.length||0}`;
     STATE.ppgMap = ppgMap;
     STATE.picksData = Array.isArray(ra.picksRaw)? ra.picksRaw : (ra.picksRaw?.picks||[]);
 
@@ -329,22 +318,31 @@ body{
   function buildPickOwnership(){
     const rosters = STATE.rosters;
     const traded = STATE.tradedPicks;
-    const season = new Date().getFullYear();
-    const seasons = [season, season+1, season+2];
+    const leagueSeason = Number(STATE.league?.season) || new Date().getFullYear();
+    const seasons = [leagueSeason, leagueSeason+1, leagueSeason+2];
     const rounds = [1,2,3,4];
+    // roster_id -> team short name
+    const rosterNames = {};
+    rosters.forEach(r=>{
+      const user = STATE.users.find(u=>u.user_id===r.owner_id);
+      const name = user?.metadata?.team_name || user?.display_name || `Team ${r.roster_id}`;
+      rosterNames[r.roster_id] = (name.match(/[A-Z]/g)||[]).slice(0,2).join('') || name.slice(0,2).toUpperCase();
+    });
     const ownerMap = {};
     rosters.forEach(r=> ownerMap[r.roster_id]=[]);
     rosters.forEach(orig=>{
       seasons.forEach(s=>{
         rounds.forEach(rd=>{
-          const tp = traded.find(t=> t.season==s && t.round==rd && t.roster_id==orig.roster_id);
-          const ownerId = tp? tp.owner_id : orig.roster_id;
+          const tp = traded.find(t=> Number(t.season)==s && Number(t.round)==rd && Number(t.roster_id)==orig.roster_id);
+          const ownerId = tp? Number(tp.owner_id) : orig.roster_id;
           if(ownerMap[ownerId]){
-            ownerMap[ownerId].push({season:s, round:rd, original:orig.roster_id});
+            ownerMap[ownerId].push({season:s, round:rd, original:orig.roster_id, originalName: rosterNames[orig.roster_id]});
           }
         });
       });
     });
+    // sort picks by season then round
+    Object.values(ownerMap).forEach(arr=> arr.sort((a,b)=> a.season-b.season || a.round-b.round));
     return ownerMap;
   }
 
@@ -443,6 +441,14 @@ body{
 
     // Sort initial
     STATE.rows = rows;
+    // compute ranks
+    const rankKeys = ['total','qb','rb','wr','te','picks','ppg'];
+    rankKeys.forEach(k=>{
+      const sorted = [...rows].sort((a,b)=> (b[k]||0)-(a[k]||0));
+      sorted.forEach((r,i)=> r['rank_'+k]=i+1);
+    });
+    const sortedAge = [...rows].sort((a,b)=> (a.age||999)-(b.age||999));
+    sortedAge.forEach((r,i)=> r.rank_age=i+1);
     applySort();
     updateMeta();
   }
@@ -479,7 +485,7 @@ body{
     const rankCls = (r)=> r<=3 ? 'text-emerald-400' : r>n-3 ? 'text-rose-400' : 'text-amber-200/40';
     rows.forEach((row,i)=>{
       const tr = document.createElement('tr');
-      tr.className = 'group hover:bg-amber-500/[.03] transition';
+      tr.className = 'group hover:bg-amber-500/[.03] transition cursor-pointer';
       tr.dataset.rid = row.roster_id;
       tr.innerHTML = `
         <td class="px-2 py-1.5 text-amber-200/40 font-mono text-[11px]">${i+1}</td>
@@ -542,7 +548,17 @@ body{
           </div>
         </td>
       `;
+      tr.addEventListener('click', e=>{
+        if(e.target.closest('button')) return;
+        toggleExpand(row.roster_id);
+      });
       frag.appendChild(tr);
+      if(STATE.expanded.has(row.roster_id)){
+        const tr2 = document.createElement('tr');
+        tr2.className = 'bg-black/20';
+        tr2.innerHTML = `<td colspan="11" class="p-0"><div class="px-3 md:px-5 py-4">${renderExpanded(row)}</div></td>`;
+        frag.appendChild(tr2);
+      }
     });
     tableBody.innerHTML='';
     tableBody.appendChild(frag);
