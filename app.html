@@ -3,321 +3,608 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>The Vault — Roster Values</title>
+<title>Roster Values • Sleeper</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root { color-scheme: dark; }
-  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background:#09090b; }
-  .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; }
-  * { scrollbar-width: thin; scrollbar-color:#3f3f46 #18181b; }
-  ::-webkit-scrollbar{ width:8px; height:8px; }
-  ::-webkit-scrollbar-track{ background:#18181b; }
-  ::-webkit-scrollbar-thumb{ background:#3f3f46; border-radius:4px; }
-  ::-webkit-scrollbar-thumb:hover{ background:#52525b; }
+  html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  .spin { animation: spin 1s linear infinite }
 </style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen flex flex-col">
-  <!-- Header -->
-  <header class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-xl">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-zinc-950">
-            <rect x="3" y="11" width="18" height="10" rx="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-            <circle cx="12" cy="16" r="1" fill="currentColor"/>
-          </svg>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen selection:bg-amber-500/20 selection:text-amber-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <header class="flex flex-col gap-6 mb-8">
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-3xl sm:text-4xl font-bold tracking-tight">
+            Roster <span class="text-amber-400">Values</span>
+          </h1>
+          <p class="text-zinc-400 mt-1.5 text-sm sm:text-base">Sleeper league analyzer with RosterAudit values, pick values, and live player search.</p>
         </div>
-        <div class="min-w-0">
-          <h1 class="text-[17px] font-semibold leading-tight tracking-tight">The Vault</h1>
-          <p class="text-xs text-zinc-400 -mt-0.5">Roster Values</p>
+        <div class="flex items-center gap-2 text-xs">
+          <span class="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">zinc / amber</span>
+          <span class="px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300">SF • 1QB</span>
         </div>
       </div>
-      <a href="https://rosteraudit.com" target="_blank" rel="noopener" class="hidden sm:inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-amber-400 transition">
-        rosteraudit.com
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
-      </a>
-    </div>
-  </header>
 
-  <!-- Controls -->
-  <div class="border-b border-zinc-900 bg-zinc-950 sticky top-[61px] z-40 backdrop-blur">
-    <div class="max-w-7xl mx-auto px-4 py-4">
-      <div class="flex flex-col lg:flex-row gap-3">
-        <div class="flex-1 flex flex-col sm:flex-row gap-3">
+      <!-- Load Bar -->
+      <div class="bg-zinc-900/60 backdrop-blur border border-zinc-800 rounded-2xl p-4 sm:p-5">
+        <div class="flex flex-col sm:flex-row gap-3">
           <div class="flex-1">
-            <label class="sr-only">League ID</label>
-            <input id="leagueId" type="text" placeholder="Sleeper League ID" class="w-full h-11 px-3.5 rounded-xl bg-zinc-900 border border-zinc-800 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 text-sm placeholder-zinc-600 transition" />
+            <label for="leagueId" class="block text-xs font-medium text-zinc-400 mb-1.5">Sleeper League ID</label>
+            <input id="leagueId" placeholder="e.g. 1048360096184856576" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 placeholder-zinc-600" />
           </div>
-          <div class="flex items-center p-1 rounded-xl bg-zinc-900 border border-zinc-800 h-11">
-            <button data-format="superflex" id="fmt-sf" class="format-btn px-4 h-9 rounded-lg text-sm font-medium transition bg-amber-500 text-zinc-950">Superflex</button>
-            <button data-format="1qb" id="fmt-1qb" class="format-btn px-4 h-9 rounded-lg text-sm font-medium transition text-zinc-400 hover:text-zinc-200">1QB</button>
+          <div class="sm:self-end flex gap-2">
+            <button id="loadBtn" class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-zinc-950 font-semibold px-4 py-2.5 rounded-xl text-sm transition">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-4.35-4.35M11 19a8 8 0 1 0-16 8 8 0 0 1 0 16z"/></svg>
+              Load League
+            </button>
+            <button id="demoBtn" class="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3.5 py-2.5 rounded-xl text-sm transition">Demo</button>
           </div>
         </div>
-        <button id="loadBtn" class="h-11 px-5 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-zinc-950 font-semibold text-sm transition shadow-lg shadow-amber-500/10 flex items-center justify-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 21l-4.35-4.35"/><circle cx="11" cy="11" r="8"/></svg>
-          Load
-        </button>
+        <div id="leagueMeta" class="hidden mt-4 pt-4 border-t border-zinc-800 text-sm text-zinc-300"></div>
       </div>
+
+      <!-- Controls -->
+      <div id="controls" class="hidden flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3 flex-wrap">
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg>
+            <input id="searchInput" placeholder="Search players…" class="pl-9 pr-3 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm w-64 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 placeholder-zinc-600" />
+          </div>
+          <select id="sortSelect" class="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+            <option value="total">Sort: Total Value</option>
+            <option value="ppg">Sort: PPG</option>
+            <option value="qb">Sort: QB Value</option>
+            <option value="rb">Sort: RB Value</option>
+            <option value="wr">Sort: WR Value</option>
+            <option value="te">Sort: TE Value</option>
+            <option value="picks">Sort: Picks Value</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="expandAll" class="text-xs px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800">Expand all</button>
+          <button id="collapseAll" class="text-xs px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800">Collapse all</button>
+          <span id="statusPill" class="text-xs px-2.5 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">Idle</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Warning -->
+    <div id="warning" class="hidden mb-6 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm"></div>
+
+    <!-- Teams Grid -->
+    <main id="teamsContainer" class="grid grid-cols-1 xl:grid-cols-2 gap-5"></main>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="text-center py-24 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/30">
+      <div class="mx-auto w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-zinc-600"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+      </div>
+      <h3 class="text-lg font-semibold">No league loaded</h3>
+      <p class="text-zinc-500 text-sm mt-1">Enter a Sleeper League ID above to analyze rosters, values and picks.</p>
     </div>
+
+    <!-- Footer -->
+    <footer class="mt-16 pt-8 border-t border-zinc-900 text-xs text-zinc-600 flex items-center justify-between flex-wrap gap-3">
+      <p>Values via RosterAudit • Data via Sleeper API</p>
+      <p class="mono">zinc/amber theme</p>
+    </footer>
   </div>
 
-  <main class="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
-    <!-- Error -->
-    <div id="errorBanner" class="hidden mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"></div>
-
-    <!-- Status -->
-    <div id="statusBar" class="hidden mb-6 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-400">
-      <span id="statusLeague" class="font-medium text-zinc-200"></span>
-      <span class="w-1 h-1 rounded-full bg-zinc-700 hidden sm:block"></span>
-      <span id="statusSeason"></span>
-      <span class="w-1 h-1 rounded-full bg-zinc-700 hidden sm:block"></span>
-      <span id="statusTeams"></span>
-      <span class="w-1 h-1 rounded-full bg-zinc-700 hidden sm:block"></span>
-      <span id="statusFormat" class="uppercase tracking-wide"></span>
-    </div>
-
-    <!-- Loading -->
-    <div id="loading" class="hidden py-24 flex flex-col items-center justify-center gap-4 text-zinc-500">
-      <div class="w-10 h-10 rounded-full border-2 border-zinc-800 border-t-amber-500 animate-spin"></div>
-      <p class="text-sm">Loading rosters & values…</p>
-    </div>
-
-    <!-- Empty -->
-    <div id="empty" class="border-2 border-dashed border-zinc-800 rounded-2xl py-24 flex flex-col items-center justify-center text-center px-6">
-      <div class="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#52525b" stroke-width="1.5"><path d="M3 7h18M6 7v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+  <!-- Team Card Template -->
+  <template id="teamCardTpl">
+    <section class="team-card group bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden transition hover:border-zinc-700">
+      <button class="team-header w-full text-left px-5 py-4 flex items-start gap-4 hover:bg-zinc-900/60">
+        <img class="avatar w-11 h-11 rounded-xl bg-zinc-800 object-cover flex-shrink-0" src="" alt="" />
+        <div class="flex-1 min-w-0">
+          <div class="flex items-baseline gap-2 flex-wrap">
+            <h2 class="team-name text-[17px] font-semibold leading-tight truncate"></h2>
+            <span class="team-record text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 mono"></span>
+          </div>
+          <div class="mt-1.5 flex flex-wrap gap-1.5">
+            <span class="pos-pill px-2 py-0.5 rounded-lg text-[11px] font-medium bg-sky-500/10 text-sky-300 border border-sky-500/20">QB <b class="pos-qb mono ml-1">0</b></span>
+            <span class="pos-pill px-2 py-0.5 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">RB <b class="pos-rb mono ml-1">0</b></span>
+            <span class="pos-pill px-2 py-0.5 rounded-lg text-[11px] font-medium bg-violet-500/10 text-violet-300 border border-violet-500/20">WR <b class="pos-wr mono ml-1">0</b></span>
+            <span class="pos-pill px-2 py-0.5 rounded-lg text-[11px] font-medium bg-rose-500/10 text-rose-300 border border-rose-500/20">TE <b class="pos-te mono ml-1">0</b></span>
+          </div>
+          <div class="mt-2 text-[11px] text-zinc-500 player-count"></div>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <div class="combined-total text-2xl font-bold text-amber-400 mono leading-none">0</div>
+          <div class="mt-1 text-[11px] leading-tight text-zinc-400">
+            Players <span class="players-val mono text-zinc-300">0</span> • Picks <span class="picks-val mono text-zinc-300">0</span> • PPG <span class="ppg-val mono text-zinc-300">0</span>
+          </div>
+        </div>
+        <svg class="chevron w-5 h-5 text-zinc-600 mt-1 transition-transform group-[.open]:rotate-180 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="team-body border-t border-zinc-800 bg-zinc-950/50 hidden">
+        <div class="overflow-x-auto scrollbar-thin">
+          <table class="w-full text-sm">
+            <thead class="text-[11px] uppercase tracking-wider text-zinc-500 bg-zinc-900/80">
+              <tr>
+                <th class="text-left font-medium px-5 py-2.5">Player</th>
+                <th class="text-left font-medium px-3 py-2.5">Pos</th>
+                <th class="text-left font-medium px-3 py-2.5">Team</th>
+                <th class="text-right font-medium px-3 py-2.5">Value</th>
+                <th class="text-right font-medium px-5 py-2.5">PPG</th>
+              </tr>
+            </thead>
+            <tbody class="player-tbody divide-y divide-zinc-900"></tbody>
+          </table>
+        </div>
+        <div class="picks-section px-5 py-4 border-t border-zinc-900">
+          <h4 class="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">Draft Picks Owned</h4>
+          <div class="picks-grid flex flex-wrap gap-1.5"></div>
+        </div>
       </div>
-      <h2 class="text-lg font-semibold text-zinc-200 mb-1">No league loaded</h2>
-      <p class="text-sm text-zinc-500 max-w-sm">Enter a Sleeper League ID and choose a format to view roster values powered by RosterAudit.</p>
-    </div>
+    </section>
+  </template>
 
-    <!-- Grid -->
-    <div id="grid" class="grid grid-cols-1 xl:grid-cols-2 gap-6"></div>
-  </main>
+  <template id="playerRowTpl">
+    <tr class="player-row hover:bg-zinc-900/60">
+      <td class="px-5 py-2.5">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-400 player-initial"></div>
+          <div>
+            <div class="player-name font-medium leading-tight"></div>
+            <div class="player-meta text-[11px] text-zinc-500"></div>
+          </div>
+        </div>
+      </td>
+      <td class="px-3 py-2.5 text-zinc-300 mono text-xs player-pos"></td>
+      <td class="px-3 py-2.5 text-zinc-400 text-xs player-team"></td>
+      <td class="px-3 py-2.5 text-right mono text-xs player-value"></td>
+      <td class="px-5 py-2.5 text-right mono text-xs player-ppg"></td>
+    </tr>
+  </template>
 
-  <footer class="border-t border-zinc-900 mt-auto">
-    <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-600">
-      <p>Values from <a href="https://rosteraudit.com" target="_blank" class="hover:text-amber-400 transition">RosterAudit</a> • Player data from Sleeper</p>
-      <p>The Vault © <span id="year"></span></p>
-    </div>
-  </footer>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const fmt = n => n >= 1000 ? (n/1000).toFixed(1).replace(/\.0$/,'') + 'k' : Math.round(n).toString();
+  const fmtFull = n => n.toLocaleString();
+  const debounce = (fn,ms=150)=>{let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms)}};
+  
+  const state = {
+    league: null,
+    rosters: [],
+    users: [],
+    players: {},
+    values: {},
+    picksRaw: null,
+    tradedPicks: [],
+    format: 'sf',
+    seasons: [],
+    teamsData: [],
+    search: ''
+  };
 
-<script type="module">
-const $ = s => document.querySelector(s);
-const leagueInput = $('#leagueId');
-const loadBtn = $('#loadBtn');
-const fmtBtns = document.querySelectorAll('.format-btn');
-const grid = $('#grid');
-const loading = $('#loading');
-const empty = $('#empty');
-const errorBanner = $('#errorBanner');
-const statusBar = $('#statusBar');
-
-let currentFormat = 'superflex';
-
-function setFormat(fmt){
-  currentFormat = fmt;
-  fmtBtns.forEach(b=>{
-    const active = b.dataset.format===fmt;
-    b.classList.toggle('bg-amber-500', active);
-    b.classList.toggle('text-zinc-950', active);
-    b.classList.toggle('text-zinc-400', !active);
-  });
-  localStorage.setItem('vault_format', fmt);
-}
-fmtBtns.forEach(b=>b.addEventListener('click',()=>setFormat(b.dataset.format)));
-
-function showLoading(v){ loading.classList.toggle('hidden', !v); if(v){ empty.classList.add('hidden'); grid.innerHTML=''; statusBar.classList.add('hidden'); } }
-function showError(msg){ if(!msg){ errorBanner.classList.add('hidden'); return;} errorBanner.textContent=msg; errorBanner.classList.remove('hidden'); }
-function formatNumber(n){ return n>0 ? n.toLocaleString() : '0'; }
-
-async function fetchWithProxies(url){
-  const proxies = [
-    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-    u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
-    u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
+  const proxyList = [
+    url => url,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://corsproxy.io/?${encodeURIComponent(url)}`
   ];
-  let lastErr;
-  for(const p of proxies){
-    try{
-      const res = await fetch(p(url));
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      const text = await res.text();
-      return JSON.parse(text);
-    }catch(e){ lastErr=e; }
-  }
-  throw lastErr || new Error('All proxies failed');
-}
 
-async function fetchValues(format){
-  const formatKey = format==='superflex' ? 'sf_ppr' : '1qb_ppr';
-  const url = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${formatKey}`;
-  const data = await fetchWithProxies(url);
-  // Normalize
-  const map = new Map();
-  const src = data.values || data.data || data;
-  if(Array.isArray(src)){
-    // array of {player_id, value} ?
-    for(const item of src){
-      const id = item.player_id || item.id || item.sleeper_id;
-      const val = item.value || item.sf || item['1qb'] || 0;
-      if(id) map.set(String(id), Number(val)||0);
+  async function fetchWithProxy(url, opts={}) {
+    let lastErr;
+    for (const mk of proxyList) {
+      try {
+        const res = await fetch(mk(url), { ...opts, cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } catch(e){ lastErr = e; }
     }
-  }else if(typeof src==='object'){
-    for(const [id, obj] of Object.entries(src)){
-      if(typeof obj==='number'){ map.set(id, obj); }
-      else if(obj && typeof obj==='object'){
-        const v = format==='superflex' ? (obj.sf ?? obj.superflex ?? obj.value ?? 0) : (obj['1qb'] ?? obj.qb ?? obj.value ?? 0);
-        map.set(id, Number(v)||0);
+    throw lastErr;
+  }
+
+  async function getPlayers() {
+    const key = 'sleeper_players_v1';
+    const ttl = 24*60*60*1000;
+    try {
+      const cached = JSON.parse(localStorage.getItem(key)||'null');
+      if (cached && Date.now()-cached.ts < ttl) return cached.data;
+    } catch {}
+    const data = await fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json());
+    try { localStorage.setItem(key, JSON.stringify({ts:Date.now(), data})); } catch {}
+    return data;
+  }
+
+  async function getRosterAuditValues() {
+    const url = 'https://rosteraudit.com/wp-json/ra/v1/values';
+    try {
+      const raw = await fetchWithProxy(url);
+      // normalize
+      if (raw.players) return raw.players;
+      if (raw.data && raw.data.players) return raw.data.players;
+      // flat map?
+      return raw;
+    } catch(e){
+      console.warn('Values fetch failed', e);
+      return {};
+    }
+  }
+
+  async function getRosterAuditPicks() {
+    const url = 'https://rosteraudit.com/wp-json/ra/v1/picks';
+    try {
+      const raw = await fetchWithProxy(url);
+      return raw;
+    } catch(e){
+      console.warn('Picks fetch failed', e);
+      return null;
+    }
+  }
+
+  function detectFormat(league) {
+    const pos = league.roster_positions || [];
+    return pos.includes('SUPER_FLEX') ? 'sf' : '1qb';
+  }
+
+  function getPlayerValue(pid) {
+    const entry = state.values[pid] || state.values[String(pid)] || {};
+    const fmtKey = state.format;
+    // try multiple shapes
+    if (typeof entry === 'number') return { value: entry, ppg:0 };
+    if (entry[fmtKey] != null) return { value: entry[fmtKey], ppg: entry.ppg || entry.PPG || 0 };
+    if (entry.value != null) return { value: entry.value, ppg: entry.ppg || 0 };
+    if (entry.sf != null) return { value: state.format==='sf'? entry.sf: entry['1qb'], ppg: entry.ppg||0 };
+    return { value:0, ppg:0 };
+  }
+
+  function getPickValue(season, round, yearsAhead) {
+    const data = state.picksRaw;
+    const fmt = state.format;
+    if (data) {
+      const root = data[fmt] || data;
+      // shape 1: root[season][round].mid
+      try {
+        const s = root[season] || root[String(season)];
+        if (s) {
+          const r = s[round] || s[String(round)];
+          if (r) {
+            if (typeof r === 'number') return r;
+            if (r.mid) return r.mid;
+            if (r.early && r.late) return Math.round((r.early + r.mid + r.late)/3);
+            if (r.value) return r.value;
+          }
+        }
+        // flat keys
+        const keys = Object.keys(root);
+        const matches = keys.filter(k => k.startsWith(`${season}_${round}_`) || k.startsWith(`${season}-${round}-`));
+        if (matches.length) {
+          const vals = matches.map(k => root[k]).filter(v=>typeof v==='number');
+          if (vals.length) return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+        }
+      } catch {}
+    }
+    // fallback curve
+    const base = [5000,2000,800,300][round-1] || 100;
+    const decay = Math.pow(0.85, Math.max(0, yearsAhead));
+    const multi = state.format==='sf' && round===1 ? 1.1 : 1;
+    return Math.round(base * decay * multi);
+  }
+
+  function buildPickOwnership() {
+    const curr = parseInt(state.league.season);
+    state.seasons = [curr, curr+1, curr+2];
+    const map = new Map(); // key -> owner
+    for (const r of state.rosters) {
+      for (const s of state.seasons) {
+        for (let rd=1; rd<=4; rd++) {
+          const key = `${s}-${rd}-${r.roster_id}`;
+          map.set(key, r.roster_id);
+        }
       }
     }
-  }
-  return map;
-}
-
-async function loadLeague(leagueId, format){
-  if(!leagueId) return;
-  showLoading(true);
-  showError('');
-  grid.innerHTML='';
-  try{
-    const [league, rosters, users, players] = await Promise.all([
-      fetch(`https://api.sleeper.app/v1/league/${leagueId}`).then(r=>r.json()),
-      fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`).then(r=>r.json()),
-      fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`).then(r=>r.json()),
-      fetch(`https://api.sleeper.app/v1/players/nfl`).then(r=>r.json()).catch(()=>({}))
-    ]);
-
-    let valuesMap = new Map();
-    try{
-      valuesMap = await fetchValues(format);
-    }catch(e){
-      console.warn('Values fetch failed', e);
-      showError('Value data unavailable – showing rosters with 0 values. RosterAudit may be blocking proxies.');
+    // apply traded picks
+    for (const tp of state.tradedPicks) {
+      const s = parseInt(tp.season);
+      const rd = parseInt(tp.round);
+      const orig = tp.roster_id;
+      const owner = tp.owner_id;
+      if (!state.seasons.includes(s) || rd<1||rd>4) continue;
+      const key = `${s}-${rd}-${orig}`;
+      if (map.has(key)) map.set(key, owner);
     }
+    // collect per roster
+    const perRoster = new Map();
+    for (const r of state.rosters) perRoster.set(r.roster_id, []);
+    for (const [key, owner] of map.entries()) {
+      const [s, rd, orig] = key.split('-').map(Number);
+      perRoster.get(owner).push({ season:s, round:rd, original:orig });
+    }
+    return perRoster;
+  }
 
-    const userMap = new Map(users.map(u=>[u.user_id, u]));
-
-    const teams = rosters.map(r=>{
-      const user = userMap.get(r.owner_id);
-      const teamName = user?.metadata?.team_name || user?.display_name || `Team ${r.roster_id}`;
-      const avatar = user?.avatar ? `https://sleepercdn.com/avatars/thumbs/${user.avatar}` : 'https://sleepercdn.com/images/v2/icons/player_default.webp';
-      const record = `${r.settings?.wins||0}-${r.settings?.losses||0}${r.settings?.ties?`-${r.settings.ties}`:''}`;
-      const playerIds = (r.players||[]).filter(Boolean);
-      const plist = playerIds.map(pid=>{
-        const p = players[pid];
-        if(!p) return null;
-        const value = valuesMap.get(pid) || valuesMap.get(String(pid)) || 0;
+  function computeTeams() {
+    const userById = new Map(state.users.map(u=>[u.user_id, u]));
+    const rosterById = new Map(state.rosters.map(r=>[r.roster_id, r]));
+    const picksPerRoster = buildPickOwnership();
+    const currSeason = parseInt(state.league.season);
+    
+    const teams = state.rosters.map(roster => {
+      const user = userById.get(roster.owner_id) || {};
+      const playerIds = roster.players || [];
+      const players = playerIds.map(pid => {
+        const p = state.players[pid] || {};
+        const { value, ppg } = getPlayerValue(pid);
         return {
           id: pid,
-          name: `${p.first_name||''} ${p.last_name||''}`.trim() || p.full_name || pid,
-          pos: p.position || '-',
+          name: p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || pid,
+          pos: p.position || '—',
           team: p.team || 'FA',
-          age: p.age ?? '-',
-          value
+          age: p.age || null,
+          value,
+          ppg
         };
-      }).filter(Boolean).sort((a,b)=>b.value-a.value);
-      const total = plist.reduce((s,p)=>s+p.value,0);
-      return { roster_id:r.roster_id, teamName, avatar, record, players:plist, total };
-    }).sort((a,b)=>b.total-a.total);
-
-    // status
-    $('#statusLeague').textContent = league.name || 'League';
-    $('#statusSeason').textContent = `Season ${league.season}`;
-    $('#statusTeams').textContent = `${teams.length} teams`;
-    $('#statusFormat').textContent = format==='superflex' ? 'Superflex' : '1QB';
-    statusBar.classList.remove('hidden');
-
-    // render
-    grid.innerHTML = teams.map((t,idx)=>renderCard(t, idx+1)).join('');
-    empty.classList.add('hidden');
-    localStorage.setItem('vault_league_id', leagueId);
-    localStorage.setItem('vault_format', format);
-  }catch(e){
-    console.error(e);
-    showError('Failed to load league. Check the League ID and try again.');
-    empty.classList.remove('hidden');
-  }finally{
-    showLoading(false);
+      }).sort((a,b)=> b.value - a.value);
+      
+      const posSum = { QB:0, RB:0, WR:0, TE:0 };
+      let playerValue = 0, ppgTotal = 0;
+      for (const pl of players) {
+        playerValue += pl.value;
+        ppgTotal += pl.ppg;
+        if (posSum[pl.pos] != null) posSum[pl.pos] += pl.value;
+      }
+      
+      const picks = picksPerRoster.get(roster.roster_id) || [];
+      let picksValue = 0;
+      for (const pk of picks) {
+        const yearsAhead = pk.season - currSeason;
+        const val = getPickValue(pk.season, pk.round, yearsAhead);
+        pk.value = val;
+        picksValue += val;
+      }
+      picks.sort((a,b)=> a.season - b.season || a.round - b.round);
+      
+      const record = `${roster.settings?.wins||0}-${roster.settings?.losses||0}${roster.settings?.ties?`-${roster.settings.ties}`:''}`;
+      
+      return {
+        roster_id: roster.roster_id,
+        owner_id: roster.owner_id,
+        name: user.display_name || user.username || `Team ${roster.roster_id}`,
+        avatar: user.avatar ? `https://sleepercdn.com/avatars/${user.avatar}` : `https://sleepercdn.com/images/v2/icons/league/nfl/league_avatar_256.png`,
+        record,
+        players,
+        playersCount: players.length,
+        playerValue,
+        picks,
+        picksValue,
+        combined: playerValue + picksValue,
+        ppgTotal,
+        pos: posSum,
+        roster
+      };
+    });
+    state.teamsData = teams;
   }
-}
 
-function renderCard(team, rank){
-  const rows = team.players.map(p=>`
-    <tr class="hover:bg-zinc-800/40 transition">
-      <td class="px-5 py-2.5">
-        <div class="font-medium text-zinc-200 truncate max-w-[200px] sm:max-w-none">${escapeHtml(p.name)}</div>
-      </td>
-      <td class="px-2 py-2.5 hidden sm:table-cell">
-        <span class="inline-flex w-6 h-6 rounded-lg bg-zinc-800 border border-zinc-700 items-center justify-center text-[10px] font-bold text-zinc-400">${escapeHtml(p.pos)}</span>
-      </td>
-      <td class="px-2 py-2.5 hidden sm:table-cell text-zinc-500 mono text-xs">${escapeHtml(p.team)}</td>
-      <td class="px-2 py-2.5 hidden md:table-cell text-zinc-500 text-xs">${p.age}</td>
-      <td class="px-5 py-2.5 text-right mono text-sm ${p.value>0?'text-amber-200':'text-zinc-600'}">${formatNumber(p.value)}</td>
-    </tr>
-  `).join('');
+  function renderTeams() {
+    const container = $('#teamsContainer');
+    container.innerHTML = '';
+    const tpl = $('#teamCardTpl');
+    for (const t of state.teamsData) {
+      const node = tpl.content.cloneNode(true);
+      const card = node.querySelector('.team-card');
+      card.dataset.rosterId = t.roster_id;
+      card.dataset.combined = t.combined;
+      card.dataset.ppg = t.ppgTotal;
+      card.dataset.qb = t.pos.QB;
+      card.dataset.rb = t.pos.RB;
+      card.dataset.wr = t.pos.WR;
+      card.dataset.te = t.pos.TE;
+      card.dataset.picks = t.picksValue;
+      
+      node.querySelector('.avatar').src = t.avatar;
+      node.querySelector('.team-name').textContent = t.name;
+      node.querySelector('.team-record').textContent = t.record;
+      node.querySelector('.pos-qb').textContent = fmt(t.pos.QB);
+      node.querySelector('.pos-rb').textContent = fmt(t.pos.RB);
+      node.querySelector('.pos-wr').textContent = fmt(t.pos.WR);
+      node.querySelector('.pos-te').textContent = fmt(t.pos.TE);
+      node.querySelector('.combined-total').textContent = fmt(t.combined);
+      node.querySelector('.players-val').textContent = fmt(t.playerValue);
+      node.querySelector('.picks-val').textContent = fmt(t.picksValue);
+      node.querySelector('.ppg-val').textContent = t.ppgTotal.toFixed(1);
+      node.querySelector('.player-count').textContent = `${t.playersCount} players`;
+      
+      const tbody = node.querySelector('.player-tbody');
+      const rowTpl = $('#playerRowTpl');
+      for (const pl of t.players) {
+        const r = rowTpl.content.cloneNode(true);
+        r.querySelector('.player-initial').textContent = (pl.name.split(' ').map(s=>s[0]).join('').slice(0,2)||'??').toUpperCase();
+        r.querySelector('.player-name').textContent = pl.name;
+        r.querySelector('.player-meta').textContent = pl.age ? `Age ${pl.age}` : '';
+        r.querySelector('.player-pos').textContent = pl.pos;
+        r.querySelector('.player-team').textContent = pl.team;
+        r.querySelector('.player-value').textContent = fmt(pl.value);
+        r.querySelector('.player-ppg').textContent = pl.ppg ? pl.ppg.toFixed(1) : '—';
+        r.querySelector('.player-row').dataset.name = pl.name.toLowerCase();
+        tbody.appendChild(r);
+      }
+      
+      const picksGrid = node.querySelector('.picks-grid');
+      if (t.picks.length===0) {
+        picksGrid.innerHTML = `<span class="text-xs text-zinc-600">No picks in window</span>`;
+      } else {
+        for (const pk of t.picks) {
+          const pill = document.createElement('div');
+          const origTeam = state.teamsData.find(x=>x.roster_id===pk.original);
+          const origName = origTeam ? origTeam.name.split(' ')[0] : `#${pk.original}`;
+          pill.className = 'px-2 py-1 rounded-lg bg-zinc-800 border border-zinc-700 text-[11px] mono flex items-center gap-1.5';
+          pill.innerHTML = `<span class="text-zinc-400">${pk.season} R${pk.round}</span><span class="text-zinc-600">•</span><span class="text-zinc-300">${fmt(pk.value)}</span><span class="text-zinc-600 hidden sm:inline">• ${origName}</span>`;
+          picksGrid.appendChild(pill);
+        }
+      }
+      
+      container.appendChild(node);
+    }
+    
+    // attach toggle handlers
+    $$('.team-header').forEach(btn => {
+      btn.onclick = () => {
+        const card = btn.closest('.team-card');
+        const body = card.querySelector('.team-body');
+        const isOpen = !body.classList.contains('hidden');
+        body.classList.toggle('hidden', isOpen);
+        card.classList.toggle('open', !isOpen);
+      };
+    });
+    
+    applySort();
+    applySearch();
+  }
 
-  return `
-  <div class="rounded-2xl border border-zinc-800 bg-zinc-900/50 overflow-hidden flex flex-col">
-    <div class="flex items-center gap-3 px-5 py-4 border-b border-zinc-800 bg-zinc-900/70">
-      <img src="${team.avatar}" alt="" class="w-10 h-10 rounded-xl border border-zinc-800 object-cover" loading="lazy">
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2">
-          <h3 class="font-semibold truncate text-zinc-100">${escapeHtml(team.teamName)}</h3>
-          <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-[10px] font-semibold text-zinc-400">#${rank}</span>
-        </div>
-        <div class="text-xs text-zinc-500">${team.record}</div>
-      </div>
-      <div class="text-right ml-auto">
-        <div class="text-[10px] uppercase tracking-wider text-zinc-500">Total Value</div>
-        <div class="mono text-lg font-semibold text-amber-300">${formatNumber(team.total)}</div>
-      </div>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="text-xs uppercase text-zinc-400 bg-zinc-950/50">
-          <tr>
-            <th class="text-left font-medium px-5 py-2.5">Player</th>
-            <th class="text-left font-medium px-2 py-2.5 hidden sm:table-cell">Pos</th>
-            <th class="text-left font-medium px-2 py-2.5 hidden sm:table-cell">Team</th>
-            <th class="text-left font-medium px-2 py-2.5 hidden md:table-cell">Age</th>
-            <th class="text-right font-medium px-5 py-2.5">Value</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-zinc-800/60">
-          ${rows || `<tr><td colspan="5" class="px-5 py-8 text-center text-zinc-600 text-sm">No players</td></tr>`}
-        </tbody>
-      </table>
-    </div>
-  </div>`;
-}
+  function applySort() {
+    const sort = $('#sortSelect').value;
+    const container = $('#teamsContainer');
+    const cards = [...container.children];
+    const getVal = card => {
+      const d = card.dataset;
+      switch(sort){
+        case 'total': return +d.combined;
+        case 'ppg': return +d.ppg;
+        case 'qb': return +d.qb;
+        case 'rb': return +d.rb;
+        case 'wr': return +d.wr;
+        case 'te': return +d.te;
+        case 'picks': return +d.picks;
+        default: return +d.combined;
+      }
+    };
+    cards.sort((a,b)=> getVal(b)-getVal(a));
+    cards.forEach(c=>container.appendChild(c));
+  }
 
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+  function applySearch() {
+    const q = state.search.trim().toLowerCase();
+    $$('.team-card').forEach(card => {
+      const rows = [...card.querySelectorAll('.player-row')];
+      let visible = 0;
+      rows.forEach(r => {
+        const match = !q || r.dataset.name.includes(q);
+        r.classList.toggle('hidden', !match);
+        if (match) visible++;
+      });
+      const countEl = card.querySelector('.player-count');
+      const total = rows.length;
+      if (q) {
+        countEl.textContent = `${visible} / ${total} players match`;
+        countEl.classList.add('text-amber-300');
+        // auto open if matches
+        if (visible>0) {
+          card.querySelector('.team-body').classList.remove('hidden');
+          card.classList.add('open');
+        }
+      } else {
+        countEl.textContent = `${total} players`;
+        countEl.classList.remove('text-amber-300');
+      }
+      // if no matches, dim
+      card.style.opacity = q && visible===0 ? '0.45' : '1';
+    });
+  }
 
-loadBtn.addEventListener('click', ()=>{
-  const id = leagueInput.value.trim();
-  if(!id) { leagueInput.focus(); return; }
-  loadLeague(id, currentFormat);
-});
-leagueInput.addEventListener('keydown', e=>{ if(e.key==='Enter') loadBtn.click(); });
+  async function loadLeague(leagueId) {
+    try {
+      setStatus('Loading league…', true);
+      $('#warning').classList.add('hidden');
+      $('#emptyState').classList.add('hidden');
+      $('#controls').classList.add('hidden');
+      $('#teamsContainer').innerHTML = '';
+      
+      const [league, rosters, users, traded] = await Promise.all([
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}`).then(r=>{if(!r.ok)throw new Error('League not found');return r.json()}),
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`).then(r=>r.json()),
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`).then(r=>r.json()),
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`).then(r=>r.json()).catch(()=>[])
+      ]);
+      
+      state.league = league;
+      state.rosters = rosters;
+      state.users = users;
+      state.tradedPicks = traded || [];
+      state.format = detectFormat(league);
+      
+      setStatus('Loading players & values…', true);
+      const [players, values, picksRaw] = await Promise.all([
+        getPlayers(),
+        getRosterAuditValues(),
+        getRosterAuditPicks()
+      ]);
+      state.players = players;
+      state.values = values;
+      state.picksRaw = picksRaw;
+      
+      if (!picksRaw) {
+        $('#warning').textContent = 'Pick values could not be loaded from RosterAudit – using fallback curve.';
+        $('#warning').classList.remove('hidden');
+      }
+      
+      computeTeams();
+      renderTeams();
+      
+      // meta
+      $('#leagueMeta').innerHTML = `
+        <div class="flex flex-wrap gap-x-6 gap-y-2">
+          <div><span class="text-zinc-500">League:</span> <span class="font-medium">${league.name}</span></div>
+          <div><span class="text-zinc-500">Season:</span> <span class="mono">${league.season}</span></div>
+          <div><span class="text-zinc-500">Format:</span> <span class="uppercase">${state.format}</span></div>
+          <div><span class="text-zinc-500">Teams:</span> <span class="mono">${rosters.length}</span></div>
+        </div>`;
+      $('#leagueMeta').classList.remove('hidden');
+      $('#controls').classList.remove('hidden').style.display='flex';
+      setStatus('Loaded', false);
+    } catch(e) {
+      console.error(e);
+      $('#emptyState').classList.remove('hidden');
+      $('#emptyState').innerHTML = `<div class="text-rose-400 font-semibold">Error: ${e.message}</div>`;
+      setStatus('Error', false);
+    }
+  }
 
-// Auto load
-function init(){
-  $('#year').textContent = new Date().getFullYear();
+  function setStatus(text, spinning) {
+    const pill = $('#statusPill');
+    pill.textContent = text;
+    pill.classList.toggle('text-amber-300', spinning);
+  }
+
+  // Events
+  $('#loadBtn').onclick = () => {
+    const id = $('#leagueId').value.trim();
+    if (!id) return alert('Enter league ID');
+    loadLeague(id);
+  };
+  $('#demoBtn').onclick = () => {
+    $('#leagueId').value = '1048360096184856576';
+    $('#loadBtn').click();
+  };
+  $('#sortSelect').onchange = applySort;
+  $('#searchInput').addEventListener('input', debounce(e=>{
+    state.search = e.target.value;
+    applySearch();
+  }, 150));
+  $('#expandAll').onclick = ()=> $$('.team-body').forEach(b=>{b.classList.remove('hidden'); b.closest('.team-card').classList.add('open')});
+  $('#collapseAll').onclick = ()=> $$('.team-body').forEach(b=>{b.classList.add('hidden'); b.closest('.team-card').classList.remove('open')});
+
+  // init
   const params = new URLSearchParams(location.search);
-  const urlLeague = params.get('league');
-  const savedLeague = localStorage.getItem('vault_league_id');
-  const savedFormat = localStorage.getItem('vault_format') || 'superflex';
-  setFormat(savedFormat);
-  const lid = urlLeague || savedLeague || '';
-  leagueInput.value = lid;
-  if(lid) loadLeague(lid, savedFormat);
-}
-init();
+  if (params.get('league')) {
+    $('#leagueId').value = params.get('league');
+    loadLeague(params.get('league'));
+  }
+})();
 </script>
 </body>
 </html>
