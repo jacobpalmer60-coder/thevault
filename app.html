@@ -14,6 +14,8 @@
     .scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
     .scrollbar-thin::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
     .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    summary::-webkit-details-marker { display: none; }
+    summary { list-style: none; }
   </style>
 </head>
 <body class="bg-zinc-950 text-zinc-100 min-h-screen antialiased">
@@ -81,12 +83,14 @@
               <tr class="[&>th]:text-left [&>th]:font-semibold [&>th]:px-5 [&>th]:py-3 whitespace-nowrap">
                 <th>Rank</th>
                 <th>Team</th>
-                <th>Record</th>
-                <th class="text-right">Total Value</th>
-                <th class="text-right">Starter Value</th>
-                <th class="text-right">Bench Value</th>
-                <th class="text-right">Avg Age</th>
+                <th class="text-right">QB</th>
+                <th class="text-right">RB</th>
+                <th class="text-right">WR</th>
+                <th class="text-right">TE</th>
+                <th class="text-right">PK</th>
                 <th class="text-right">PPG</th>
+                <th class="text-right">Value</th>
+                <th class="text-right">Age</th>
               </tr>
             </thead>
             <tbody id="powerRankings" class="divide-y divide-zinc-800/80"></tbody>
@@ -96,13 +100,7 @@
 
       <!-- Team Cards -->
       <section>
-        <div class="flex items-center justify-between mb-4 px-1">
-          <h2 class="text-lg font-bold tracking-tight">Teams</h2>
-          <div class="flex items-center gap-2">
-            <button id="expandAll" class="text-xs px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">Expand All</button>
-            <button id="collapseAll" class="text-xs px-2.5 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300">Collapse All</button>
-          </div>
-        </div>
+        <h2 class="text-lg font-bold tracking-tight mb-4 px-1">Teams</h2>
         <div id="teamGrid" class="grid grid-cols-1 xl:grid-cols-2 gap-6"></div>
       </section>
     </div>
@@ -157,6 +155,7 @@
 
         // Rankings (optional)
         let rankings = [];
+        let ppgMap = new Map();
         try {
           const raUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings?format=${format}&per_page=500`;
           const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(raUrl)}`;
@@ -167,36 +166,52 @@
             else if (Array.isArray(data?.data)) rankings = data.data;
             else if (Array.isArray(data?.rankings)) rankings = data.rankings;
           }
-        } catch (e) {
-          console.warn('Rankings fetch failed', e);
-        }
+        } catch (e) { console.warn('Rankings fetch failed', e); }
+
+        try {
+          const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings`;
+          const ppgProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(ppgUrl)}`;
+          const ppgRes = await fetch(ppgProxy);
+          if (ppgRes.ok) {
+            const ppgData = await ppgRes.json();
+            const arr = Array.isArray(ppgData) ? ppgData : (Array.isArray(ppgData?.data) ? ppgData.data : []);
+            for (const p of arr) {
+              const id = String(p.sleeper_id || p.player_id || '');
+              if (id) ppgMap.set(id, Number(p.ppg || p.value || 0));
+            }
+          }
+        } catch {}
 
         // Maps
         const userMap = Object.fromEntries(users.map(u => [u.user_id, u]));
         const rankById = new Map();
         const rankByName = new Map();
         for (const r of rankings) {
-          if (r.player_id) rankById.set(String(r.player_id), r);
-          rankByName.set(normalizeName(r.name || `${r.first_name} ${r.last_name}`), r);
+          const id = String(r.sleeper_id || r.player_id || '');
+          if (id) rankById.set(id, r);
+          const name = r.name || `${r.first_name || ''} ${r.last_name || ''}`.trim();
+          if (name) rankByName.set(normalizeName(name), r);
         }
 
         function getPlayerInfo(pid){
           const p = players[pid] || {};
-          const name = p.full_name || p.first_name && p.last_name ? `${p.first_name} ${p.last_name}`.trim() : (p.full_name || 'Unknown');
+          const name = p.full_name || (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}`.trim() : (p.full_name || 'Unknown'));
           const pos = p.position || p.fantasy_positions?.[0] || '';
           const team = p.team || '';
           const age = p.age || 0;
 
           let r = rankById.get(String(pid));
           if (!r) r = rankByName.get(normalizeName(name));
+          const value = Number( (format === 'sf' ? (r?.val_sf ?? r?.value) : (r?.val_1qb ?? r?.value)) || 0 );
+          const ppg = Number( ppgMap.get(String(pid)) ?? r?.ppg ?? 0 );
           return {
             id: pid,
             name,
             pos,
             team,
             age,
-            value: Number(r?.value || 0),
-            ppg: Number(r?.ppg || 0)
+            value,
+            ppg
           };
         }
 
@@ -266,66 +281,95 @@
           <tr class="hover:bg-zinc-800/40 transition">
             <td class="px-5 py-3 font-mono text-zinc-500">${i+1}</td>
             <td class="px-5 py-3 font-medium">${esc(t.owner_name)} <span class="text-zinc-600">·</span> <span class="text-zinc-500">R${t.roster_id}</span></td>
-            <td class="px-5 py-3 font-mono text-zinc-400">${esc(t.record)}</td>
-            <td class="px-5 py-3 text-right font-semibold text-amber-400">${fmtNum(t.totalValue)}</td>
-            <td class="px-5 py-3 text-right text-zinc-300">${fmtNum(t.starterValue)}</td>
-            <td class="px-5 py-3 text-right text-zinc-400">${fmtNum(t.benchValue)}</td>
-            <td class="px-5 py-3 text-right font-mono text-zinc-400">${fmt1(t.avgAge)}</td>
+            <td class="px-5 py-3 text-right font-mono">${t.qbRank || '-'}</td>
+            <td class="px-5 py-3 text-right font-mono">${t.rbRank || '-'}</td>
+            <td class="px-5 py-3 text-right font-mono">${t.wrRank || '-'}</td>
+            <td class="px-5 py-3 text-right font-mono">${t.teRank || '-'}</td>
+            <td class="px-5 py-3 text-right font-mono">${t.pkRank || '-'}</td>
             <td class="px-5 py-3 text-right font-mono text-zinc-300">${fmt1(t.ppg)}</td>
+            <td class="px-5 py-3 text-right font-semibold text-amber-400">${fmtNum(t.totalValue)}</td>
+            <td class="px-5 py-3 text-right font-mono text-zinc-400">${fmt1(t.avgAge)}</td>
           </tr>
         `).join('');
 
+
         // Team Cards
         const grid = $('#teamGrid');
-        grid.innerHTML = teams.map(t=>`
-          <details class="group rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 overflow-hidden">
-            <summary class="list-none cursor-pointer px-5 py-4 flex items-start justify-between gap-4 hover:bg-zinc-900/50 transition">
-              <div>
-                <div class="flex items-center gap-2">
-                  <h3 class="font-bold text-lg leading-tight">${esc(t.owner_name)}</h3>
-                  <span class="text-xs px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-400">R${t.roster_id}</span>
-                </div>
-                <div class="text-xs text-zinc-500 mt-0.5">${esc(t.record)} · Avg Age ${fmt1(t.avgAge)} · PPG ${fmt1(t.ppg)}</div>
+        grid.innerHTML = teams.map(t => {
+          const groups = {QB:[],RB:[],WR:[],TE:[],K:[],DEF:[]};
+          t.players.forEach(p => { if(groups[p.pos]) groups[p.pos].push(p); });
+          const posMeta = {
+            QB:{color:'text-amber-400'},
+            RB:{color:'text-emerald-400'},
+            WR:{color:'text-sky-400'},
+            TE:{color:'text-orange-400'},
+            K:{color:'text-zinc-400'},
+            DEF:{color:'text-zinc-400'}
+          };
+          const posOrder = ['QB','RB','WR','TE','K','DEF'];
+          const groupsHtml = posOrder.map(pos => {
+            const arr = groups[pos] || [];
+            if(!arr.length) return '';
+            const totalVal = arr.reduce((s,p)=>s+p.value,0);
+            const ages = arr.filter(p=>p.age>0).map(p=>p.age);
+            const avgAge = ages.length ? (ages.reduce((a,b)=>a+b,0)/ages.length).toFixed(1) : '-';
+            const count = arr.length;
+            const playersHtml = arr.map(p=>`
+              <div class="flex justify-between py-1 border-b border-zinc-800/50 last:border-0">
+                <div class="truncate pr-2">${esc(p.name)} <span class="text-zinc-600">${esc(p.team||'')}</span></div>
+                <div class="font-mono text-zinc-300">${fmtNum(p.value)}</div>
               </div>
-              <div class="flex items-center gap-4">
+            `).join('');
+            return `
+              <div class="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
+                <div class="flex items-baseline justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-zinc-800 ${posMeta[pos]?.color||'text-zinc-300'}">${pos}</span>
+                    <span class="text-xs text-zinc-500">${count} • ${fmtNum(totalVal)} • ${avgAge}y</span>
+                  </div>
+                </div>
+                <div class="text-sm">${playersHtml}</div>
+              </div>
+            `;
+          }).join('');
+
+          const picksHtml = `
+            <div class="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
+              <div class="flex items-baseline justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-pink-400">PK</span>
+                  <span class="text-xs text-zinc-500">${t.picksCount||0} • ${fmtNum(t.picksValue||0)}</span>
+                </div>
+              </div>
+              <div class="text-sm text-zinc-500">Picks data coming soon</div>
+            </div>
+          `;
+
+          return `
+            <details class="group rounded-2xl border border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 overflow-hidden">
+              <summary class="list-none cursor-pointer px-5 py-4 flex items-start justify-between gap-4 hover:bg-zinc-800/30 transition">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="font-bold text-lg leading-tight">${esc(t.owner_name)}</h3>
+                    <span class="text-xs px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-400">R${t.roster_id}</span>
+                  </div>
+                  <div class="text-xs text-zinc-500 mt-0.5">${esc(t.record)} · Avg Age ${fmt1(t.avgAge)} · PPG ${fmt1(t.ppg)}</div>
+                </div>
                 <div class="text-right">
                   <div class="text-2xl font-extrabold text-amber-400 leading-none">${fmtNum(t.totalValue)}</div>
                   <div class="text-[10px] uppercase tracking-wider text-zinc-500 mt-0.5">Total Value</div>
                 </div>
-                <svg class="size-5 text-zinc-600 group-open:rotate-180 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+              </summary>
+              <div class="px-5 pb-5 pt-2">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  ${groupsHtml}
+                  ${picksHtml}
+                </div>
               </div>
-            </summary>
-            <div class="border-t border-zinc-800 overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead class="text-[11px] uppercase tracking-wider text-zinc-500 bg-zinc-950/60">
-                  <tr class="[&>th]:px-5 [&>th]:py-2 [&>th]:font-semibold [&>th]:text-left whitespace-nowrap">
-                    <th>Player</th>
-                    <th>Pos</th>
-                    <th>Team</th>
-                    <th class="text-right">Value</th>
-                    <th class="text-right">PPG</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-zinc-800/60">
-                  ${t.players.map(p=>`
-                    <tr class="hover:bg-zinc-900/60">
-                      <td class="px-5 py-2.5">
-                        <div class="flex items-center gap-2">
-                          <span class="font-medium">${esc(p.name)}</span>
-                          ${p.isStarter ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/20 font-bold">S</span>` : ''}
-                        </div>
-                      </td>
-                      <td class="px-5 py-2.5 font-mono text-xs text-zinc-400">${esc(p.pos)}</td>
-                      <td class="px-5 py-2.5 font-mono text-xs text-zinc-500">${esc(p.team)}</td>
-                      <td class="px-5 py-2.5 text-right font-semibold text-amber-400/90">${p.value ? fmtNum(p.value) : '—'}</td>
-                      <td class="px-5 py-2.5 text-right font-mono text-zinc-300">${p.ppg ? fmt1(p.ppg) : '—'}</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            </div>
-          </details>
-        `).join('');
+            </details>
+          `;
+        }).join('');
+
 
         $('#updatedAt').textContent = new Date().toLocaleString();
 
