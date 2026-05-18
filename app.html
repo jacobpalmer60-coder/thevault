@@ -228,94 +228,108 @@ body{
     localStorage.setItem('vault_league_id', leagueId);
     showLoading('Fetching Sleeper…');
     setProgress('Fetching Sleeper…');
-
-    // Sleeper parallel
-    const base = 'https://api.sleeper.app/v1';
-    const urls = {
-      league: `${base}/league/${leagueId}`,
-      rosters: `${base}/league/${leagueId}/rosters`,
-      users: `${base}/league/${leagueId}/users`,
-      picks: `${base}/league/${leagueId}/traded_picks`,
-    };
-    const [league, rosters, users, tradedPicks] = await Promise.all([
-      fetchJSONFallback(urls.league),
-      fetchJSONFallback(urls.rosters),
-      fetchJSONFallback(urls.users),
-      fetchJSONFallback(urls.picks).catch(()=>[])
-    ]);
-    STATE.league = league; STATE.rosters = rosters; STATE.users = users; STATE.tradedPicks = tradedPicks||[];
-
-    // Players with cache
-    let players = cacheGet('vault_sleeper_players', 24*3600*1000);
-    if(!players){
-      setProgress('Fetching players database…');
-      players = await fetchJSONFallback(`${base}/players/nfl`);
-      cacheSet('vault_sleeper_players', players);
-    }
-    STATE.players = players;
-
-    // Render immediately with zero values
-    buildRows();
-    renderTable();
-
-    // RosterAudit parallel with cache
-    setProgress('Fetching RosterAudit values…');
-    const format = STATE.format;
-    const raCacheKey = `vault_ra_${format}`;
-    let ra = cacheGet(raCacheKey, 60*60*1000);
-    if(!ra){
-      const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
-      const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings`;
-      const picksUrl = `https://rosteraudit.com/wp-json/ra/v1/picks`;
-      const [valuesRaw, ppgRaw, picksRaw] = await Promise.all([
-        fetchJSONFallback(valuesUrl).catch(()=>({})),
-        fetchJSONFallback(ppgUrl).catch(()=>([])),
-        fetchJSONFallback(picksUrl).catch(()=>([])),
+    try {
+      // Sleeper parallel
+      const base = 'https://api.sleeper.app/v1';
+      const urls = {
+        league: `${base}/league/${leagueId}`,
+        rosters: `${base}/league/${leagueId}/rosters`,
+        users: `${base}/league/${leagueId}/users`,
+        picks: `${base}/league/${leagueId}/traded_picks`,
+      };
+      const [league, rosters, users, tradedPicks] = await Promise.all([
+        fetchJSONFallback(urls.league),
+        fetchJSONFallback(urls.rosters),
+        fetchJSONFallback(urls.users),
+        fetchJSONFallback(urls.picks).catch(()=>[])
       ]);
-      ra = { valuesRaw, ppgRaw, picksRaw };
-      cacheSet(raCacheKey, ra);
-    }
-    // Normalize
-    const valuesMap = {};
-    const vr = ra.valuesRaw;
-    const isSF = STATE.format.startsWith('sf');
-    if(vr && vr.values && typeof vr.values === 'object'){
-      Object.entries(vr.values).forEach(([id,v])=>{
-        if(typeof v === 'object' && v!==null){
-          valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
-        }else{
-          valuesMap[id] = Number(v)||0;
-        }
-      });
-    }else if(vr && typeof vr === 'object' && !Array.isArray(vr)){
-      Object.entries(vr).forEach(([id,v])=>{
-        if(typeof v === 'object' && v!==null && ('sf' in v || '1qb' in v)){
-          valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
-        }else if(typeof v === 'number'){
-          valuesMap[id] = v;
-        }
-      });
-    }else if(Array.isArray(vr)){
-      vr.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||v.val||0; });
-    }else if(vr && Array.isArray(vr.data)){
-      vr.data.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||0; });
-    }
-    const ppgMap = {};
-    const pr = ra.ppgRaw;
-    if(Array.isArray(pr)){
-      pr.forEach(p=>{ if(p.player_id) ppgMap[p.player_id]=p.ppg||p.proj_ppg||0; });
-    }else if(pr && pr.players){
-      Object.entries(pr.players).forEach(([id,v])=> ppgMap[id]=v.ppg||0);
-    }
-    STATE.valuesMap = valuesMap;
-    STATE.ppgMap = ppgMap;
-    STATE.picksData = Array.isArray(ra.picksRaw)? ra.picksRaw : (ra.picksRaw?.picks||[]);
+      if(!league || !rosters){
+        throw new Error('League not found');
+      }
+      STATE.league = league; STATE.rosters = rosters; STATE.users = users; STATE.tradedPicks = tradedPicks||[];
 
-    // Rebuild with values
-    buildRows();
-    renderTable();
-    hideLoading();
+      // Players with cache
+      let players = cacheGet('vault_sleeper_players', 24*3600*1000);
+      if(!players){
+        setProgress('Fetching players database…');
+        players = await fetchJSONFallback(`${base}/players/nfl`);
+        cacheSet('vault_sleeper_players', players);
+      }
+      STATE.players = players;
+
+      // Render immediately with zero values
+      buildRows();
+      renderTable();
+
+      // RosterAudit parallel with cache
+      setProgress('Fetching RosterAudit values…');
+      const format = STATE.format;
+      const raCacheKey = `vault_ra_${format}`;
+      let ra = cacheGet(raCacheKey, 60*60*1000);
+      if(!ra){
+        const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
+        const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings`;
+        const picksUrl = `https://rosteraudit.com/wp-json/ra/v1/picks`;
+        const [valuesRaw, ppgRaw, picksRaw] = await Promise.all([
+          fetchJSONFallback(valuesUrl).catch(()=>({})),
+          fetchJSONFallback(ppgUrl).catch(()=>([])),
+          fetchJSONFallback(picksUrl).catch(()=>([])),
+        ]);
+        ra = { valuesRaw, ppgRaw, picksRaw };
+        cacheSet(raCacheKey, ra);
+      }
+      // Normalize
+      const valuesMap = {};
+      const vr = ra.valuesRaw;
+      const isSF = STATE.format.startsWith('sf');
+      if(vr && vr.values && typeof vr.values === 'object'){
+        Object.entries(vr.values).forEach(([id,v])=>{
+          if(typeof v === 'object' && v!==null){
+            valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
+          }else{
+            valuesMap[id] = Number(v)||0;
+          }
+        });
+      }else if(vr && typeof vr === 'object' && !Array.isArray(vr)){
+        Object.entries(vr).forEach(([id,v])=>{
+          if(typeof v === 'object' && v!==null && ('sf' in v || '1qb' in v)){
+            valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
+          }else if(typeof v === 'number'){
+            valuesMap[id] = v;
+          }
+        });
+      }else if(Array.isArray(vr)){
+        vr.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||v.val||0; });
+      }else if(vr && Array.isArray(vr.data)){
+        vr.data.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||0; });
+      }
+      const ppgMap = {};
+      const pr = ra.ppgRaw;
+      if(Array.isArray(pr)){
+        pr.forEach(p=>{ if(p.player_id) ppgMap[p.player_id]=p.ppg||p.proj_ppg||0; });
+      }else if(pr && pr.players){
+        Object.entries(pr.players).forEach(([id,v])=> ppgMap[id]=v.ppg||0);
+      }
+      STATE.valuesMap = valuesMap;
+      STATE.ppgMap = ppgMap;
+      STATE.picksData = Array.isArray(ra.picksRaw)? ra.picksRaw : (ra.picksRaw?.picks||[]);
+
+      // Rebuild with values
+      buildRows();
+      renderTable();
+    } catch(err){
+      console.error(err);
+      setProgress('Error: ' + (err.message || 'Failed to load'));
+      // Show error in table area
+      emptyState.classList.remove('hidden');
+      emptyState.innerHTML = `<div class="py-10 text-center"><div class="text-amber-200 text-lg mb-2">Failed to load league</div><div class="text-amber-200/60 text-sm">${err.message || 'Check league ID and try again'}</div></div>`;
+      tableBody.innerHTML='';
+    } finally {
+      hideLoading();
+    }
   }
+
+
 
   // ---------- Computations ----------
   function getUserForRoster(roster){
@@ -504,7 +518,7 @@ body{
           </div>
         </td>
         <td class="px-3 py-3 text-center font-mono text-amber-200/70">${row.rec}</td>
-        <td class="px-3 py-3 text-right font-mono text-amber-100" style="background-color:${heatScale(row.total,max.total)}">${compact(row.total)}</td>
+        <td class="px-3 py-3 text-right font-mono text-amber-100">${compact(row.total)}</td>
         <td class="px-3 py-3 text-right font-mono ${POS_COLORS.QB}">${compact(row.qb)}</td>
         <td class="px-3 py-3 text-right font-mono ${POS_COLORS.RB}">${compact(row.rb)}</td>
         <td class="px-3 py-3 text-right font-mono ${POS_COLORS.WR}">${compact(row.wr)}</td>
