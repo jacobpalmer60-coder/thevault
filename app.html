@@ -101,6 +101,8 @@ body{
     </div>
   </div>
 
+  <div id="summaryBar" class="card rounded-2xl p-3 mb-5 hidden"></div>
+
   <!-- Table -->
   <div class="card rounded-2xl overflow-hidden">
     <div class="overflow-x-auto scrollbar-thin">
@@ -228,80 +230,83 @@ body{
     localStorage.setItem('vault_league_id', leagueId);
     showLoading('Fetching Sleeper…');
     setProgress('Fetching Sleeper…');
-    try {
-      // Sleeper parallel
-      const base = 'https://api.sleeper.app/v1';
-      const urls = {
-        league: `${base}/league/${leagueId}`,
-        rosters: `${base}/league/${leagueId}/rosters`,
-        users: `${base}/league/${leagueId}/users`,
-        picks: `${base}/league/${leagueId}/traded_picks`,
-      };
-      const [league, rosters, users, tradedPicks] = await Promise.all([
-        fetchJSONFallback(urls.league),
-        fetchJSONFallback(urls.rosters),
-        fetchJSONFallback(urls.users),
-        fetchJSONFallback(urls.picks).catch(()=>[])
+
+    // Sleeper parallel
+    const base = 'https://api.sleeper.app/v1';
+    const urls = {
+      league: `${base}/league/${leagueId}`,
+      rosters: `${base}/league/${leagueId}/rosters`,
+      users: `${base}/league/${leagueId}/users`,
+      picks: `${base}/league/${leagueId}/traded_picks`,
+    };
+    const [league, rosters, users, tradedPicks] = await Promise.all([
+      fetchJSONFallback(urls.league),
+      fetchJSONFallback(urls.rosters),
+      fetchJSONFallback(urls.users),
+      fetchJSONFallback(urls.picks).catch(()=>[])
+    ]);
+    STATE.league = league; STATE.rosters = rosters; STATE.users = users; STATE.tradedPicks = tradedPicks||[];
+
+    // Players with cache
+    let players = cacheGet('vault_sleeper_players', 24*3600*1000);
+    if(!players){
+      setProgress('Fetching players database…');
+      players = await fetchJSONFallback(`${base}/players/nfl`);
+      cacheSet('vault_sleeper_players', players);
+    }
+    STATE.players = players;
+
+    // Render immediately with zero values
+    buildRows();
+    renderTable();
+
+    // RosterAudit parallel with cache
+    setProgress('Fetching RosterAudit values…');
+    const format = STATE.format;
+    const raCacheKey = `vault_ra_${format}`;
+    let ra = cacheGet(raCacheKey, 60*60*1000);
+    if(!ra){
+      const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
+      const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings`;
+      const picksUrl = `https://rosteraudit.com/wp-json/ra/v1/picks`;
+      const [valuesRaw, ppgRaw, picksRaw] = await Promise.all([
+        fetchJSONFallback(valuesUrl).catch(()=>({})),
+        fetchJSONFallback(ppgUrl).catch(()=>([])),
+        fetchJSONFallback(picksUrl).catch(()=>([])),
       ]);
-      if(!league || !rosters){
-        throw new Error('League not found');
-      }
-      STATE.league = league; STATE.rosters = rosters; STATE.users = users; STATE.tradedPicks = tradedPicks||[];
-
-      // Players with cache
-      let players = cacheGet('vault_sleeper_players', 24*3600*1000);
-      if(!players){
-        setProgress('Fetching players database…');
-        players = await fetchJSONFallback(`${base}/players/nfl`);
-        cacheSet('vault_sleeper_players', players);
-      }
-      STATE.players = players;
-
-      // Render immediately with zero values
-      buildRows();
-      renderTable();
-
-      // RosterAudit parallel with cache
-      setProgress('Fetching RosterAudit values…');
-      const format = STATE.format;
-      const raCacheKey = `vault_ra_${format}`;
-      let ra = cacheGet(raCacheKey, 60*60*1000);
-      if(!ra){
-        const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
-        const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings`;
-        const picksUrl = `https://rosteraudit.com/wp-json/ra/v1/picks`;
-        const [valuesRaw, ppgRaw, picksRaw] = await Promise.all([
-          fetchJSONFallback(valuesUrl).catch(()=>({})),
-          fetchJSONFallback(ppgUrl).catch(()=>([])),
-          fetchJSONFallback(picksUrl).catch(()=>([])),
-        ]);
-        ra = { valuesRaw, ppgRaw, picksRaw };
-        cacheSet(raCacheKey, ra);
-      }
-      // Normalize
+      ra = { valuesRaw, ppgRaw, picksRaw };
+      cacheSet(raCacheKey, ra);
+    }
+    // Normalize
       const valuesMap = {};
       const vr = ra.valuesRaw;
       const isSF = STATE.format.startsWith('sf');
+      const extractVal = (v) => {
+        if(typeof v === 'object' && v !== null){
+          return isSF ? (v.sf || v.value || v.val || 0) : (v['1qb'] || v.value || v.val || 0);
+        }
+        return Number(v)||0;
+      };
       if(vr && vr.values && typeof vr.values === 'object'){
         Object.entries(vr.values).forEach(([id,v])=>{
-          if(typeof v === 'object' && v!==null){
-            valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
-          }else{
-            valuesMap[id] = Number(v)||0;
-          }
+          valuesMap[id] = extractVal(v);
         });
       }else if(vr && typeof vr === 'object' && !Array.isArray(vr)){
+        // direct map
         Object.entries(vr).forEach(([id,v])=>{
-          if(typeof v === 'object' && v!==null && ('sf' in v || '1qb' in v)){
-            valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
-          }else if(typeof v === 'number'){
-            valuesMap[id] = v;
-          }
+          if(id === 'values' || id === 'attribution') return;
+          valuesMap[id] = extractVal(v);
         });
       }else if(Array.isArray(vr)){
-        vr.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||v.val||0; });
+        vr.forEach(v=>{
+          const id = v.player_id || v.sleeper_id || v.id;
+          if(id) valuesMap[id] = extractVal(v);
+        });
       }else if(vr && Array.isArray(vr.data)){
-        vr.data.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||0; });
+        vr.data.forEach(v=>{
+          const id = v.player_id || v.sleeper_id || v.id;
+          if(id) valuesMap[id] = extractVal(v);
+        });
       }
       const ppgMap = {};
       const pr = ra.ppgRaw;
@@ -324,7 +329,6 @@ body{
           addPpg(id, val);
         });
       }else if(pr && typeof pr === 'object'){
-        // map of id -> ppg
         Object.entries(pr).forEach(([id,v])=>{
           const val = (typeof v === 'object') ? (v.ppg||v.proj_ppg||0) : Number(v)||0;
           if(!isNaN(Number(id))) addPpg(id, val);
@@ -332,25 +336,13 @@ body{
       }
       STATE.valuesMap = valuesMap;
       STATE.ppgMap = ppgMap;
-
       STATE.picksData = Array.isArray(ra.picksRaw)? ra.picksRaw : (ra.picksRaw?.picks||[]);
 
-      // Rebuild with values
-      buildRows();
-      renderTable();
-    } catch(err){
-      console.error(err);
-      setProgress('Error: ' + (err.message || 'Failed to load'));
-      // Show error in table area
-      emptyState.classList.remove('hidden');
-      emptyState.innerHTML = `<div class="py-10 text-center"><div class="text-amber-200 text-lg mb-2">Failed to load league</div><div class="text-amber-200/60 text-sm">${err.message || 'Check league ID and try again'}</div></div>`;
-      tableBody.innerHTML='';
-    } finally {
-      hideLoading();
-    }
+    // Rebuild with values
+    buildRows();
+    renderTable();
+    hideLoading();
   }
-
-
 
   // ---------- Computations ----------
   function getUserForRoster(roster){
@@ -516,17 +508,84 @@ body{
   // ---------- Render ----------
   function renderTable(){
     const rows = filterRows(STATE.rows);
+    const summaryBar = document.getElementById('summaryBar');
     if(!STATE.league){
       emptyState.classList.remove('hidden');
       tableBody.innerHTML='';
+      if(summaryBar) summaryBar.classList.add('hidden');
       return;
     }
     emptyState.classList.add('hidden');
+    if(summaryBar && rows.length){
+      summaryBar.classList.remove('hidden');
+      const avg = key => rows.reduce((s,r)=>s+(r[key]||0),0)/rows.length;
+      const median = key => {
+        const arr = rows.map(r=>r[key]||0).sort((a,b)=>a-b);
+        const mid = Math.floor(arr.length/2);
+        return arr.length%2 ? arr[mid] : (arr[mid-1]+arr[mid])/2;
+      };
+      const top = key => rows.reduce((best,r)=> (r[key]||0)>(best[key]||0)?r:best, rows[0]);
+      const avgTotal = avg('total');
+      const medTotal = median('total');
+      const stats = [
+        {k:'QB', key:'qb', cls:POS_COLORS.QB},
+        {k:'RB', key:'rb', cls:POS_COLORS.RB},
+        {k:'WR', key:'wr', cls:POS_COLORS.WR},
+        {k:'TE', key:'te', cls:POS_COLORS.TE},
+        {k:'PICKS', key:'picks', cls:POS_COLORS.PICKS},
+      ].map(s=>({ ...s, avg: avg(s.key), med: median(s.key), top: top(s.key) }));
+      summaryBar.innerHTML = `
+        <div class="flex flex-wrap items-center gap-3 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-200/50 font-mono">LEAGUE</span>
+            <span class="px-2 py-1 rounded-lg bg-black/30 border border-amber-500/10 font-mono text-amber-200" title="Avg / Median">${compact(avgTotal)} <span class="text-amber-200/40">/</span> ${compact(medTotal)}</span>
+          </div>
+          <div class="h-4 w-px bg-amber-500/10"></div>
+          ${stats.map(p=>`
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono ${p.cls}">${p.k}</span>
+              <span class="font-mono text-amber-200/80" title="Avg / Med">${compact(p.avg)}<span class="text-amber-200/30">/</span>${compact(p.med)}</span>
+              <span class="text-[10px] px-1 py-0.5 rounded bg-amber-500/10 border border-amber-500/10 text-amber-200/60">${p.top.name.slice(0,12)}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else if(summaryBar){
+      summaryBar.classList.add('hidden');
+    }
+    const max = {
+      total: Math.max(...rows.map(r=>r.total||0),1),
+      qb: Math.max(...rows.map(r=>r.qb||0),1),
+      rb: Math.max(...rows.map(r=>r.rb||0),1),
+      wr: Math.max(...rows.map(r=>r.wr||0),1),
+      te: Math.max(...rows.map(r=>r.te||0),1),
+      picks: Math.max(...rows.map(r=>r.picks||0),1),
+    };
+    const heatColor = (val, maxVal) => {
+      const t = Math.max(0, Math.min(1, val / maxVal));
+      let r,g,b;
+      if(t < 0.5){
+        const t2 = t / 0.5;
+        r = 239 + (234 - 239) * t2;
+        g = 68 + (179 - 68) * t2;
+        b = 68 + (8 - 68) * t2;
+      } else {
+        const t2 = (t - 0.5) / 0.5;
+        r = 234 + (34 - 234) * t2;
+        g = 179 + (197 - 179) * t2;
+        b = 8 + (94 - 8) * t2;
+      }
+      return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+    };
     const frag = document.createDocumentFragment();
     rows.forEach((row,i)=>{
       const tr = document.createElement('tr');
       tr.className = 'group hover:bg-amber-500/[.03] transition cursor-pointer';
       tr.dataset.rid = row.roster_id;
+      const ppgTip = (row.starterDetails||[]).map(d=>{
+        const name = (d.player.info.first_name? d.player.info.first_name[0]+'. ' : '') + (d.player.info.last_name||d.player.info.full_name||'');
+        return `${d.slot}: ${name} (${d.player.pos}) - ${d.ppg.toFixed(1)}`;
+      }).join('\n');
       tr.innerHTML = `
         <td class="px-4 py-3 text-amber-200/40 font-mono text-xs">${i+1}</td>
         <td class="px-4 py-3">
@@ -539,13 +598,13 @@ body{
           </div>
         </td>
         <td class="px-3 py-3 text-center font-mono text-amber-200/70">${row.rec}</td>
-        <td class="px-3 py-3 text-right font-mono text-amber-100">${compact(row.total)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.QB}">${compact(row.qb)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.RB}">${compact(row.rb)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.WR}">${compact(row.wr)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.TE}">${compact(row.te)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.PICKS}">${compact(row.picks)}</td>
-        <td class="px-3 py-3 text-right font-mono text-amber-200/80">${row.ppg? row.ppg.toFixed(1):'—'}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.total,max.total)}">${compact(row.total)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.qb,max.qb)}">${compact(row.qb)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.rb,max.rb)}">${compact(row.rb)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.wr,max.wr)}">${compact(row.wr)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.te,max.te)}">${compact(row.te)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.picks,max.picks)}">${compact(row.picks)}</td>
+        <td class="px-3 py-3 text-right font-mono text-amber-200/80" title="${ppgTip}">${row.ppg? row.ppg.toFixed(1):'—'}</td>
         <td class="px-4 py-3 text-right font-mono text-amber-200/70">${fmt1(row.age)}</td>
       `;
       tr.addEventListener('click', e=>{
@@ -565,14 +624,15 @@ body{
     tableBody.appendChild(frag);
   }
 
+
   function renderExpanded(row){
     const distBars = row.dist.map(d=>`
-      <div class="h-2 rounded-full ${d.cls}" style="width:${(d.pct*100).toFixed(1)}%" title="${d.pos} ${(d.pct*100).toFixed(0)}%"></div>
+      <div class="h-1.5 rounded-full ${d.cls}" style="width:${(d.pct*100).toFixed(1)}%" title="${d.pos} ${(d.pct*100).toFixed(0)}%"></div>
     `).join('');
     const distLabels = row.dist.map(d=>`
-      <div class="flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full ${d.cls}"></span>
-        <span class="text-[11px] font-mono text-amber-200/70">${d.pos} ${(d.pct*100).toFixed(0)}%</span>
+      <div class="flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full ${d.cls}"></span>
+        <span class="text-[10px] font-mono text-amber-200/70">${d.pos} ${(d.pct*100).toFixed(0)}%</span>
       </div>
     `).join('');
     const starterIds = new Set((row.starters||[]).map(s=>s.id));
@@ -582,55 +642,59 @@ body{
       const color = POS_COLORS[pos];
       const items = stat.players.map(p=>{
         if(pos==='PICKS'){
-          return `<div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-amber-500/[.05]">
-            <div class="truncate pr-2">
-              <div class="text-sm text-amber-100 truncate">${p.label}</div>
-              <div class="text-[11px] text-amber-200/40 font-mono">orig ${p.original}</div>
+          return `<div class="flex items-center justify-between py-1 px-1.5 rounded hover:bg-amber-500/[.04]">
+            <div class="truncate pr-2 leading-tight">
+              <div class="text-[12px] text-amber-100 truncate">${p.label}</div>
+              <div class="text-[10px] text-amber-200/40 font-mono leading-none">orig ${p.original}</div>
             </div>
-            <div class="font-mono text-sm text-amber-200">${compact(p.val)}</div>
+            <div class="font-mono text-[12px] text-amber-200">${compact(p.val)}</div>
           </div>`;
         }else{
           const name = (p.info.first_name? p.info.first_name[0]+'. ' : '') + (p.info.last_name||p.info.full_name||'—');
-          return `<div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-amber-500/[.05]">
-            <div class="truncate pr-2">
-              <div class="text-sm text-amber-100 truncate">${name} ${starterIds.has(p.id)? '<span class="ml-1 text-[9px] px-1 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono">S</span>':''} ${p.ppg ? `<span class="ml-1 text-[10px] px-1 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-200/80 font-mono">${p.ppg.toFixed(1)}</span>` : ''}</div>
-              <div class="text-[11px] text-amber-200/40 font-mono">${[p.age? p.age+'y':'', p.ppg? p.ppg.toFixed(1)+' ppg':''].filter(Boolean).join(' • ')}</div>
+          const ppg = typeof p.ppg==='number' ? p.ppg : 0;
+          const ageStr = p.age ? `${p.age}y` : '';
+          const ppgStr = `${ppg.toFixed(1)} ppg`;
+          const meta = [ageStr, ppgStr].filter(Boolean).join(' • ');
+          return `<div class="flex items-center justify-between py-1 px-1.5 rounded hover:bg-amber-500/[.04]">
+            <div class="truncate pr-2 leading-tight">
+              <div class="text-[12px] text-amber-100 truncate">${name} ${starterIds.has(p.id)? '<span class="ml-1 text-[9px] px-1 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-mono">S</span>':''} <span class="ml-1 text-[10px] px-1 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-200/80 font-mono">${ppg.toFixed(1)}</span></div>
+              <div class="text-[10px] text-amber-200/40 font-mono leading-none">${meta}</div>
             </div>
-            <div class="font-mono text-sm text-amber-200">${compact(p.val)}</div>
+            <div class="font-mono text-[12px] text-amber-200">${compact(p.val)}</div>
           </div>`;
         }
-      }).join('') || `<div class="py-8 text-center text-amber-200/30 text-sm">—</div>`;
+      }).join('') || `<div class="py-6 text-center text-amber-200/30 text-xs">—</div>`;
 
-      return `<div class="card rounded-2xl overflow-hidden flex flex-col" style="border-top:2px solid ${POS_HEX[pos]}">
-        <div class="px-3 py-2.5 border-b border-amber-500/10 bg-amber-500/[.03] flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-black/40 border border-amber-500/15 text-amber-200/80">${stat.cnt}</span>
-            <span class="font-semibold ${color}">${pos}</span>
+      return `<div class="card rounded-xl overflow-hidden flex flex-col" style="border-top:2px solid ${POS_HEX[pos]}">
+        <div class="px-2.5 py-1.5 border-b border-amber-500/10 bg-amber-500/[.03] flex items-center justify-between">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono px-1 py-0.5 rounded bg-black/40 border border-amber-500/15 text-amber-200/80">${stat.cnt}</span>
+            <span class="font-semibold text-[12px] ${color}">${pos}</span>
           </div>
-          <div class="flex items-center gap-3 text-[11px] font-mono text-amber-200/60">
+          <div class="flex items-center gap-2 text-[10px] font-mono text-amber-200/60">
             <span>${compact(stat.tot)}</span>
             <span>${stat.avg? stat.avg.toFixed(1)+'y' : '—'}</span>
           </div>
         </div>
-        <div class="p-1.5 space-y-0.5 max-h-[320px] overflow-auto scrollbar-thin">${items}</div>
+        <div class="p-1 space-y-0">${items}</div>
       </div>`;
     }).join('');
 
     return `
-      <div class="fade-in space-y-4">
-        <div class="card rounded-2xl p-4">
-          <div class="flex flex-wrap items-center gap-3 mb-3">
+      <div class="fade-in space-y-3">
+        <div class="card rounded-xl p-3">
+          <div class="flex flex-wrap items-center gap-2.5 mb-2">
             ${distLabels}
           </div>
-          <div class="flex gap-1">${distBars}</div>
-          <div class="mt-3 text-sm text-amber-200/70">Solid RB depth. WR room is a strength.</div>
+          <div class="flex gap-0.5">${distBars}</div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           ${cards}
         </div>
       </div>
     `;
   }
+
 
   function toggleExpand(rid){
     if(STATE.expanded.has(rid)) STATE.expanded.delete(rid);
