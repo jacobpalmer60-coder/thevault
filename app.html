@@ -481,60 +481,12 @@ body{
   // ---------- Render ----------
   function renderTable(){
     const rows = filterRows(STATE.rows);
-    const summaryBar = document.getElementById('summaryBar');
     if(!STATE.league){
       emptyState.classList.remove('hidden');
       tableBody.innerHTML='';
-      if(summaryBar) summaryBar.classList.add('hidden');
       return;
     }
     emptyState.classList.add('hidden');
-    if(summaryBar && rows.length){
-      summaryBar.classList.remove('hidden');
-      const avg = key => rows.reduce((s,r)=>s+(r[key]||0),0)/rows.length;
-      const median = key => {
-        const arr = rows.map(r=>r[key]||0).sort((a,b)=>a-b);
-        const mid = Math.floor(arr.length/2);
-        return arr.length%2 ? arr[mid] : (arr[mid-1]+arr[mid])/2;
-      };
-      const top = key => rows.reduce((best,r)=> (r[key]||0)>(best[key]||0)?r:best, rows[0]);
-      const avgTotal = avg('total');
-      const medTotal = median('total');
-      const stats = [
-        {k:'QB', key:'qb', cls:POS_COLORS.QB},
-        {k:'RB', key:'rb', cls:POS_COLORS.RB},
-        {k:'WR', key:'wr', cls:POS_COLORS.WR},
-        {k:'TE', key:'te', cls:POS_COLORS.TE},
-        {k:'PICKS', key:'picks', cls:POS_COLORS.PICKS},
-      ].map(s=>({ ...s, avg: avg(s.key), med: median(s.key), top: top(s.key) }));
-      summaryBar.innerHTML = `
-        <div class="flex flex-wrap items-center gap-3 text-xs">
-          <div class="flex items-center gap-2">
-            <span class="text-amber-200/50 font-mono">LEAGUE</span>
-            <span class="px-2 py-1 rounded-lg bg-black/30 border border-amber-500/10 font-mono text-amber-200" title="Avg / Median">${compact(avgTotal)} <span class="text-amber-200/40">/</span> ${compact(medTotal)}</span>
-          </div>
-          <div class="h-4 w-px bg-amber-500/10"></div>
-          ${stats.map(p=>`
-            <div class="flex items-center gap-1.5">
-              <span class="font-mono ${p.cls}">${p.k}</span>
-              <span class="font-mono text-amber-200/80" title="Avg / Med">${compact(p.avg)}<span class="text-amber-200/30">/</span>${compact(p.med)}</span>
-              <span class="text-[10px] px-1 py-0.5 rounded bg-amber-500/10 border border-amber-500/10 text-amber-200/60">${p.top.name.slice(0,12)}</span>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    } else if(summaryBar){
-      summaryBar.classList.add('hidden');
-    }
-    const max = {
-      qb: Math.max(...rows.map(r=>r.qb||0),1),
-      rb: Math.max(...rows.map(r=>r.rb||0),1),
-      wr: Math.max(...rows.map(r=>r.wr||0),1),
-      te: Math.max(...rows.map(r=>r.te||0),1),
-      picks: Math.max(...rows.map(r=>r.picks||0),1),
-    };
-    const rgba = (r,g,b,a)=>`rgba(${r},${g},${b},${a.toFixed(3)})`;
-    const heat = (val, maxVal, r,g,b)=> rgba(r,g,b, Math.min(0.35, (val/maxVal)*0.35));
     const frag = document.createDocumentFragment();
     rows.forEach((row,i)=>{
       const tr = document.createElement('tr');
@@ -552,12 +504,12 @@ body{
           </div>
         </td>
         <td class="px-3 py-3 text-center font-mono text-amber-200/70">${row.rec}</td>
-        <td class="px-3 py-3 text-right font-mono text-amber-100">${compact(row.total)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.QB}" style="background-color:${heat(row.qb,max.qb,96,165,250)}">${compact(row.qb)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.RB}" style="background-color:${heat(row.rb,max.rb,52,211,153)}">${compact(row.rb)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.WR}" style="background-color:${heat(row.wr,max.wr,244,114,182)}">${compact(row.wr)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.TE}" style="background-color:${heat(row.te,max.te,251,191,36)}">${compact(row.te)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.PICKS}" style="background-color:${heat(row.picks,max.picks,167,139,250)}">${compact(row.picks)}</td>
+        <td class="px-3 py-3 text-right font-mono text-amber-100" style="background-color:${heatScale(row.total,max.total)}">${compact(row.total)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.QB}">${compact(row.qb)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.RB}">${compact(row.rb)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.WR}">${compact(row.wr)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.TE}">${compact(row.te)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.PICKS}">${compact(row.picks)}</td>
         <td class="px-3 py-3 text-right font-mono text-amber-200/80">${row.ppg? row.ppg.toFixed(1):'—'}</td>
         <td class="px-4 py-3 text-right font-mono text-amber-200/70">${fmt1(row.age)}</td>
       `;
@@ -577,7 +529,6 @@ body{
     tableBody.innerHTML='';
     tableBody.appendChild(frag);
   }
-
 
   function renderExpanded(row){
     const distBars = row.dist.map(d=>`
