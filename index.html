@@ -85,6 +85,13 @@
                             </span>
                         </div>
                         <p class="mt-2 text-xs text-zinc-500">We fetch your NFL leagues from 2015 to next season.</p>
+                        <div class="mt-3">
+                            <label for="manualLeagueId" class="block text-xs font-medium text-zinc-400 mb-1">Or enter League ID manually</label>
+                            <div class="flex gap-2">
+                                <input id="manualLeagueId" type="text" placeholder="1234567890123456789" class="flex-1 h-10 px-3 rounded-lg bg-zinc-950/70 border border-zinc-800 focus:border-amber-500/60 focus:ring-4 focus:ring-amber-500/10 outline-none text-sm" />
+                                <button id="useManualBtn" class="px-3 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-sm font-medium">Use</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Step 3: Actions -->
@@ -125,7 +132,6 @@
                                         <div class="font-semibold leading-tight">Trade Calculator</div>
                                         <div class="text-xs text-zinc-500">Fair value & win-now moves</div>
                                     </div>
-                                </div>
                                 <svg class="text-zinc-600 group-hover:text-amber-400 transition" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
                             </a>
                         </div>
@@ -161,6 +167,8 @@
         const btnOverview = document.getElementById('btnOverview');
         const btnRankings = document.getElementById('btnRankings');
         const btnTrade = document.getElementById('btnTrade');
+        const manualLeagueId = document.getElementById('manualLeagueId');
+        const useManualBtn = document.getElementById('useManualBtn');
 
         const STORAGE_KEY = 'vault_league_id';
         const STORAGE_USER = 'vault_username';
@@ -283,6 +291,19 @@
         usernameInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') loadLeagues();
         });
+        
+        useManualBtn.addEventListener('click', () => {
+            const id = manualLeagueId.value.trim();
+            if (!id) return;
+            localStorage.setItem(STORAGE_KEY, id);
+            const params = `?league_id=${encodeURIComponent(id)}`;
+            btnOverview.href = `app.html${params}`;
+            btnRankings.href = `player_rankings.html${params}`;
+            btnTrade.href = `trade.html${params}`;
+            stepActions.classList.remove('hidden');
+            stepActions.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+
         leagueSelect.addEventListener('change', onLeagueChange);
 
         // Auto-load if username saved
