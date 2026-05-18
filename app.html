@@ -101,8 +101,6 @@ body{
     </div>
   </div>
 
-  <div id="summaryBar" class="card rounded-2xl p-3 mb-5 hidden"></div>
-
   <!-- Table -->
   <div class="card rounded-2xl overflow-hidden">
     <div class="overflow-x-auto scrollbar-thin">
@@ -280,8 +278,23 @@ body{
     // Normalize
     const valuesMap = {};
     const vr = ra.valuesRaw;
+    const isSF = STATE.format.startsWith('sf');
     if(vr && vr.values && typeof vr.values === 'object'){
-      Object.assign(valuesMap, vr.values);
+      Object.entries(vr.values).forEach(([id,v])=>{
+        if(typeof v === 'object' && v!==null){
+          valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
+        }else{
+          valuesMap[id] = Number(v)||0;
+        }
+      });
+    }else if(vr && typeof vr === 'object' && !Array.isArray(vr)){
+      Object.entries(vr).forEach(([id,v])=>{
+        if(typeof v === 'object' && v!==null && ('sf' in v || '1qb' in v)){
+          valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
+        }else if(typeof v === 'number'){
+          valuesMap[id] = v;
+        }
+      });
     }else if(Array.isArray(vr)){
       vr.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||v.val||0; });
     }else if(vr && Array.isArray(vr.data)){
@@ -521,8 +534,12 @@ body{
       te: Math.max(...rows.map(r=>r.te||0),1),
       picks: Math.max(...rows.map(r=>r.picks||0),1),
     };
-    const heatColor = (val, maxVal) => {
-      const t = Math.max(0, Math.min(1, val / maxVal));
+    const ages = rows.map(r=>r.age||0).filter(a=>a>0);
+    const minAge = ages.length ? Math.min(...ages) : 0;
+    const maxAge = ages.length ? Math.max(...ages) : 0;
+    const ageRange = Math.max(1, maxAge - minAge);
+    const heatColorFromT = (t) => {
+      t = Math.max(0, Math.min(1, t));
       let r,g,b;
       if(t < 0.5){
         const t2 = t / 0.5;
@@ -536,6 +553,12 @@ body{
         b = 8 + (94 - 8) * t2;
       }
       return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+    };
+    const heatColor = (val, maxVal) => heatColorFromT(Math.max(0, Math.min(1, val / maxVal)));
+    const heatColorAge = (age) => {
+      if(!age) return 'rgb(180,180,180)';
+      const t = (maxAge - age) / ageRange; // younger = greener
+      return heatColorFromT(t);
     };
     const frag = document.createDocumentFragment();
     rows.forEach((row,i)=>{
@@ -561,7 +584,7 @@ body{
         <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.te,max.te)}">${compact(row.te)}</td>
         <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.picks,max.picks)}">${compact(row.picks)}</td>
         <td class="px-3 py-3 text-right font-mono text-amber-200/80">${row.ppg? row.ppg.toFixed(1):'—'}</td>
-        <td class="px-4 py-3 text-right font-mono text-amber-200/70">${fmt1(row.age)}</td>
+        <td class="px-4 py-3 text-right font-mono" style="color:${heatColorAge(row.age)}">${fmt1(row.age)}</td>
       `;
       tr.addEventListener('click', e=>{
         if(e.target.closest('button')) return;
@@ -581,14 +604,15 @@ body{
   }
 
 
+
   function renderExpanded(row){
     const distBars = row.dist.map(d=>`
-      <div class="h-1.5 rounded-full ${d.cls}" style="width:${(d.pct*100).toFixed(1)}%" title="${d.pos} ${(d.pct*100).toFixed(0)}%"></div>
+      <div class="h-2 rounded-full ${d.cls}" style="width:${(d.pct*100).toFixed(1)}%" title="${d.pos} ${(d.pct*100).toFixed(0)}%"></div>
     `).join('');
     const distLabels = row.dist.map(d=>`
-      <div class="flex items-center gap-1">
-        <span class="w-1.5 h-1.5 rounded-full ${d.cls}"></span>
-        <span class="text-[10px] font-mono text-amber-200/70">${d.pos} ${(d.pct*100).toFixed(0)}%</span>
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full ${d.cls}"></span>
+        <span class="text-[11px] font-mono text-amber-200/70">${d.pos} ${(d.pct*100).toFixed(0)}%</span>
       </div>
     `).join('');
 
@@ -597,55 +621,55 @@ body{
       const color = POS_COLORS[pos];
       const items = stat.players.map(p=>{
         if(pos==='PICKS'){
-          return `<div class="flex items-center justify-between py-1 px-1.5 rounded hover:bg-amber-500/[.04]">
-            <div class="truncate pr-2 leading-tight">
-              <div class="text-[12px] text-amber-100 truncate">${p.label}</div>
-              <div class="text-[10px] text-amber-200/40 font-mono leading-none">orig ${p.original}</div>
+          return `<div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-amber-500/[.05]">
+            <div class="truncate pr-2">
+              <div class="text-sm text-amber-100 truncate">${p.label}</div>
+              <div class="text-[11px] text-amber-200/40 font-mono">orig ${p.original}</div>
             </div>
-            <div class="font-mono text-[12px] text-amber-200">${compact(p.val)}</div>
+            <div class="font-mono text-sm text-amber-200">${compact(p.val)}</div>
           </div>`;
         }else{
           const name = (p.info.first_name? p.info.first_name[0]+'. ' : '') + (p.info.last_name||p.info.full_name||'—');
-          return `<div class="flex items-center justify-between py-1 px-1.5 rounded hover:bg-amber-500/[.04]">
-            <div class="truncate pr-2 leading-tight">
-              <div class="text-[12px] text-amber-100 truncate">${name}</div>
-              <div class="text-[10px] text-amber-200/40 font-mono leading-none">${p.age? p.age+'y':''}</div>
+          return `<div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-amber-500/[.05]">
+            <div class="truncate pr-2">
+              <div class="text-sm text-amber-100 truncate">${name}</div>
+              <div class="text-[11px] text-amber-200/40 font-mono">${p.age? p.age+'y':''}</div>
             </div>
-            <div class="font-mono text-[12px] text-amber-200">${compact(p.val)}</div>
+            <div class="font-mono text-sm text-amber-200">${compact(p.val)}</div>
           </div>`;
         }
-      }).join('') || `<div class="py-6 text-center text-amber-200/30 text-xs">—</div>`;
+      }).join('') || `<div class="py-8 text-center text-amber-200/30 text-sm">—</div>`;
 
-      return `<div class="card rounded-xl overflow-hidden flex flex-col" style="border-top:2px solid ${POS_HEX[pos]}">
-        <div class="px-2.5 py-1.5 border-b border-amber-500/10 bg-amber-500/[.03] flex items-center justify-between">
-          <div class="flex items-center gap-1.5">
-            <span class="text-[10px] font-mono px-1 py-0.5 rounded bg-black/40 border border-amber-500/15 text-amber-200/80">${stat.cnt}</span>
-            <span class="font-semibold text-[12px] ${color}">${pos}</span>
+      return `<div class="card rounded-2xl overflow-hidden flex flex-col" style="border-top:2px solid ${POS_HEX[pos]}">
+        <div class="px-3 py-2.5 border-b border-amber-500/10 bg-amber-500/[.03] flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-black/40 border border-amber-500/15 text-amber-200/80">${stat.cnt}</span>
+            <span class="font-semibold ${color}">${pos}</span>
           </div>
-          <div class="flex items-center gap-2 text-[10px] font-mono text-amber-200/60">
+          <div class="flex items-center gap-3 text-[11px] font-mono text-amber-200/60">
             <span>${compact(stat.tot)}</span>
             <span>${stat.avg? stat.avg.toFixed(1)+'y' : '—'}</span>
           </div>
         </div>
-        <div class="p-1 space-y-0">${items}</div>
+        <div class="p-1.5 space-y-0.5 max-h-[320px] overflow-auto scrollbar-thin">${items}</div>
       </div>`;
     }).join('');
 
     return `
-      <div class="fade-in space-y-3">
-        <div class="card rounded-xl p-3">
-          <div class="flex flex-wrap items-center gap-2.5 mb-2">
+      <div class="fade-in space-y-4">
+        <div class="card rounded-2xl p-4">
+          <div class="flex flex-wrap items-center gap-3 mb-3">
             ${distLabels}
           </div>
-          <div class="flex gap-0.5">${distBars}</div>
+          <div class="flex gap-1">${distBars}</div>
+          <div class="mt-3 text-sm text-amber-200/70">Solid RB depth. WR room is a strength.</div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           ${cards}
         </div>
       </div>
     `;
   }
-
 
   function toggleExpand(rid){
     if(STATE.expanded.has(rid)) STATE.expanded.delete(rid);
