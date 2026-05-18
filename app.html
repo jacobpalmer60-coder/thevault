@@ -228,94 +228,108 @@ body{
     localStorage.setItem('vault_league_id', leagueId);
     showLoading('Fetching Sleeper…');
     setProgress('Fetching Sleeper…');
-
-    // Sleeper parallel
-    const base = 'https://api.sleeper.app/v1';
-    const urls = {
-      league: `${base}/league/${leagueId}`,
-      rosters: `${base}/league/${leagueId}/rosters`,
-      users: `${base}/league/${leagueId}/users`,
-      picks: `${base}/league/${leagueId}/traded_picks`,
-    };
-    const [league, rosters, users, tradedPicks] = await Promise.all([
-      fetchJSONFallback(urls.league),
-      fetchJSONFallback(urls.rosters),
-      fetchJSONFallback(urls.users),
-      fetchJSONFallback(urls.picks).catch(()=>[])
-    ]);
-    STATE.league = league; STATE.rosters = rosters; STATE.users = users; STATE.tradedPicks = tradedPicks||[];
-
-    // Players with cache
-    let players = cacheGet('vault_sleeper_players', 24*3600*1000);
-    if(!players){
-      setProgress('Fetching players database…');
-      players = await fetchJSONFallback(`${base}/players/nfl`);
-      cacheSet('vault_sleeper_players', players);
-    }
-    STATE.players = players;
-
-    // Render immediately with zero values
-    buildRows();
-    renderTable();
-
-    // RosterAudit parallel with cache
-    setProgress('Fetching RosterAudit values…');
-    const format = STATE.format;
-    const raCacheKey = `vault_ra_${format}`;
-    let ra = cacheGet(raCacheKey, 60*60*1000);
-    if(!ra){
-      const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
-      const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings`;
-      const picksUrl = `https://rosteraudit.com/wp-json/ra/v1/picks`;
-      const [valuesRaw, ppgRaw, picksRaw] = await Promise.all([
-        fetchJSONFallback(valuesUrl).catch(()=>({})),
-        fetchJSONFallback(ppgUrl).catch(()=>([])),
-        fetchJSONFallback(picksUrl).catch(()=>([])),
+    try {
+      // Sleeper parallel
+      const base = 'https://api.sleeper.app/v1';
+      const urls = {
+        league: `${base}/league/${leagueId}`,
+        rosters: `${base}/league/${leagueId}/rosters`,
+        users: `${base}/league/${leagueId}/users`,
+        picks: `${base}/league/${leagueId}/traded_picks`,
+      };
+      const [league, rosters, users, tradedPicks] = await Promise.all([
+        fetchJSONFallback(urls.league),
+        fetchJSONFallback(urls.rosters),
+        fetchJSONFallback(urls.users),
+        fetchJSONFallback(urls.picks).catch(()=>[])
       ]);
-      ra = { valuesRaw, ppgRaw, picksRaw };
-      cacheSet(raCacheKey, ra);
-    }
-    // Normalize
-    const valuesMap = {};
-    const vr = ra.valuesRaw;
-    const isSF = STATE.format.startsWith('sf');
-    if(vr && vr.values && typeof vr.values === 'object'){
-      Object.entries(vr.values).forEach(([id,v])=>{
-        if(typeof v === 'object' && v!==null){
-          valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
-        }else{
-          valuesMap[id] = Number(v)||0;
-        }
-      });
-    }else if(vr && typeof vr === 'object' && !Array.isArray(vr)){
-      Object.entries(vr).forEach(([id,v])=>{
-        if(typeof v === 'object' && v!==null && ('sf' in v || '1qb' in v)){
-          valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
-        }else if(typeof v === 'number'){
-          valuesMap[id] = v;
-        }
-      });
-    }else if(Array.isArray(vr)){
-      vr.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||v.val||0; });
-    }else if(vr && Array.isArray(vr.data)){
-      vr.data.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||0; });
-    }
-    const ppgMap = {};
-    const pr = ra.ppgRaw;
-    if(Array.isArray(pr)){
-      pr.forEach(p=>{ if(p.player_id) ppgMap[p.player_id]=p.ppg||p.proj_ppg||0; });
-    }else if(pr && pr.players){
-      Object.entries(pr.players).forEach(([id,v])=> ppgMap[id]=v.ppg||0);
-    }
-    STATE.valuesMap = valuesMap;
-    STATE.ppgMap = ppgMap;
-    STATE.picksData = Array.isArray(ra.picksRaw)? ra.picksRaw : (ra.picksRaw?.picks||[]);
+      if(!league || !rosters){
+        throw new Error('League not found');
+      }
+      STATE.league = league; STATE.rosters = rosters; STATE.users = users; STATE.tradedPicks = tradedPicks||[];
 
-    // Rebuild with values
-    buildRows();
-    renderTable();
-    hideLoading();
+      // Players with cache
+      let players = cacheGet('vault_sleeper_players', 24*3600*1000);
+      if(!players){
+        setProgress('Fetching players database…');
+        players = await fetchJSONFallback(`${base}/players/nfl`);
+        cacheSet('vault_sleeper_players', players);
+      }
+      STATE.players = players;
+
+      // Render immediately with zero values
+      buildRows();
+      renderTable();
+
+      // RosterAudit parallel with cache
+      setProgress('Fetching RosterAudit values…');
+      const format = STATE.format;
+      const raCacheKey = `vault_ra_${format}`;
+      let ra = cacheGet(raCacheKey, 60*60*1000);
+      if(!ra){
+        const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
+        const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings`;
+        const picksUrl = `https://rosteraudit.com/wp-json/ra/v1/picks`;
+        const [valuesRaw, ppgRaw, picksRaw] = await Promise.all([
+          fetchJSONFallback(valuesUrl).catch(()=>({})),
+          fetchJSONFallback(ppgUrl).catch(()=>([])),
+          fetchJSONFallback(picksUrl).catch(()=>([])),
+        ]);
+        ra = { valuesRaw, ppgRaw, picksRaw };
+        cacheSet(raCacheKey, ra);
+      }
+      // Normalize
+      const valuesMap = {};
+      const vr = ra.valuesRaw;
+      const isSF = STATE.format.startsWith('sf');
+      if(vr && vr.values && typeof vr.values === 'object'){
+        Object.entries(vr.values).forEach(([id,v])=>{
+          if(typeof v === 'object' && v!==null){
+            valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
+          }else{
+            valuesMap[id] = Number(v)||0;
+          }
+        });
+      }else if(vr && typeof vr === 'object' && !Array.isArray(vr)){
+        Object.entries(vr).forEach(([id,v])=>{
+          if(typeof v === 'object' && v!==null && ('sf' in v || '1qb' in v)){
+            valuesMap[id] = isSF ? (v.sf||0) : (v['1qb']||0);
+          }else if(typeof v === 'number'){
+            valuesMap[id] = v;
+          }
+        });
+      }else if(Array.isArray(vr)){
+        vr.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||v.val||0; });
+      }else if(vr && Array.isArray(vr.data)){
+        vr.data.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||0; });
+      }
+      const ppgMap = {};
+      const pr = ra.ppgRaw;
+      if(Array.isArray(pr)){
+        pr.forEach(p=>{ if(p.player_id) ppgMap[p.player_id]=p.ppg||p.proj_ppg||0; });
+      }else if(pr && pr.players){
+        Object.entries(pr.players).forEach(([id,v])=> ppgMap[id]=v.ppg||0);
+      }
+      STATE.valuesMap = valuesMap;
+      STATE.ppgMap = ppgMap;
+      STATE.picksData = Array.isArray(ra.picksRaw)? ra.picksRaw : (ra.picksRaw?.picks||[]);
+
+      // Rebuild with values
+      buildRows();
+      renderTable();
+    } catch(err){
+      console.error(err);
+      setProgress('Error: ' + (err.message || 'Failed to load'));
+      // Show error in table area
+      emptyState.classList.remove('hidden');
+      emptyState.innerHTML = `<div class="py-10 text-center"><div class="text-amber-200 text-lg mb-2">Failed to load league</div><div class="text-amber-200/60 text-sm">${err.message || 'Check league ID and try again'}</div></div>`;
+      tableBody.innerHTML='';
+    } finally {
+      hideLoading();
+    }
   }
+
+
 
   // ---------- Computations ----------
   function getUserForRoster(roster){
@@ -527,14 +541,39 @@ body{
       summaryBar.classList.add('hidden');
     }
     const max = {
+      total: Math.max(...rows.map(r=>r.total||0),1),
       qb: Math.max(...rows.map(r=>r.qb||0),1),
       rb: Math.max(...rows.map(r=>r.rb||0),1),
       wr: Math.max(...rows.map(r=>r.wr||0),1),
       te: Math.max(...rows.map(r=>r.te||0),1),
       picks: Math.max(...rows.map(r=>r.picks||0),1),
     };
-    const rgba = (r,g,b,a)=>`rgba(${r},${g},${b},${a.toFixed(3)})`;
-    const heat = (val, maxVal, r,g,b)=> rgba(r,g,b, Math.min(0.35, (val/maxVal)*0.35));
+    const ages = rows.map(r=>r.age||0).filter(a=>a>0);
+    const minAge = ages.length ? Math.min(...ages) : 0;
+    const maxAge = ages.length ? Math.max(...ages) : 0;
+    const ageRange = Math.max(1, maxAge - minAge);
+    const heatColorFromT = (t) => {
+      t = Math.max(0, Math.min(1, t));
+      let r,g,b;
+      if(t < 0.5){
+        const t2 = t / 0.5;
+        r = 239 + (234 - 239) * t2;
+        g = 68 + (179 - 68) * t2;
+        b = 68 + (8 - 68) * t2;
+      } else {
+        const t2 = (t - 0.5) / 0.5;
+        r = 234 + (34 - 234) * t2;
+        g = 179 + (197 - 179) * t2;
+        b = 8 + (94 - 8) * t2;
+      }
+      return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+    };
+    const heatColor = (val, maxVal) => heatColorFromT(Math.max(0, Math.min(1, val / maxVal)));
+    const heatColorAge = (age) => {
+      if(!age) return 'rgb(180,180,180)';
+      const t = (maxAge - age) / ageRange;
+      return heatColorFromT(t);
+    };
     const frag = document.createDocumentFragment();
     rows.forEach((row,i)=>{
       const tr = document.createElement('tr');
@@ -552,14 +591,14 @@ body{
           </div>
         </td>
         <td class="px-3 py-3 text-center font-mono text-amber-200/70">${row.rec}</td>
-        <td class="px-3 py-3 text-right font-mono text-amber-100">${compact(row.total)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.QB}" style="background-color:${heat(row.qb,max.qb,96,165,250)}">${compact(row.qb)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.RB}" style="background-color:${heat(row.rb,max.rb,52,211,153)}">${compact(row.rb)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.WR}" style="background-color:${heat(row.wr,max.wr,244,114,182)}">${compact(row.wr)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.TE}" style="background-color:${heat(row.te,max.te,251,191,36)}">${compact(row.te)}</td>
-        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.PICKS}" style="background-color:${heat(row.picks,max.picks,167,139,250)}">${compact(row.picks)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.total,max.total)}">${compact(row.total)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.qb,max.qb)}">${compact(row.qb)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.rb,max.rb)}">${compact(row.rb)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.wr,max.wr)}">${compact(row.wr)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.te,max.te)}">${compact(row.te)}</td>
+        <td class="px-3 py-3 text-right font-mono" style="color:${heatColor(row.picks,max.picks)}">${compact(row.picks)}</td>
         <td class="px-3 py-3 text-right font-mono text-amber-200/80">${row.ppg? row.ppg.toFixed(1):'—'}</td>
-        <td class="px-4 py-3 text-right font-mono text-amber-200/70">${fmt1(row.age)}</td>
+        <td class="px-4 py-3 text-right font-mono" style="color:${heatColorAge(row.age)}">${fmt1(row.age)}</td>
       `;
       tr.addEventListener('click', e=>{
         if(e.target.closest('button')) return;
@@ -604,11 +643,10 @@ body{
           </div>`;
         }else{
           const name = (p.info.first_name? p.info.first_name[0]+'. ' : '') + (p.info.last_name||p.info.full_name||'—');
-          const meta = [p.age? p.age+'y' : '', p.ppg? p.ppg.toFixed(1)+' ppg' : ''].filter(Boolean).join(' • ');
           return `<div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-amber-500/[.05]">
             <div class="truncate pr-2">
               <div class="text-sm text-amber-100 truncate">${name}</div>
-              <div class="text-[11px] text-amber-200/40 font-mono">${meta}</div>
+              <div class="text-[11px] text-amber-200/40 font-mono">${p.age? p.age+'y':''}</div>
             </div>
             <div class="font-mono text-sm text-amber-200">${compact(p.val)}</div>
           </div>`;
@@ -645,7 +683,6 @@ body{
       </div>
     `;
   }
-
 
   function toggleExpand(rid){
     if(STATE.expanded.has(rid)) STATE.expanded.delete(rid);
