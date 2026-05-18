@@ -167,6 +167,7 @@ body{
   };
 
   const POS_COLORS = { QB:'pos-qb', RB:'pos-rb', WR:'pos-wr', TE:'pos-te', PICKS:'pos-pick' };
+  const POS_HEX = { QB:'#60a5fa', RB:'#4ade80', WR:'#fbbf24', TE:'#f472b6', PICKS:'#fde68a' };
   const POS_ORDER = ['QB','RB','WR','TE','PICKS'];
 
   // ---------- Utils ----------
@@ -260,7 +261,7 @@ body{
     // RosterAudit parallel with cache
     setProgress('Fetching RosterAudit values…');
     const format = STATE.format;
-    const raCacheKey = `vault_ra_v2_${format}`;
+    const raCacheKey = `vault_ra_${format}`;
     let ra = cacheGet(raCacheKey, 60*60*1000);
     if(!ra){
       const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
@@ -318,31 +319,22 @@ body{
   function buildPickOwnership(){
     const rosters = STATE.rosters;
     const traded = STATE.tradedPicks;
-    const leagueSeason = Number(STATE.league?.season) || new Date().getFullYear();
-    const seasons = [leagueSeason, leagueSeason+1, leagueSeason+2];
+    const season = new Date().getFullYear();
+    const seasons = [season, season+1, season+2];
     const rounds = [1,2,3,4];
-    // roster_id -> team short name
-    const rosterNames = {};
-    rosters.forEach(r=>{
-      const user = STATE.users.find(u=>u.user_id===r.owner_id);
-      const name = user?.metadata?.team_name || user?.display_name || `Team ${r.roster_id}`;
-      rosterNames[r.roster_id] = (name.match(/[A-Z]/g)||[]).slice(0,2).join('') || name.slice(0,2).toUpperCase();
-    });
     const ownerMap = {};
     rosters.forEach(r=> ownerMap[r.roster_id]=[]);
     rosters.forEach(orig=>{
       seasons.forEach(s=>{
         rounds.forEach(rd=>{
-          const tp = traded.find(t=> Number(t.season)==s && Number(t.round)==rd && Number(t.roster_id)==orig.roster_id);
-          const ownerId = tp? Number(tp.owner_id) : orig.roster_id;
+          const tp = traded.find(t=> t.season==s && t.round==rd && t.roster_id==orig.roster_id);
+          const ownerId = tp? tp.owner_id : orig.roster_id;
           if(ownerMap[ownerId]){
-            ownerMap[ownerId].push({season:s, round:rd, original:orig.roster_id, originalName: rosterNames[orig.roster_id]});
+            ownerMap[ownerId].push({season:s, round:rd, original:orig.roster_id});
           }
         });
       });
     });
-    // sort picks by season then round
-    Object.values(ownerMap).forEach(arr=> arr.sort((a,b)=> a.season-b.season || a.round-b.round));
     return ownerMap;
   }
 
@@ -481,82 +473,41 @@ body{
     }
     emptyState.classList.add('hidden');
     const frag = document.createDocumentFragment();
-    const n = rows.length;
-    const rankCls = (r)=> r<=3 ? 'text-emerald-400' : r>n-3 ? 'text-rose-400' : 'text-amber-200/40';
     rows.forEach((row,i)=>{
       const tr = document.createElement('tr');
       tr.className = 'group hover:bg-amber-500/[.03] transition cursor-pointer';
       tr.dataset.rid = row.roster_id;
       tr.innerHTML = `
-        <td class="px-2 py-1.5 text-amber-200/40 font-mono text-[11px]">${i+1}</td>
-        <td class="px-2 py-1.5">
-          <div class="flex items-center gap-2">
-            <div class="h-6 w-6 rounded-md bg-amber-500/10 border border-amber-500/15 flex items-center justify-center text-amber-200 font-semibold text-[10px]">${row.name.slice(0,2).toUpperCase()}</div>
-            <div class="leading-tight">
-              <div class="font-medium text-amber-100 text-[13px]">${row.name}</div>
-              <div class="text-[10px] text-amber-200/40 font-mono">R${row.roster_id}</div>
+        <td class="px-4 py-3 text-amber-200/40 font-mono text-xs">${i+1}</td>
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="h-8 w-8 rounded-lg bg-amber-500/10 border border-amber-500/15 flex items-center justify-center text-amber-200 font-semibold text-xs">${row.name.slice(0,2).toUpperCase()}</div>
+            <div>
+              <div class="font-medium text-amber-100 group-hover:text-amber-200">${row.name}</div>
+              <div class="text-[11px] text-amber-200/40 font-mono">Roster ${row.roster_id}</div>
             </div>
           </div>
         </td>
-        <td class="px-2 py-1.5 text-center font-mono text-[12px] text-amber-200/70">${row.rec}</td>
-        <td class="px-2 py-1.5 text-right">
-          <div class="flex flex-col items-end leading-tight">
-            <span class="font-mono text-[13px] text-amber-100">${compact(row.total)}</span>
-            <span class="font-mono text-[10px] ${rankCls(row.rank_total)}">#${row.rank_total}</span>
-          </div>
-        </td>
-        <td class="px-2 py-1.5 text-right">
-          <div class="flex flex-col items-end leading-tight">
-            <span class="font-mono text-[13px] ${POS_COLORS.QB}">${compact(row.qb)}</span>
-            <span class="font-mono text-[10px] ${rankCls(row.rank_qb)}">#${row.rank_qb}</span>
-          </div>
-        </td>
-        <td class="px-2 py-1.5 text-right">
-          <div class="flex flex-col items-end leading-tight">
-            <span class="font-mono text-[13px] ${POS_COLORS.RB}">${compact(row.rb)}</span>
-            <span class="font-mono text-[10px] ${rankCls(row.rank_rb)}">#${row.rank_rb}</span>
-          </div>
-        </td>
-        <td class="px-2 py-1.5 text-right">
-          <div class="flex flex-col items-end leading-tight">
-            <span class="font-mono text-[13px] ${POS_COLORS.WR}">${compact(row.wr)}</span>
-            <span class="font-mono text-[10px] ${rankCls(row.rank_wr)}">#${row.rank_wr}</span>
-          </div>
-        </td>
-        <td class="px-2 py-1.5 text-right">
-          <div class="flex flex-col items-end leading-tight">
-            <span class="font-mono text-[13px] ${POS_COLORS.TE}">${compact(row.te)}</span>
-            <span class="font-mono text-[10px] ${rankCls(row.rank_te)}">#${row.rank_te}</span>
-          </div>
-        </td>
-        <td class="px-2 py-1.5 text-right">
-          <div class="flex flex-col items-end leading-tight">
-            <span class="font-mono text-[13px] ${POS_COLORS.PICKS}">${compact(row.picks)}</span>
-            <span class="font-mono text-[10px] ${rankCls(row.rank_picks)}">#${row.rank_picks}</span>
-          </div>
-        </td>
-        <td class="px-2 py-1.5 text-right">
-          <div class="flex flex-col items-end leading-tight">
-            <span class="font-mono text-[13px] text-amber-200/80">${row.ppg? row.ppg.toFixed(1):'—'}</span>
-            <span class="font-mono text-[10px] ${rankCls(row.rank_ppg)}">#${row.rank_ppg}</span>
-          </div>
-        </td>
-        <td class="px-2 py-1.5 text-right">
-          <div class="flex flex-col items-end leading-tight">
-            <span class="font-mono text-[13px] text-amber-200/70">${fmt1(row.age)}</span>
-            <span class="font-mono text-[10px] ${rankCls(row.rank_age)}">#${row.rank_age}</span>
-          </div>
-        </td>
+        <td class="px-3 py-3 text-center font-mono text-amber-200/70">${row.rec}</td>
+        <td class="px-3 py-3 text-right font-mono text-amber-100">${compact(row.total)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.QB}">${compact(row.qb)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.RB}">${compact(row.rb)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.WR}">${compact(row.wr)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.TE}">${compact(row.te)}</td>
+        <td class="px-3 py-3 text-right font-mono ${POS_COLORS.PICKS}">${compact(row.picks)}</td>
+        <td class="px-3 py-3 text-right font-mono text-amber-200/80">${row.ppg? row.ppg.toFixed(1):'—'}</td>
+        <td class="px-4 py-3 text-right font-mono text-amber-200/70">${fmt1(row.age)}</td>
       `;
       tr.addEventListener('click', e=>{
         if(e.target.closest('button')) return;
         toggleExpand(row.roster_id);
       });
       frag.appendChild(tr);
+
       if(STATE.expanded.has(row.roster_id)){
         const tr2 = document.createElement('tr');
         tr2.className = 'bg-black/20';
-        tr2.innerHTML = `<td colspan="11" class="p-0"><div class="px-3 md:px-5 py-4">${renderExpanded(row)}</div></td>`;
+        tr2.innerHTML = `<td colspan="11" class="p-0"><div class="px-3 md:px-5 py-5">${renderExpanded(row)}</div></td>`;
         frag.appendChild(tr2);
       }
     });
@@ -564,15 +515,14 @@ body{
     tableBody.appendChild(frag);
   }
 
-
   function renderExpanded(row){
     const distBars = row.dist.map(d=>`
-      <div class="h-2 rounded-full ${d.cls}" style="width:${(d.pct*100).toFixed(1)}%" title="${d.pos} ${(d.pct*100).toFixed(0)}%"></div>
+      <div class="h-1.5 rounded-full ${d.cls}" style="width:${(d.pct*100).toFixed(1)}%" title="${d.pos} ${(d.pct*100).toFixed(0)}%"></div>
     `).join('');
     const distLabels = row.dist.map(d=>`
-      <div class="flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full ${d.cls}"></span>
-        <span class="text-[11px] font-mono text-amber-200/70">${d.pos} ${(d.pct*100).toFixed(0)}%</span>
+      <div class="flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full ${d.cls}"></span>
+        <span class="text-[10px] font-mono text-amber-200/70">${d.pos} ${(d.pct*100).toFixed(0)}%</span>
       </div>
     `).join('');
 
@@ -581,55 +531,55 @@ body{
       const color = POS_COLORS[pos];
       const items = stat.players.map(p=>{
         if(pos==='PICKS'){
-          return `<div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-amber-500/[.05]">
-            <div class="truncate pr-2">
-              <div class="text-sm text-amber-100 truncate">${p.label}</div>
-              <div class="text-[11px] text-amber-200/40 font-mono">orig ${p.original}</div>
+          return `<div class="flex items-center justify-between py-1 px-1.5 rounded hover:bg-amber-500/[.04]">
+            <div class="truncate pr-2 leading-tight">
+              <div class="text-[12px] text-amber-100 truncate">${p.label}</div>
+              <div class="text-[10px] text-amber-200/40 font-mono leading-none">orig ${p.original}</div>
             </div>
-            <div class="font-mono text-sm text-amber-200">${compact(p.val)}</div>
+            <div class="font-mono text-[12px] text-amber-200">${compact(p.val)}</div>
           </div>`;
         }else{
           const name = (p.info.first_name? p.info.first_name[0]+'. ' : '') + (p.info.last_name||p.info.full_name||'—');
-          return `<div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-amber-500/[.05]">
-            <div class="truncate pr-2">
-              <div class="text-sm text-amber-100 truncate">${name}</div>
-              <div class="text-[11px] text-amber-200/40 font-mono">${p.age? p.age+'y':''}</div>
+          return `<div class="flex items-center justify-between py-1 px-1.5 rounded hover:bg-amber-500/[.04]">
+            <div class="truncate pr-2 leading-tight">
+              <div class="text-[12px] text-amber-100 truncate">${name}</div>
+              <div class="text-[10px] text-amber-200/40 font-mono leading-none">${p.age? p.age+'y':''}</div>
             </div>
-            <div class="font-mono text-sm text-amber-200">${compact(p.val)}</div>
+            <div class="font-mono text-[12px] text-amber-200">${compact(p.val)}</div>
           </div>`;
         }
-      }).join('') || `<div class="py-8 text-center text-amber-200/30 text-sm">—</div>`;
+      }).join('') || `<div class="py-6 text-center text-amber-200/30 text-xs">—</div>`;
 
-      return `<div class="card rounded-2xl overflow-hidden flex flex-col">
-        <div class="px-3 py-2.5 border-b border-amber-500/10 bg-amber-500/[.03] flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-black/40 border border-amber-500/15 text-amber-200/80">${stat.cnt}</span>
-            <span class="font-semibold ${color}">${pos}</span>
+      return `<div class="card rounded-xl overflow-hidden flex flex-col" style="border-top:2px solid ${POS_HEX[pos]}">
+        <div class="px-2.5 py-1.5 border-b border-amber-500/10 bg-amber-500/[.03] flex items-center justify-between">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono px-1 py-0.5 rounded bg-black/40 border border-amber-500/15 text-amber-200/80">${stat.cnt}</span>
+            <span class="font-semibold text-[12px] ${color}">${pos}</span>
           </div>
-          <div class="flex items-center gap-3 text-[11px] font-mono text-amber-200/60">
+          <div class="flex items-center gap-2 text-[10px] font-mono text-amber-200/60">
             <span>${compact(stat.tot)}</span>
             <span>${stat.avg? stat.avg.toFixed(1)+'y' : '—'}</span>
           </div>
         </div>
-        <div class="p-1.5 space-y-0.5 max-h-[320px] overflow-auto scrollbar-thin">${items}</div>
+        <div class="p-1 space-y-0">${items}</div>
       </div>`;
     }).join('');
 
     return `
-      <div class="fade-in space-y-4">
-        <div class="card rounded-2xl p-4">
-          <div class="flex flex-wrap items-center gap-3 mb-3">
+      <div class="fade-in space-y-3">
+        <div class="card rounded-xl p-3">
+          <div class="flex flex-wrap items-center gap-2.5 mb-2">
             ${distLabels}
           </div>
-          <div class="flex gap-1">${distBars}</div>
-          <div class="mt-3 text-sm text-amber-200/70">Solid RB depth. WR room is a strength.</div>
+          <div class="flex gap-0.5">${distBars}</div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           ${cards}
         </div>
       </div>
     `;
   }
+
 
   function toggleExpand(rid){
     if(STATE.expanded.has(rid)) STATE.expanded.delete(rid);
