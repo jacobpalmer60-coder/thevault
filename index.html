@@ -164,9 +164,7 @@
         const STORAGE_KEY = 'vault_league_id';
         const STORAGE_USER = 'vault_username';
 
-        // Prefill username if saved
-        const savedUser = localStorage.getItem(STORAGE_USER);
-        if (savedUser) usernameInput.value = savedUser;
+        // Do not prefill username - user must enter each time
 
         function setLoading(isLoading) {
             loadBtn.disabled = isLoading;
@@ -214,16 +212,18 @@
                 localStorage.setItem(STORAGE_USER, username);
                 showStatus('Fetching leagues…');
 
-                const years = [];
-                const currentYear = new Date().getFullYear();
-                for (let y = 2015; y <= currentYear + 1; y++) years.push(String(y));
-                const leaguesByYear = await Promise.all(
-                    years.map(y => fetchJSON(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/${y}`).catch(() => []))
-                );
-                const leagues = leaguesByYear.flat().map(l => ({...l, season: l.season || ''})).sort((a,b) => (b.season||'').localeCompare(a.season||'') || a.name.localeCompare(b.name));
+                const [leagues2024, leagues2025] = await Promise.all([
+                    fetchJSON(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/2024`).catch(() => []),
+                    fetchJSON(`https://api.sleeper.app/v1/user/${user.user_id}/leagues/nfl/2025`).catch(() => [])
+                ]);
+
+                const leagues = [
+                    ...leagues2024.map(l => ({...l, season: l.season || '2024'})),
+                    ...leagues2025.map(l => ({...l, season: l.season || '2025'}))
+                ].sort((a,b) => (b.season||'').localeCompare(a.season||'') || a.name.localeCompare(b.name));
 
                 if (leagues.length === 0) {
-                    showError('No NFL leagues found.');
+                    showError('No NFL leagues found for 2024 or 2025.');
                     stepLeague.classList.add('hidden');
                     stepActions.classList.add('hidden');
                     return;
