@@ -311,47 +311,22 @@ body{
       const ppgMap = {};
       const pr = ra.ppgRaw;
       const addPpg = (id, val) => { if(id) ppgMap[String(id)] = Number(val)||0; };
-      // Build name -> sleeper_id lookup for fallback matching
-      const nameToId = new Map();
-      Object.entries(STATE.players).forEach(([id, pl])=>{
-        if(!pl) return;
-        const fn = (pl.first_name||'').trim().toLowerCase();
-        const ln = (pl.last_name||'').trim().toLowerCase();
-        if(fn && ln) nameToId.set(`${fn} ${ln}`, id);
-        if(pl.full_name) nameToId.set(pl.full_name.trim().toLowerCase(), id);
-      });
-      const getNameKey = (p)=>{
-        const fn = (p.first_name||p.first||'').trim().toLowerCase();
-        const ln = (p.last_name||p.last||'').trim().toLowerCase();
-        if(fn && ln) return `${fn} ${ln}`;
-        const full = (p.full_name||p.player||p.name||'').trim().toLowerCase();
-        return full || null;
-      };
-      const processEntry = (p)=>{
-        let id = p.player_id || p.sleeper_id || p.id;
-        const val = p.ppg || p.proj_ppg || p.value || 0;
-        if(!id){
-          const key = getNameKey(p);
-          if(key && nameToId.has(key)) id = nameToId.get(key);
-        }
-        addPpg(id, val);
-      };
       if(Array.isArray(pr)){
-        pr.forEach(processEntry);
+        pr.forEach(p=>{
+          const id = p.player_id || p.sleeper_id || p.id;
+          const val = p.ppg || p.proj_ppg || p.value || 0;
+          addPpg(id, val);
+        });
       }else if(pr && Array.isArray(pr.rankings)){
-        pr.rankings.forEach(processEntry);
+        pr.rankings.forEach(p=>{
+          const id = p.player_id || p.sleeper_id || p.id;
+          const val = p.ppg || p.proj_ppg || p.value || 0;
+          addPpg(id, val);
+        });
       }else if(pr && pr.players && typeof pr.players === 'object'){
         Object.entries(pr.players).forEach(([id,v])=>{
           const val = (typeof v === 'object') ? (v.ppg||v.proj_ppg||0) : Number(v)||0;
-          let useId = id;
-          if(!STATE.players[useId]){
-            // try name lookup if v has name
-            if(typeof v === 'object'){
-              const key = getNameKey(v);
-              if(key && nameToId.has(key)) useId = nameToId.get(key);
-            }
-          }
-          addPpg(useId, val);
+          addPpg(id, val);
         });
       }else if(pr && typeof pr === 'object'){
         Object.entries(pr).forEach(([id,v])=>{
