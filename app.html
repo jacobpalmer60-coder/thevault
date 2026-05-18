@@ -184,13 +184,14 @@
                 const ppgData = await ppgRes.json();
                 const arr = Array.isArray(ppgData) ? ppgData : (Array.isArray(ppgData?.data) ? ppgData.data : []);
                 for (const p of arr) {
-                  const id = String(p.sleeper_id || p.player_id || '');
+                  const id = String(p.sleeper_id || p.player_id || p.id || '');
                   if (id) ppgMap.set(id, Number(p.ppg || p.value || 0));
                 }
                 if (arr.length) break;
               }
             } catch(e) {}
-          } catch {}
+          }
+        } catch {}
 
         // Maps
         const userMap = Object.fromEntries(users.map(u => [u.user_id, u]));
@@ -205,21 +206,23 @@
 
         function getPlayerInfo(pid){
           const p = players[pid] || {};
-          const name = p.full_name || p.first_name && p.last_name ? `${p.first_name} ${p.last_name}`.trim() : (p.full_name || 'Unknown');
+          const name = p.full_name || (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}`.trim() : (p.full_name || 'Unknown'));
           const pos = p.position || p.fantasy_positions?.[0] || '';
           const team = p.team || '';
           const age = p.age || 0;
 
           let r = rankById.get(String(pid));
           if (!r) r = rankByName.get(normalizeName(name));
+          const value = Number( (format === 'sf' ? (r?.val_sf ?? r?.sf_value ?? r?.value_sf ?? r?.value) : (r?.val_1qb ?? r?.oneqb_value ?? r?.value_1qb ?? r?.value)) || 0 );
+          const ppg = Number( ppgMap.get(String(pid)) ?? r?.ppg ?? 0 );
           return {
             id: pid,
             name,
             pos,
             team,
             age,
-            value: Number(r?.value || 0),
-            ppg: Number(r?.ppg || 0)
+            value,
+            ppg
           };
         }
 
