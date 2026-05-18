@@ -278,25 +278,65 @@ body{
       cacheSet(raCacheKey, ra);
     }
     // Normalize
-    const valuesMap = {};
-    const vr = ra.valuesRaw;
-    if(vr && vr.values && typeof vr.values === 'object'){
-      Object.assign(valuesMap, vr.values);
-    }else if(Array.isArray(vr)){
-      vr.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||v.val||0; });
-    }else if(vr && Array.isArray(vr.data)){
-      vr.data.forEach(v=>{ if(v.player_id) valuesMap[v.player_id]=v.value||0; });
-    }
-    const ppgMap = {};
-    const pr = ra.ppgRaw;
-    if(Array.isArray(pr)){
-      pr.forEach(p=>{ if(p.player_id) ppgMap[p.player_id]=p.ppg||p.proj_ppg||0; });
-    }else if(pr && pr.players){
-      Object.entries(pr.players).forEach(([id,v])=> ppgMap[id]=v.ppg||0);
-    }
-    STATE.valuesMap = valuesMap;
-    STATE.ppgMap = ppgMap;
-    STATE.picksData = Array.isArray(ra.picksRaw)? ra.picksRaw : (ra.picksRaw?.picks||[]);
+      const valuesMap = {};
+      const vr = ra.valuesRaw;
+      const isSF = STATE.format.startsWith('sf');
+      const extractVal = (v) => {
+        if(typeof v === 'object' && v !== null){
+          return isSF ? (v.sf || v.value || v.val || 0) : (v['1qb'] || v.value || v.val || 0);
+        }
+        return Number(v)||0;
+      };
+      if(vr && vr.values && typeof vr.values === 'object'){
+        Object.entries(vr.values).forEach(([id,v])=>{
+          valuesMap[id] = extractVal(v);
+        });
+      }else if(vr && typeof vr === 'object' && !Array.isArray(vr)){
+        // direct map
+        Object.entries(vr).forEach(([id,v])=>{
+          if(id === 'values' || id === 'attribution') return;
+          valuesMap[id] = extractVal(v);
+        });
+      }else if(Array.isArray(vr)){
+        vr.forEach(v=>{
+          const id = v.player_id || v.sleeper_id || v.id;
+          if(id) valuesMap[id] = extractVal(v);
+        });
+      }else if(vr && Array.isArray(vr.data)){
+        vr.data.forEach(v=>{
+          const id = v.player_id || v.sleeper_id || v.id;
+          if(id) valuesMap[id] = extractVal(v);
+        });
+      }
+      const ppgMap = {};
+      const pr = ra.ppgRaw;
+      const addPpg = (id, val) => { if(id) ppgMap[String(id)] = Number(val)||0; };
+      if(Array.isArray(pr)){
+        pr.forEach(p=>{
+          const id = p.player_id || p.sleeper_id || p.id;
+          const val = p.ppg || p.proj_ppg || p.value || 0;
+          addPpg(id, val);
+        });
+      }else if(pr && Array.isArray(pr.rankings)){
+        pr.rankings.forEach(p=>{
+          const id = p.player_id || p.sleeper_id || p.id;
+          const val = p.ppg || p.proj_ppg || p.value || 0;
+          addPpg(id, val);
+        });
+      }else if(pr && pr.players && typeof pr.players === 'object'){
+        Object.entries(pr.players).forEach(([id,v])=>{
+          const val = (typeof v === 'object') ? (v.ppg||v.proj_ppg||0) : Number(v)||0;
+          addPpg(id, val);
+        });
+      }else if(pr && typeof pr === 'object'){
+        Object.entries(pr).forEach(([id,v])=>{
+          const val = (typeof v === 'object') ? (v.ppg||v.proj_ppg||0) : Number(v)||0;
+          if(!isNaN(Number(id))) addPpg(id, val);
+        });
+      }
+      STATE.valuesMap = valuesMap;
+      STATE.ppgMap = ppgMap;
+      STATE.picksData = Array.isArray(ra.picksRaw)? ra.picksRaw : (ra.picksRaw?.picks||[]);
 
     // Rebuild with values
     buildRows();
