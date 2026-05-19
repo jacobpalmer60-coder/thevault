@@ -1,580 +1,598 @@
+
+
+Ask Meta AI...
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>RosterAudit Dynasty Dashboard • Dark</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RosterAudit Dynasty Rankings Dashboard</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root { color-scheme: dark; }
-html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-.display { font-family: 'Space Grotesk', 'Inter', sans-serif; }
-body {
-  background:#050608;
-  min-height:100vh;
-}
-.glass {
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border:1px solid rgba(255,255,255,.08);
-}
-.glass-strong {
-  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border:1px solid rgba(255,255,255,.10);
-}
-.pos-QB { background: rgba(236,72,153,.15); color:#f9a8d4; border:1px solid rgba(236,72,153,.35); }
-.pos-RB { background: rgba(59,130,246,.15); color:#93c5fd; border:1px solid rgba(59,130,246,.35); }
-.pos-WR { background: rgba(16,185,129,.15); color:#6ee7b7; border:1px solid rgba(16,185,129,.35); }
-.pos-TE { background: rgba(245,158,11,.15); color:#fcd34d; border:1px solid rgba(245,158,11,.35); }
-.scrollbar-thin::-webkit-scrollbar { width:6px; height:6px; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius:999px; }
-.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-.shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-@keyframes shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
+  :root { color-scheme: dark; }
+  html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  * { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.3) transparent; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.3); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,.5); }
+  .glass { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  .glass-strong { background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04)); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .shimmer { position: relative; overflow: hidden; }
+  .shimmer::after { content:''; position:absolute; inset:0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent); transform: translateX(-100%); animation: shimmer 1.8s infinite; }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  .fade-in { animation: fade .3s ease-out; }
+  @keyframes fade { from { opacity:0; transform: translateY(4px);} }
 </style>
 </head>
-<body class="text-zinc-200 antialiased selection:bg-amber-500/30">
-<div class="fixed inset-0 -z-10">
-  <div class="absolute inset-0 bg-[#050608]"></div>
-  <div class="absolute inset-0 opacity-[0.6]" style="background: radial-gradient(60% 50% at 20% 0%, rgba(245,158,11,.15) 0%, transparent 60%), radial-gradient(50% 50% at 100% 20%, rgba(139,92,246,.12) 0%, transparent 60%), radial-gradient(70% 70% at 50% 100%, rgba(14,165,233,.10) 0%, transparent 60%);"></div>
-  <div class="absolute inset-0 mix-blend-overlay opacity-[.03]" style="background-image:repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 4px);"></div>
-</div>
-
-<div class="max-w-[1200px] mx-auto px-4 md:px-6 py-8 md:py-12">
-  <!-- Header -->
-  <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
-    <div>
-      <div class="flex items-center gap-3 mb-2">
-        <div class="w-10 h-10 rounded-2xl glass-strong flex items-center justify-center">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" stroke="#fbbf24" stroke-width="1.5"/><path d="M12 3v14" stroke="#fbbf24" stroke-width="1.5" opacity=".5"/></svg>
-        </div>
-        <h1 class="display text-[28px] md:text-[34px] font-semibold tracking-tight text-white">Dynasty Rankings <span class="text-amber-400">Dashboard</span></h1>
-      </div>
-      <p class="text-sm text-zinc-400 max-w-xl">Live player values & PPG from RosterAudit + Sleeper. Dark glass UI with smart caching, concurrent embed backfill, and resilient proxy fallback.</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <button id="refreshBtn" class="glass hover:bg-white/10 transition px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-        Refresh
-      </button>
-      <button id="exportBtn" class="glass hover:bg-white/10 transition px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-        CSV
-      </button>
-    </div>
-  </header>
-
-  <!-- Controls -->
-  <section class="glass-strong rounded-[24px] p-4 md:p-5 mb-6">
-    <div class="flex flex-wrap items-center gap-3">
-      <!-- Format -->
-      <div class="flex items-center gap-2">
-        <span class="text-xs uppercase tracking-wider text-zinc-500 font-medium">Format</span>
-        <div class="flex glass rounded-xl p-1">
-          <button data-format="sf" class="seg px-3 py-1.5 text-sm rounded-lg transition">SF</button>
-          <button data-format="1qb" class="seg px-3 py-1.5 text-sm rounded-lg transition">1QB</button>
-        </div>
-      </div>
-      <!-- Scoring -->
-      <div class="flex items-center gap-2">
-        <span class="text-xs uppercase tracking-wider text-zinc-500 font-medium">Scoring</span>
-        <div class="flex glass rounded-xl p-1">
-          <button data-scoring="ppr" class="seg px-3 py-1.5 text-sm rounded-lg transition">PPR</button>
-          <button data-scoring="half" class="seg px-3 py-1.5 text-sm rounded-lg transition">Half</button>
-          <button data-scoring="standard" class="seg px-3 py-1.5 text-sm rounded-lg transition">Std</button>
-        </div>
-      <!-- TE Premium -->
-      <label class="flex items-center gap-2 cursor-pointer ml-1">
-        <input id="tePremium" type="checkbox" class="sr-only peer">
-        <div class="w-11 h-6 rounded-full bg-zinc-800 border border-white/10 peer-checked:bg-amber-500/20 peer-checked:border-amber-500/40 relative transition">
-          <div class="absolute top-[2px] left-[2px] w-5 h-5 rounded-full bg-zinc-400 peer-checked:translate-x-5 peer-checked:bg-amber-400 transition"></div>
-        </div>
-        <span class="text-sm text-zinc-300">TE Premium</span>
-      </label>
-
-      <div class="h-6 w-px bg-white/10 hidden md:block"></div>
-
-      <!-- Position chips -->
-      <div class="flex items-center gap-1.5 flex-wrap">
-        <button data-pos="ALL" class="pos-chip px-2.5 py-1 rounded-full text-xs font-medium glass hover:bg-white/10 border border-white/10">All</button>
-        <button data-pos="QB" class="pos-chip px-2.5 py-1 rounded-full text-xs font-medium glass hover:bg-white/10 border border-white/10">QB</button>
-        <button data-pos="RB" class="pos-chip px-2.5 py-1 rounded-full text-xs font-medium glass hover:bg-white/10 border border-white/10">RB</button>
-        <button data-pos="WR" class="pos-chip px-2.5 py-1 rounded-full text-xs font-medium glass hover:bg-white/10 border border-white/10">WR</button>
-        <button data-pos="TE" class="pos-chip px-2.5 py-1 rounded-full text-xs font-medium glass hover:bg-white/10 border border-white/10">TE</button>
-      </div>
-
-      <div class="ml-auto flex items-center gap-2 w-full md:w-auto">
-        <div class="relative flex-1 md:w-64">
-          <input id="search" placeholder="Search player..." class="w-full pl-9 pr-3 py-2 rounded-xl glass bg-transparent placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 border border-white/10"/>
-          <svg class="absolute left-3 top-2.5 text-zinc-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3"/></svg>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Stats bar -->
-  <div class="flex flex-wrap items-center gap-3 mb-4">
-    <div class="glass rounded-2xl px-3 py-2 text-xs text-zinc-400 flex items-center gap-2">
-      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-      <span id="statusText">Idle</span>
-    </div>
-    <div class="glass rounded-2xl px-3 py-2 text-xs text-zinc-400">
-      <span id="countText">0 players</span>
-    </div>
-    <div class="glass rounded-2xl px-3 py-2 text-xs text-zinc-400">
-      <span id="updatedText">—</span>
-    </div>
+<body class="min-h-screen bg-[#020617] text-slate-100 antialiased selection:bg-fuchsia-500/30">
+  <!-- Background -->
+  <div class="fixed inset-0 -z-10">
+    <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(139,92,246,.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(56,189,248,.2),transparent_60%),radial-gradient(40%_40%_at_0%_100%,rgba(236,72,153,.15),transparent_60%),#020617]"></div>
+    <div class="absolute inset-0 opacity-[0.03] mix-blend-soft-light" style="background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22 viewBox=%220 0 400 400%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/></filter><rect width=%22400%22 height=%22400%22 filter=%22url(%23n)%22/></svg>')"></div>
   </div>
 
-  <!-- Table -->
-  <div class="glass-strong rounded-[24px] overflow-hidden">
-    <div class="overflow-auto max-h-[68vh] scrollbar-thin" id="tableWrap">
-      <table class="w-full text-sm">
-        <thead class="sticky top-0 z-10 backdrop-blur-xl bg-[#0a0c10]/80 border-b border-white/10">
-          <tr class="text-[11px] uppercase tracking-wider text-zinc-500">
-            <th class="text-left font-medium px-4 py-3 w-14">#</th>
-            <th class="text-left font-medium px-2 py-3">Player</th>
-            <th class="text-left font-medium px-2 py-3">Pos</th>
-            <th class="text-right font-medium px-3 py-3">Value</th>
-            <th class="text-right font-medium px-3 py-3">PPG</th>
-            <th class="text-right font-medium px-3 py-3">7d</th>
-            <th class="text-right font-medium px-3 py-3">30d</th>
-          </tr>
-        </thead>
-        <tbody id="tbody" class="divide-y divide-white/[0.04]">
-          <!-- rows -->
-        </tbody>
-      </table>
-      <div id="loadingRows" class="p-4 space-y-2">
-        <div class="h-12 rounded-xl shimmer bg-white/[0.03]"></div>
-        <div class="h-12 rounded-xl shimmer bg-white/[0.03]"></div>
-        <div class="h-12 rounded-xl shimmer bg-white/[0.03]"></div>
-      </div>
-      <div id="emptyState" class="hidden py-20 text-center">
-        <div class="inline-flex w-12 h-12 rounded-2xl glass items-center justify-center mb-3">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3"/></svg>
+  <div class="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-10">
+    <!-- Header -->
+    <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
+      <div class="flex items-center gap-4">
+        <div class="size-12 rounded-2xl glass-strong border border-white/10 flex items-center justify-center shadow-2xl shadow-fuchsia-500/10">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-fuchsia-400">
+            <path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" stroke="currentColor" stroke-width="1.5" fill="url(#g)"/>
+            <defs><linearGradient id="g" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#e879f9"/><stop offset="1" stop-color="#60a5fa"/></linearGradient></defs>
+          </svg>
         </div>
-        <p class="text-zinc-300 font-medium">No players match your filters</p>
-        <p class="text-sm text-zinc-500 mt-1">Try adjusting position, search or settings.</p>
-      </div>
-      <div id="errorState" class="hidden py-20 text-center px-6">
-        <div class="inline-flex w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/30 items-center justify-center mb-3">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="1.5"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        <div>
+          <h1 class="text-[1.75rem] md:text-3xl font-semibold tracking-tight">Dynasty Rankings</h1>
+          <p class="text-sm text-slate-400 -mt-0.5">RosterAudit • Live values, PPG & movers</p>
         </div>
-        <p class="text-zinc-200 font-medium">Failed to load data</p>
-        <p class="text-sm text-zinc-500 mt-1 max-w-md mx-auto" id="errorMsg">Something went wrong.</p>
-        <button id="retryBtn" class="mt-4 glass hover:bg-white/10 px-4 py-2 rounded-xl text-sm">Retry</button>
       </div>
-    </div>
-  </div>
 
-  <footer class="mt-8 text-center text-[11px] text-zinc-600">
-    Built for dynasty nerds • Data via RosterAudit & Sleeper • <span class="text-zinc-500">Not affiliated</span>
-  </footer>
-</div>
+      <div class="flex items-center gap-3">
+        <div id="statusPill" class="glass border border-white/10 rounded-full px-3 py-1.5 flex items-center gap-2 text-xs font-medium">
+          <span class="size-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="mono">READY</span>
+        </div>
+        <button id="refreshBtn" class="group relative inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 px-4 py-2 text-sm font-medium transition active:scale-[.98]">
+          <svg class="size-4 transition-transform group-active:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1018 0 9 9 0 00-18 0"/><path d="M9 9l-3 3 3 3"/></svg>
+          Refresh
+        </button>
+        <button id="csvBtn" class="inline-flex items-center gap-2 rounded-xl bg-fuchsia-500/20 hover:bg-fuchsia-500/30 border border-fuchsia-500/30 text-fuchsia-200 px-4 py-2 text-sm font-medium transition active:scale-[.98]">
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16v-8M8 12l4 4 4-4"/><path d="M20 16v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2"/></svg>
+          Export CSV
+        </button>
+      </div>
+    </header>
+
+    <!-- Controls -->
+    <section class="glass-strong border border-white/10 rounded-[1.25rem] shadow-2xl shadow-black/40 p-4 md:p-5 mb-6">
+      <div class="flex flex-wrap items-center gap-4">
+        <!-- Format -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs uppercase tracking-wider text-slate-400 font-medium">Format</span>
+          <div class="flex bg-black/30 rounded-xl p-1 border border-white/10">
+            <button data-format="sf" class="toggle-btn px-3 py-1.5 text-sm rounded-lg transition">SF</button>
+            <button data-format="1qb" class="toggle-btn px-3 py-1.5 text-sm rounded-lg transition">1QB</button>
+          </div>
+        </div>
+
+        <!-- Scoring -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs uppercase tracking-wider text-slate-400 font-medium">Scoring</span>
+          <div class="flex bg-black/30 rounded-xl p-1 border border-white/10">
+            <button data-scoring="ppr" class="toggle-btn px-3 py-1.5 text-sm rounded-lg transition">PPR</button>
+            <button data-scoring="half" class="toggle-btn px-3 py-1.5 text-sm rounded-lg transition">Half</button>
+            <button data-scoring="std" class="toggle-btn px-3 py-1.5 text-sm rounded-lg transition">Std</button>
+          </div>
+        </div>
+
+        <!-- TE Premium -->
+        <label class="flex items-center gap-3 cursor-pointer select-none">
+          <span class="text-xs uppercase tracking-wider text-slate-400 font-medium">TE Premium</span>
+          <div class="relative">
+            <input id="tepToggle" type="checkbox" class="sr-only peer">
+            <div class="w-11 h-6 rounded-full bg-black/40 border border-white/10 peer-checked:bg-fuchsia-500/30 transition"></div>
+            <div class="absolute top-0.5 left-0.5 size-5 rounded-full bg-white/90 peer-checked:translate-x-5 transition"></div>
+          </div>
+        </label>
+
+        <div class="h-6 w-px bg-white/10 hidden md:block"></div>
+
+        <!-- Positions -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <button data-pos="All" class="pos-chip px-3 py-1.5 text-sm rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition">All</button>
+          <button data-pos="QB" class="pos-chip px-3 py-1.5 text-sm rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition">QB</button>
+          <button data-pos="RB" class="pos-chip px-3 py-1.5 text-sm rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition">RB</button>
+          <button data-pos="WR" class="pos-chip px-3 py-1.5 text-sm rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition">WR</button>
+          <button data-pos="TE" class="pos-chip px-3 py-1.5 text-sm rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition">TE</button>
+        </div>
+
+        <div class="flex-1 min-w-[200px]">
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4-4"/></svg>
+            <input id="searchInput" placeholder="Search player…" class="w-full pl-9 pr-3 py-2 rounded-xl bg-black/30 border border-white/10 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 transition" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Error Banner -->
+    <div id="errorBanner" class="hidden mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200 flex items-start gap-3">
+      <svg class="size-5 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div class="flex-1">
+        <p class="font-medium">Failed to load data</p>
+        <p id="errorText" class="text-red-200/80 text-xs mt-0.5"></p>
+      </div>
+      <button id="retryBtn" class="text-xs underline hover:no-underline">Retry</button>
+    </div>
+
+    <!-- Table -->
+    <section class="glass border border-white/10 rounded-[1.25rem] overflow-hidden shadow-2xl shadow-black/40">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 z-10 backdrop-blur-xl bg-slate-900/80 border-b border-white/10">
+            <tr class="text-[11px] uppercase tracking-wider text-slate-400">
+              <th class="text-right font-medium px-4 py-3 w-14">#</th>
+              <th class="text-left font-medium px-4 py-3 min-w-[240px]">Player</th>
+              <th class="text-left font-medium px-4 py-3">Pos</th>
+              <th class="text-right font-medium px-4 py-3">Value</th>
+              <th class="text-right font-medium px-4 py-3">PPG</th>
+              <th class="text-right font-medium px-4 py-3">7D</th>
+              <th class="text-right font-medium px-4 py-3">30D</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-white/[0.04]">
+            <!-- rows injected -->
+          </tbody>
+        </table>
+      </div>
+      <div id="tableFooter" class="border-t border-white/10 px-4 py-3 text-xs text-slate-500 flex items-center justify-between">
+        <span id="rowCount">0 players</span>
+        <span class="mono">rosteraudit.com • sleeper.app</span>
+      </div>
+    </section>
+
+    <footer class="mt-10 text-center text-xs text-slate-600">
+      Built with RosterAudit API • Cached locally for speed
+    </footer>
+  </div>
 
 <script>
 (() => {
-  // ---------- Config ----------
-  const PROXIES = [
-    '',
-    'https://api.allorigins.win/raw?url=',
-    'https://corsproxy.io/?',
-    'https://api.codetabs.com/v1/proxy?quest='
-  ];
-  const SLEEPER_PLAYERS = 'https://api.sleeper.app/v1/players/nfl';
-  const RA_BASE = 'https://www.rosteraudit.com';
-  // Endpoints (best-effort, may change)
-  const RA_VALUES = (format, te) => `${RA_BASE}/api/values?format=${format}&tePremium=${te ? '1' : '0'}`;
-  const RA_PPG_BULK = (scoring) => `${RA_BASE}/api/ppg?scoring=${scoring}`;
-  const RA_EMBED = (id) => `${RA_BASE}/embed/player/${id}`;
-
-  const CACHE_TTL = 24 * 60 * 60 * 1000;
-  const EMBED_CACHE_PREFIX = 'ra_embed_ppg_';
-  const SETTINGS_KEY = 'ra_settings_v1';
-
-  // ---------- State ----------
-  const state = {
-    settings: { format: 'sf', scoring: 'ppr', tePremium: false },
-    pos: 'ALL',
+  const STATE = {
+    format: 'sf',
+    scoring: 'ppr',
+    tep: false,
+    position: 'All',
     search: '',
-    players: new Map(), // sleeper_id -> {...}
     rows: [],
-    filtered: [],
     loading: false,
   };
 
-  // ---------- DOM ----------
-  const $ = s => document.querySelector(s);
-  const $$ = s => Array.from(document.querySelectorAll(s));
-  const statusText = $('#statusText');
-  const countText = $('#countText');
-  const updatedText = $('#updatedText');
-  const tbody = $('#tbody');
-  const loadingRows = $('#loadingRows');
-  const emptyState = $('#emptyState');
-  const errorState = $('#errorState');
-  const errorMsg = $('#errorMsg');
-  const searchInput = $('#search');
-  const tePremiumEl = $('#tePremium');
+  const DOM = {
+    statusPill: document.getElementById('statusPill'),
+    tableBody: document.getElementById('tableBody'),
+    rowCount: document.getElementById('rowCount'),
+    searchInput: document.getElementById('searchInput'),
+    refreshBtn: document.getElementById('refreshBtn'),
+    csvBtn: document.getElementById('csvBtn'),
+    tepToggle: document.getElementById('tepToggle'),
+    errorBanner: document.getElementById('errorBanner'),
+    errorText: document.getElementById('errorText'),
+    retryBtn: document.getElementById('retryBtn'),
+  };
 
-  // ---------- Utils ----------
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const fmt = (n, d=1) => n == null || isNaN(n) ? '—' : Number(n).toLocaleString(undefined,{minimumFractionDigits:d, maximumFractionDigits:d});
-  const fmtInt = n => n == null ? '—' : Math.round(n).toLocaleString();
+  // Persistence
+  const SETTINGS_KEY = 'ra_dashboard_settings_v1';
+  function loadSettings() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+      STATE.format = s.format || 'sf';
+      STATE.scoring = s.scoring || 'ppr';
+      STATE.tep = !!s.tep;
+      STATE.position = s.position || 'All';
+      STATE.search = s.search || '';
+    } catch {}
+  }
+  function saveSettings() {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      format: STATE.format,
+      scoring: STATE.scoring,
+      tep: STATE.tep,
+      position: STATE.position,
+      search: STATE.search,
+    }));
+  }
 
-  async function fetchWithProxy(url, opts={}) {
+  // Cache helpers
+  const now = () => Date.now();
+  function getCache(key, maxAgeMs) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const { ts, data } = JSON.parse(raw);
+      if (now() - ts > maxAgeMs) return null;
+      return data;
+    } catch { return null; }
+  }
+  function setCache(key, data) {
+    localStorage.setItem(key, JSON.stringify({ ts: now(), data }));
+  }
+
+  // Proxy fetch
+  async function fetchWithProxy(url, label='') {
+    const proxies = [
+      { name: 'direct', fn: u => u },
+      { name: 'allorigins', fn: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
+      { name: 'corsproxy', fn: u => `https://corsproxy.io/?${encodeURIComponent(u)}` },
+    ];
     let lastErr;
-    for (const p of PROXIES) {
+    for (const p of proxies) {
       try {
-        const u = p ? p + encodeURIComponent(url) : url;
-        const res = await fetch(u, { ...opts, cache:'no-store' });
+        console.log(`[Fetch] ${label} → ${p.name}`);
+        const res = await fetch(p.fn(url), { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res;
-      } catch(e){ lastErr = e; }
+        const ct = res.headers.get('content-type') || '';
+        const data = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
+        console.log(`[Fetch] ${label} ✓ via ${p.name}`);
+        return data;
+      } catch (e) {
+        console.warn(`[Fetch] ${label} ✗ ${p.name}: ${e.message}`);
+        lastErr = e;
+        continue;
+      }
     }
     throw lastErr || new Error('All proxies failed');
   }
 
-  async function fetchJSON(url){ const r = await fetchWithProxy(url); return r.json(); }
-  async function fetchText(url){ const r = await fetchWithProxy(url); return r.text(); }
+  // Endpoints
+  const EP = {
+    sleeperPlayers: 'https://api.sleeper.app/v1/players/nfl',
+    values: (key) => `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${key}`,
+    ppgRankings: 'https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings',
+    movers: 'https://rosteraudit.com/wp-json/ra/v1/movers?limit=200',
+    embed: (id) => `https://rosteraudit.com/wp-json/ra/v1/projections/embed/${id}`,
+  };
 
-  function saveSettings(){
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
-  }
-  function loadSettings(){
-    try {
-      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY)||'');
-      if(s) state.settings = {...state.settings, ...s};
-    } catch {}
-    // UI sync
-    $$('[data-format]').forEach(b=> b.classList.toggle('bg-amber-500/20', b.dataset.format===state.settings.format));
-    $$('[data-scoring]').forEach(b=> b.classList.toggle('bg-amber-500/20', b.dataset.scoring===state.settings.scoring));
-    tePremiumEl.checked = state.settings.tePremium;
-  }
-
-  function setStatus(t){ statusText.textContent = t; }
-  function setCount(n){ countText.textContent = `${n.toLocaleString()} players`; }
-  function setUpdated(){ updatedText.textContent = `Updated ${new Date().toLocaleTimeString()}`; }
-
-  // ---------- PPG embed cache ----------
-  function getEmbedCache(id){
-    try {
-      const raw = localStorage.getItem(EMBED_CACHE_PREFIX+id);
-      if(!raw) return null;
-      const {v, t} = JSON.parse(raw);
-      if(Date.now()-t > CACHE_TTL) return null;
-      return v;
-    } catch { return null; }
-  }
-  function setEmbedCache(id, v){
-    try { localStorage.setItem(EMBED_CACHE_PREFIX+id, JSON.stringify({v, t:Date.now()})); } catch {}
-  }
-
-  // ---------- Parsing ----------
-  function parsePPGFromEmbed(html, scoring){
-    // Try __NEXT_DATA__
-    try {
-      const doc = new DOMParser().parseFromString(html,'text/html');
-      const next = doc.querySelector('#__NEXT_DATA__');
-      if(next){
-        const data = JSON.parse(next.textContent);
-        // Deep search for ppg fields
-        const stack = [data];
-        let found = null;
-        while(stack.length){
-          const cur = stack.pop();
-          if(cur && typeof cur==='object'){
-            if('ppg_ppr' in cur || 'ppg' in cur || 'ppg_std' in cur){
-              found = cur; break;
-            }
-            for(const k in cur) stack.push(cur[k]);
-          }
-        }
-        if(found){
-          return {
-            ppr: found.ppg_ppr ?? found.ppg ?? null,
-            half: found.ppg ?? found.ppg_ppr ?? null,
-            standard: found.ppg_std ?? found.ppg ?? null
-          };
-        }
-      }
-    } catch {}
-    // Fallback regex
-    const rx = /ppg[_ppr]*["']?\s*[:=]\s*([0-9.]+)/gi;
-    const nums = [...html.matchAll(rx)].map(m=>parseFloat(m[1])).filter(n=>!isNaN(n));
-    if(nums.length){
-      const avg = nums.reduce((a,b)=>a+b,0)/nums.length;
-      return {ppr:avg, half:avg, standard:avg};
+  // Status
+  function setStatus(state, msg='') {
+    const dot = DOM.statusPill.querySelector('span');
+    const text = DOM.statusPill.querySelector('span.mono');
+    DOM.statusPill.classList.remove('border-emerald-500/30','border-amber-500/30','border-red-500/30');
+    if (state === 'loading') {
+      dot.className = 'size-2 rounded-full bg-amber-400 animate-pulse';
+      text.textContent = msg || 'LOADING';
+      DOM.statusPill.classList.add('border-amber-500/30');
+    } else if (state === 'error') {
+      dot.className = 'size-2 rounded-full bg-red-500';
+      text.textContent = 'ERROR';
+      DOM.statusPill.classList.add('border-red-500/30');
+    } else {
+      dot.className = 'size-2 rounded-full bg-emerald-400';
+      text.textContent = 'READY';
+      DOM.statusPill.classList.add('border-emerald-500/30');
     }
-    return null;
   }
 
-  // ---------- Concurrency ----------
-  async function pMap(items, fn, concurrency=5){
-    const ret = new Array(items.length);
-    let i=0, active=0;
-    return new Promise((resolve, reject)=>{
-      const next=()=>{ 
-        if(i>=items.length && active===0) return resolve(ret);
-        while(active<concurrency && i<items.length){
-          const idx=i++;
-          active++;
-          Promise.resolve(fn(items[idx], idx))
-            .then(v=>ret[idx]=v)
-            .catch(e=>ret[idx]={error:e})
-            .finally(()=>{active--; next();});
-        }
-      };
-      next();
-    });
-  }
+  // Data loading
+  async function loadData(force=false) {
+    if (STATE.loading) return;
+    STATE.loading = true;
+    setStatus('loading','INITIALIZING');
+    DOM.errorBanner.classList.add('hidden');
+    DOM.refreshBtn.disabled = true;
+    DOM.refreshBtn.classList.add('opacity-60','cursor-not-allowed');
 
-  // ---------- Data Load ----------
-  async function loadAll(){
-    if(state.loading) return;
-    state.loading=true;
-    errorState.classList.add('hidden');
-    emptyState.classList.add('hidden');
-    loadingRows.classList.remove('hidden');
-    tbody.innerHTML='';
     try {
-      setStatus('Loading Sleeper players…');
-      const sleeperRaw = await fetchJSON(SLEEPER_PLAYERS);
-      state.players.clear();
-      Object.entries(sleeperRaw).forEach(([id,p])=>{
-        if(!p || !p.position || !['QB','RB','WR','TE'].includes(p.position)) return;
-        if(p.team===null && p.status!=='Active') return;
-        state.players.set(id, {
-          sleeper_id:id,
-          name: `${p.first_name||''} ${p.last_name||''}`.trim() || p.full_name || 'Unknown',
-          pos:p.position,
-          team:p.team||'FA',
-          age:p.age||null
-        });
-      });
-
-      setStatus('Loading values…');
-      const vUrl = RA_VALUES(state.settings.format, state.settings.tePremium);
-      let valuesRaw = [];
-      try { valuesRaw = await fetchJSON(vUrl); } catch { valuesRaw = []; }
-
-      // Normalize values
-      const valuesMap = new Map();
-      // Expect array of {player_id or sleeper_id, value, trend_7d, trend_30d, full_name...}
-      if(Array.isArray(valuesRaw)){
-        valuesRaw.forEach(v=>{
-          const id = v.sleeper_id || v.player_id || v.id;
-          if(!id) return;
-          valuesMap.set(String(id), {
-            value: v.value ?? v.dynasty_value ?? null,
-            trend7: v.trend_7d ?? v.delta7 ?? null,
-            trend30: v.trend_30d ?? v.delta30 ?? null
-          });
-        });
+      // 1. Sleeper players
+      setStatus('loading','PLAYERS');
+      const PLAYER_CACHE_KEY = 'ra_cache_players';
+      let players = !force ? getCache(PLAYER_CACHE_KEY, 24*60*60*1000) : null;
+      if (!players) {
+        console.log('[Phase] Fetching Sleeper players');
+        players = await fetchWithProxy(EP.sleeperPlayers, 'sleeper_players');
+        setCache(PLAYER_CACHE_KEY, players);
+      } else {
+        console.log('[Cache] Sleeper players hit');
       }
 
-      setStatus('Loading PPG…');
-      const scoringKey = state.settings.scoring;
-      const ppgUrl = RA_PPG_BULK(scoringKey);
-      let ppgBulk = [];
-      try { ppgBulk = await fetchJSON(ppgUrl); } catch { ppgBulk = []; }
+      const playersMap = players; // object keyed by id
+
+      // 2. Values
+      setStatus('loading','VALUES');
+      const formatKey = `${STATE.format}_${STATE.scoring}${STATE.tep ? '_tep' : ''}`;
+      const VALUES_CACHE_KEY = `ra_cache_values_${formatKey}`;
+      let valuesResp = !force ? getCache(VALUES_CACHE_KEY, 60*60*1000) : null;
+      if (!valuesResp) {
+        console.log('[Phase] Fetching values', formatKey);
+        valuesResp = await fetchWithProxy(EP.values(formatKey), 'values');
+        setCache(VALUES_CACHE_KEY, valuesResp);
+      }
+
+      // Normalize values to array
+      const valuesArr = Array.isArray(valuesResp) ? valuesResp
+        : (valuesResp.data || valuesResp.players || valuesResp.values || Object.values(valuesResp));
+
+      // 3. PPG rankings
+      setStatus('loading','PPG');
+      const PPG_CACHE_KEY = 'ra_cache_ppg';
+      let ppgResp = !force ? getCache(PPG_CACHE_KEY, 60*60*1000) : null;
+      if (!ppgResp) {
+        console.log('[Phase] Fetching PPG rankings');
+        ppgResp = await fetchWithProxy(EP.ppgRankings, 'ppg');
+        setCache(PPG_CACHE_KEY, ppgResp);
+      }
+      const ppgArr = Array.isArray(ppgResp) ? ppgResp : (ppgResp.data || Object.values(ppgResp));
       const ppgMap = new Map();
-      if(Array.isArray(ppgBulk)){
-        ppgBulk.forEach(p=>{
-          const id = p.sleeper_id || p.player_id || p.id;
-          const val = p.ppg ?? p.ppg_ppr ?? p.ppg_std ?? p.points;
-          if(id && val!=null) ppgMap.set(String(id), Number(val));
+      for (const p of ppgArr) {
+        const id = p.sleeper_id || p.player_id || p.id;
+        const val = p.ppg || p.value || p.projected_ppg || p.avg;
+        if (id) ppgMap.set(String(id), Number(val) || null);
+      }
+
+      // 4. Movers
+      setStatus('loading','MOVERS');
+      const MOVERS_CACHE_KEY = 'ra_cache_movers';
+      let moversResp = !force ? getCache(MOVERS_CACHE_KEY, 60*60*1000) : null;
+      if (!moversResp) {
+        console.log('[Phase] Fetching movers');
+        moversResp = await fetchWithProxy(EP.movers, 'movers');
+        setCache(MOVERS_CACHE_KEY, moversResp);
+      }
+      const moversArr = Array.isArray(moversResp) ? moversResp : (moversResp.data || []);
+      const moversMap = new Map();
+      for (const m of moversArr) {
+        const id = m.sleeper_id || m.player_id || m.id;
+        if (id) moversMap.set(String(id), {
+          d7: m.change_7d ?? m['7d'] ?? m.week ?? 0,
+          d30: m.change_30d ?? m['30d'] ?? m.month ?? 0,
         });
       }
 
-      // Merge
-      const merged = [];
-      state.players.forEach((p,id)=>{
-        const vm = valuesMap.get(id) || {};
-        const base = {
-          ...p,
-          value: vm.value ?? null,
-          trend7: vm.trend7 ?? null,
-          trend30: vm.trend30 ?? null,
-          ppg: ppgMap.has(id) ? ppgMap.get(id) : null
-        };
-        if(base.value!=null) merged.push(base);
-      });
-
-      // Sort by value desc to pick top missing
-      merged.sort((a,b)=>(b.value??0)-(a.value??0));
-
-      // Identify missing PPG top 100
-      const missing = merged.filter(m=>m.ppg==null).slice(0,100);
-      if(missing.length){
-        setStatus(`Filling missing PPG from embed (0/${missing.length})…`);
-        let done=0;
-        await pMap(missing, async (pl)=>{
-          const cached = getEmbedCache(pl.sleeper_id);
-          if(cached){
-            const val = cached[state.settings.scoring] ?? cached.ppr ?? null;
-            pl.ppg = val;
-            done++;
-            setStatus(`Filling missing PPG from embed (${done}/${missing.length})…`);
-            return;
-          }
-          try{
-            const html = await fetchText(RA_EMBED(pl.sleeper_id));
-            const parsed = parsePPGFromEmbed(html, state.settings.scoring);
-            if(parsed){
-              setEmbedCache(pl.sleeper_id, parsed);
-              pl.ppg = parsed[state.settings.scoring] ?? parsed.ppr ?? null;
-            }
-          }catch{}
-          done++;
-          setStatus(`Filling missing PPG from embed (${done}/${missing.length})…`);
-        }, 5);
+      // Build rows
+      setStatus('loading','MERGING');
+      const rows = [];
+      for (const v of valuesArr) {
+        const id = String(v.sleeper_id || v.player_id || v.id || v.sleeperId || '');
+        if (!id) continue;
+        const p = playersMap[id];
+        if (!p) continue;
+        const pos = p.position || v.position || '';
+        if (!['QB','RB','WR','TE'].includes(pos)) continue;
+        const name = p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || v.name || 'Unknown';
+        const team = p.team || v.team || '';
+        const value = Number(v.value ?? v.dynasty_value ?? v.rank_value ?? 0) || 0;
+        const ppg = ppgMap.get(id) ?? null;
+        const mover = moversMap.get(id) || { d7:0, d30:0 };
+        rows.push({
+          id, name, pos, team, value, ppg,
+          d7: Number(mover.d7)||0,
+          d30: Number(mover.d30)||0,
+          search: `${name} ${team} ${pos}`.toLowerCase(),
+        });
       }
 
-      state.rows = merged;
-      setUpdated();
-      setStatus('Ready');
-      applyFilters();
-    } catch(e){
-      setStatus('Error');
-      errorMsg.textContent = e.message || 'Failed to fetch data. RosterAudit may be blocking or rate limiting.';
-      errorState.classList.remove('hidden');
+      // Sort by value desc
+      rows.sort((a,b)=> b.value - a.value);
+
+      STATE.rows = rows;
+      console.log(`[Data] Built ${rows.length} rows`);
+
+      // Fill missing PPG for top 100
+      await fillMissingPPG(rows);
+
+      render();
+      setStatus('ready');
+    } catch (err) {
+      console.error(err);
+      setStatus('error');
+      DOM.errorText.textContent = err.message || String(err);
+      DOM.errorBanner.classList.remove('hidden');
     } finally {
-      loadingRows.classList.add('hidden');
-      state.loading=false;
+      STATE.loading = false;
+      DOM.refreshBtn.disabled = false;
+      DOM.refreshBtn.classList.remove('opacity-60','cursor-not-allowed');
     }
   }
 
-  // ---------- Filter / Render ----------
-  function applyFilters(){
-    const q = state.search.trim().toLowerCase();
-    const pos = state.pos;
-    let out = state.rows;
-    if(pos!=='ALL') out = out.filter(r=>r.pos===pos);
-    if(q) out = out.filter(r=>r.name.toLowerCase().includes(q) || r.team.toLowerCase().includes(q));
-    // Sort by value desc
-    out = out.slice().sort((a,b)=>(b.value??0)-(a.value??0));
-    state.filtered = out;
-    renderTable();
+  // Fill missing PPG via embed
+  async function fillMissingPPG(rows) {
+    const EMBED_CACHE_KEY = 'ra_cache_embed_map';
+    let embedCache = getCache(EMBED_CACHE_KEY, 24*60*60*1000) || {};
+    const need = rows
+      .filter(r => r.value > 0 && (r.ppg === null || r.ppg === 0))
+      .sort((a,b)=> b.value - a.value)
+      .slice(0, 100);
+
+    if (need.length === 0) return;
+
+    console.log(`[Phase] Filling missing PPG for ${need.length} players`);
+    setStatus('loading', `PPG EMBED 0/${need.length}`);
+
+    const concurrency = 5;
+    let idx = 0;
+    let done = 0;
+
+    async function worker() {
+      while (idx < need.length) {
+        const i = idx++;
+        const row = need[i];
+        const id = row.id;
+        try {
+          if (embedCache[id] && typeof embedCache[id].ppg === 'number') {
+            row.ppg = embedCache[id].ppg;
+          } else {
+            const data = await fetchWithProxy(EP.embed(id), `embed_${id}`);
+            // Try to extract ppg
+            const ppg = Number(data.ppg ?? data.projected_ppg ?? data.avg_ppg ?? data?.projections?.ppg ?? 0) || null;
+            embedCache[id] = { ppg, ts: now() };
+            row.ppg = ppg;
+            setCache(EMBED_CACHE_KEY, embedCache);
+          }
+        } catch (e) {
+          console.warn('Embed fail', id, e.message);
+          row.ppg = row.ppg ?? null;
+        }
+        done++;
+        setStatus('loading', `PPG EMBED ${done}/${need.length}`);
+        // modest yield to UI
+        if (done % 10 === 0) await new Promise(r => setTimeout(r, 0));
+      }
+    }
+
+    await Promise.all(Array.from({length: concurrency}, () => worker()));
+    console.log('[Phase] Embed fill complete');
   }
 
-  function renderTable(){
-    const rows = state.filtered.slice(0,500);
-    setCount(state.filtered.length);
-    if(rows.length===0){
-      tbody.innerHTML='';
-      emptyState.classList.remove('hidden');
-      return;
-    }
-    emptyState.classList.add('hidden');
+  // Rendering
+  function render() {
+    // Update controls UI
+    document.querySelectorAll('[data-format]').forEach(b=>{
+      b.classList.toggle('bg-white/15', b.dataset.format === STATE.format);
+      b.classList.toggle('text-white', b.dataset.format === STATE.format);
+      b.classList.toggle('text-slate-300', b.dataset.format !== STATE.format);
+    });
+    document.querySelectorAll('[data-scoring]').forEach(b=>{
+      b.classList.toggle('bg-white/15', b.dataset.scoring === STATE.scoring);
+      b.classList.toggle('text-white', b.dataset.scoring === STATE.scoring);
+      b.classList.toggle('text-slate-300', b.dataset.scoring !== STATE.scoring);
+    });
+    DOM.tepToggle.checked = STATE.tep;
+    document.querySelectorAll('.pos-chip').forEach(b=>{
+      const active = b.dataset.pos === STATE.position;
+      b.classList.toggle('bg-fuchsia-500/20', active);
+      b.classList.toggle('border-fuchsia-500/40', active);
+      b.classList.toggle('text-fuchsia-200', active);
+    });
+    DOM.searchInput.value = STATE.search;
+
+    // Filter
+    const q = STATE.search.trim().toLowerCase();
+    let filtered = STATE.rows;
+    if (STATE.position !== 'All') filtered = filtered.filter(r => r.pos === STATE.position);
+    if (q) filtered = filtered.filter(r => r.search.includes(q));
+
+    // Render rows
     const frag = document.createDocumentFragment();
-    rows.forEach((r,i)=>{
+    filtered.slice(0, 500).forEach((r, i) => {
       const tr = document.createElement('tr');
       tr.className = 'hover:bg-white/[0.03] transition';
       tr.innerHTML = `
-        <td class="px-4 py-3 text-zinc-500 font-medium">${i+1}</td>
-        <td class="px-2 py-3">
+        <td class="text-right px-4 py-2.5 text-slate-500 mono">${i+1}</td>
+        <td class="px-4 py-2.5">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-xl glass flex items-center justify-center text-[10px] font-semibold text-zinc-400">${r.team}</div>
-            <div>
-              <div class="font-medium text-zinc-100 leading-tight">${escapeHtml(r.name)}</div>
-              <div class="text-[11px] text-zinc-500">${r.age? r.age+' y':'—'}</div>
+            <img src="https://sleepercdn.com/content/nfl/players/thumb/${r.id}.jpg" onerror="this.style.display='none'" class="size-9 rounded-xl bg-black/40 border border-white/10 object-cover"/>
+            <div class="min-w-0">
+              <div class="font-medium leading-tight truncate">${escapeHtml(r.name)}</div>
+              <div class="text-xs text-slate-500">${r.team||'FA'} • #${r.id.slice(0,4)}</div>
             </div>
           </div>
         </td>
-        <td class="px-2 py-3">
-          <span class="pos-${r.pos} inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold">${r.pos}</span>
+        <td class="px-4 py-2.5">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium border ${posClass(r.pos)}">${r.pos}</span>
         </td>
-        <td class="px-3 py-3 text-right font-semibold text-white">${fmtInt(r.value)}</td>
-        <td class="px-3 py-3 text-right text-zinc-300">${fmt(r.ppg,1)}</td>
-        <td class="px-3 py-3 text-right">${trendCell(r.trend7)}</td>
-        <td class="px-3 py-3 text-right">${trendCell(r.trend30)}</td>
+        <td class="text-right px-4 py-2.5 mono font-medium">${r.value ? r.value.toLocaleString() : '—'}</td>
+        <td class="text-right px-4 py-2.5 mono">${r.ppg ? r.ppg.toFixed(1) : '—'}</td>
+        <td class="text-right px-4 py-2.5 mono ${deltaClass(r.d7)}">${fmtDelta(r.d7)}</td>
+        <td class="text-right px-4 py-2.5 mono ${deltaClass(r.d30)}">${fmtDelta(r.d30)}</td>
       `;
       frag.appendChild(tr);
     });
-    tbody.innerHTML='';
-    tbody.appendChild(frag);
+    DOM.tableBody.innerHTML = '';
+    DOM.tableBody.appendChild(frag);
+    DOM.rowCount.textContent = `${filtered.length.toLocaleString()} players • ${STATE.rows.length.toLocaleString()} total`;
   }
 
-  function trendCell(v){
-    if(v==null || isNaN(v)) return `<span class="text-zinc-600">—</span>`;
-    const up = v>0;
-    const down = v<0;
-    const cls = up ? 'text-emerald-400' : down ? 'text-rose-400' : 'text-zinc-500';
-    const arrow = up ? '▲' : down ? '▼' : '•';
-    return `<span class="${cls} tabular-nums">${arrow} ${Math.abs(v).toFixed(0)}</span>`;
+  function posClass(pos) {
+    switch(pos) {
+      case 'QB': return 'border-sky-500/30 bg-sky-500/10 text-sky-300';
+      case 'RB': return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300';
+      case 'WR': return 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300';
+      case 'TE': return 'border-amber-500/30 bg-amber-500/10 text-amber-300';
+      default: return 'border-white/10 bg-white/5 text-slate-300';
+    }
   }
-  function escapeHtml(s){ return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function deltaClass(v){ return v>0?'text-emerald-400': v<0?'text-red-400':'text-slate-500'; }
+  function fmtDelta(v){
+    if (!v) return '—';
+    const s = v>0?'+':'';
+    return `${s}${Number(v).toFixed(1)}`;
+  }
+  function escapeHtml(s){ return s.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-  // ---------- Events ----------
-  $$('[data-format]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      state.settings.format = btn.dataset.format;
-      $$('[data-format]').forEach(b=>b.classList.toggle('bg-amber-500/20', b===btn));
-      saveSettings(); loadAll();
-    });
-  });
-  $$('[data-scoring]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      state.settings.scoring = btn.dataset.scoring;
-      $$('[data-scoring]').forEach(b=>b.classList.toggle('bg-amber-500/20', b===btn));
-      saveSettings(); loadAll();
-    });
-  });
-  tePremiumEl.addEventListener('change',()=>{
-    state.settings.tePremium = tePremiumEl.checked;
-    saveSettings(); loadAll();
-  });
+  // CSV export
+  function exportCSV() {
+    const q = STATE.search.trim().toLowerCase();
+    let filtered = STATE.rows;
+    if (STATE.position !== 'All') filtered = filtered.filter(r => r.pos === STATE.position);
+    if (q) filtered = filtered.filter(r => r.search.includes(q));
 
-  $$('.pos-chip').forEach(ch=>{
-    ch.addEventListener('click',()=>{
-      state.pos = ch.dataset.pos;
-      $$('.pos-chip').forEach(c=>c.classList.remove('bg-amber-500/20','border-amber-500/40'));
-      ch.classList.add('bg-amber-500/20','border-amber-500/40');
-      applyFilters();
+    const headers = ['Rank','Player','Pos','Team','Value','PPG','7D','30D','SleeperID'];
+    const lines = [headers.join(',')];
+    filtered.forEach((r,i)=>{
+      const row = [
+        i+1,
+        `"${r.name.replace(/"/g,'""')}"`,
+        r.pos,
+        r.team||'',
+        r.value||'',
+        r.ppg? r.ppg.toFixed(2):'',
+        r.d7||'',
+        r.d30||'',
+        r.id
+      ];
+      lines.push(row.join(','));
     });
-  });
-  // default active
-  document.querySelector('.pos-chip[data-pos="ALL"]').classList.add('bg-amber-500/20','border-amber-500/40');
+    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `rosteraudit_${STATE.format}_${STATE.scoring}${STATE.tep?'_tep':''}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
 
-  let searchTO;
-  searchInput.addEventListener('input',()=>{
-    clearTimeout(searchTO);
-    searchTO = setTimeout(()=>{
-      state.search = searchInput.value;
-      applyFilters();
+  // Events
+  document.querySelectorAll('[data-format]').forEach(b=> b.addEventListener('click',()=>{
+    STATE.format = b.dataset.format;
+    saveSettings();
+    loadData();
+  }));
+  document.querySelectorAll('[data-scoring]').forEach(b=> b.addEventListener('click',()=>{
+    STATE.scoring = b.dataset.scoring;
+    saveSettings();
+    loadData();
+  }));
+  DOM.tepToggle.addEventListener('change', e=>{
+    STATE.tep = e.target.checked;
+    saveSettings();
+    loadData();
+  });
+  document.querySelectorAll('.pos-chip').forEach(b=> b.addEventListener('click',()=>{
+    STATE.position = b.dataset.pos;
+    saveSettings();
+    render();
+  }));
+  let searchDebounce;
+  DOM.searchInput.addEventListener('input', e=>{
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(()=>{
+      STATE.search = e.target.value;
+      saveSettings();
+      render();
     }, 200);
   });
-
-  $('#refreshBtn').addEventListener('click', loadAll);
-  $('#retryBtn').addEventListener('click', loadAll);
-  $('#exportBtn').addEventListener('click', ()=>{
-    const rows = [['Rank','Player','Pos','Team','Age','Value','PPG','7d','30d']];
-    state.filtered.slice(0,500).forEach((r,i)=>{
-      rows.push([i+1,r.name,r.pos,r.team,r.age??'',r.value??'',r.ppg??'',r.trend7??'',r.trend30??'']);
-    });
-    const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv],{type:'text/csv'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `rosteraudit_dynasty_${state.settings.format}_${state.settings.scoring}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  });
+  DOM.refreshBtn.addEventListener('click', ()=> loadData(true));
+  DOM.retryBtn.addEventListener('click', ()=> loadData(true));
+  DOM.csvBtn.addEventListener('click', exportCSV);
 
   // Init
   loadSettings();
-  loadAll();
+  render();
+  loadData();
 })();
 </script>
 </body>
