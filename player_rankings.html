@@ -130,9 +130,7 @@
               <th class="text-left font-semibold px-4 py-3 w-[80px]">Pos</th>
               <th class="text-right font-semibold px-4 py-3 w-[110px]">Value</th>
               <th class="text-right font-semibold px-4 py-3 w-[90px]">PPG</th>
-              <th class="text-right font-semibold px-4 py-3 w-[90px]">7D</th>
-              <th class="text-right font-semibold px-4 py-3 w-[90px]">30D</th>
-            </tr>
+              </tr>
           </thead>
           <tbody id="tableBody" class="divide-y divide-white/[0.04]">
             <!-- rows injected -->
@@ -357,9 +355,7 @@
           age: calcAge(pl.birth_date),
           number: pl.number || null,
           value,
-          ppg: ppgMap[id] ?? null,
-          trend_7d: moversMap[id]?.trend_7d ?? null,
-          trend_30d: moversMap[id]?.trend_30d ?? null
+          ppg: ppgMap[id] ?? null
         });
       }
       merged.sort((a,b) => b.value - a.value);
@@ -409,10 +405,11 @@
 
   function buildPpgMap(raw) {
     const map = {};
-    if(Array.isArray(raw)) {
-      raw.forEach(r => {
+    const arr = Array.isArray(raw) ? raw : (raw?.rankings || raw?.data || raw?.players || []);
+    if(Array.isArray(arr)) {
+      arr.forEach(r => {
         const id = r.sleeper_id || r.player_id || r.id;
-        const v = r.ppg ?? r.fantasy_points_per_game ?? r.points_per_game ?? r.avg ?? null;
+        const v = r.ppg ?? r.fantasy_points_per_game ?? r.points_per_game ?? r.avg ?? r.ppg_ppr ?? r.ppg_half ?? r.ppg_std ?? null;
         if(id && v!=null) map[id] = +v;
       });
     } else if(raw && typeof raw === 'object') {
@@ -456,8 +453,6 @@
     }
     emptyState.classList.add('hidden');
     const html = rows.slice(0, 500).map(p => {
-      const trend7 = formatTrend(p.trend_7d);
-      const trend30 = formatTrend(p.trend_30d);
       return `
       <tr class="hover:bg-white/[0.02] transition">
         <td class="px-4 py-3 align-middle">
@@ -483,8 +478,6 @@
           <span class="font-semibold tabular-nums text-amber-300">${formatNumber(p.value)}</span>
         </td>
         <td class="px-4 py-3 align-middle text-right tabular-nums text-zinc-300">${p.ppg != null ? p.ppg.toFixed(1) : '—'}</td>
-        <td class="px-4 py-3 align-middle text-right">${trend7}</td>
-        <td class="px-4 py-3 align-middle text-right">${trend30}</td>
       </tr>
       `;
     }).join('');
@@ -521,7 +514,7 @@
     let rows = state.players;
     if(state.pos !== 'All') rows = rows.filter(p => p.pos === state.pos);
     if(q) rows = rows.filter(p => p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
-    const header = ['Rank','Player','Team','Pos','Age','Number','Value','PPG','7D','30D'];
+    const header = ['Rank','Player','Team','Pos','Age','Number','Value','PPG'];
     const csv = [header.join(',')].concat(rows.map(p => [
       p.rank,
       `"${p.name.replace(/"/g,'""')}"`,
@@ -530,9 +523,7 @@
       p.age ?? '',
       p.number ?? '',
       p.value,
-      p.ppg ?? '',
-      p.trend_7d ?? '',
-      p.trend_30d ?? ''
+      p.ppg ?? ''
     ].join(','))).join('\n');
     const blob = new Blob([csv], {type:'text/csv'});
     const url = URL.createObjectURL(blob);
