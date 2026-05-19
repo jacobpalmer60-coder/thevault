@@ -3,644 +3,518 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RosterAudit • Dynasty Rankings</title>
+<title>Dynasty Rankings • RosterAudit Pro</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Space Grotesk', 'Inter', 'sans-serif']
-      },
-      colors: {
-        amberRA: '#fbbf24'
-      },
-      boxShadow: {
-        glass: '0 0 0 1px rgba(255,255,255,0.08) inset, 0 8px 32px rgba(0,0,0,0.35)'
-      }
-    }
-  }
-}
-</script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <style>
-* { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-.glass { backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); }
+:root { color-scheme: dark; }
+html { font-family: 'Inter', system-ui, sans-serif; }
+.font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+body {
+  background: #030308;
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(245,158,11,0.18), transparent 60%),
+    radial-gradient(900px 500px at -10% 20%, rgba(245,158,11,0.12), transparent 60%),
+    radial-gradient(700px 400px at 50% 120%, rgba(245,158,11,0.08), transparent 60%),
+    #030308;
+  z-index: -2;
+}
+.noise::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+  z-index: -1;
+}
+.glass {
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+.glass-strong {
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.12);
+}
 .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
 .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.20); }
+.pos-qb { background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.35); }
+.pos-rb { background: rgba(34,197,94,0.15); color: #86efac; border-color: rgba(34,197,94,0.35); }
+.pos-wr { background: rgba(59,130,246,0.15); color: #93c5fd; border-color: rgba(59,130,246,0.35); }
+.pos-te { background: rgba(168,85,247,0.15); color: #d8b4fe; border-color: rgba(168,85,247,0.35); }
+.pos-other { background: rgba(245,158,11,0.15); color: #fcd34d; border-color: rgba(245,158,11,0.35); }
+.toggle-track { transition: all .2s ease; }
+.toggle-thumb { transition: all .2s ease; }
+input:checked + .toggle-track { background: rgb(245 158 11); }
+input:checked + .toggle-track .toggle-thumb { transform: translateX(100%); }
 </style>
 </head>
-<body class="min-h-screen bg-[#020617] text-slate-100 font-sans selection:bg-amber-400/20 selection:text-amber-200">
-<!-- Background -->
-<div class="fixed inset-0 -z-10 overflow-hidden">
-  <div class="absolute inset-0 bg-[#020617]"></div>
-  <div class="absolute -top-[40%] left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] rounded-full opacity-[0.18] blur-3xl" style="background: radial-gradient(circle at center, #f59e0b 0%, #fb923c 25%, transparent 70%);"></div>
-  <div class="absolute top-[10%] -left-[20%] w-[800px] h-[800px] rounded-full opacity-[0.12] blur-3xl" style="background: radial-gradient(circle at center, #fbbf24 0%, transparent 70%);"></div>
-  <div class="absolute bottom-[-30%] right-[-20%] w-[900px] h-[900px] rounded-full opacity-[0.10] blur-3xl" style="background: radial-gradient(circle at center, #ea580c 0%, transparent 70%);"></div>
-  <div class="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] opacity-[0.04]"></div>
-</div>
+<body class="noise text-zinc-200 antialiased">
+<div class="max-w-[1200px] mx-auto px-4 md:px-6 py-8 md:py-12">
 
-<div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
   <!-- Header -->
-  <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+  <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
     <div class="flex items-center gap-4">
-      <div class="size-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-lg shadow-amber-500/25 flex items-center justify-center font-display font-bold text-slate-900 text-xl tracking-tight">RA</div>
+      <div class="size-12 rounded-2xl glass-strong flex items-center justify-center shadow-[0_0_40px_rgba(245,158,11,0.35)]">
+        <span class="font-display font-bold text-amber-300 text-xl tracking-tight">RA</span>
+      </div>
       <div>
-        <h1 class="font-display text-2xl sm:text-[28px] font-semibold leading-tight tracking-tight">Dynasty Rankings</h1>
-        <p class="text-sm text-slate-400 flex items-center gap-2 mt-0.5">
-          <span class="inline-flex items-center gap-1.5">
-            <span class="size-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            Live from Google Sheet
-          </span>
-          <span class="hidden sm:inline text-slate-600">•</span>
-          <span class="hidden sm:inline">RosterAudit Pro</span>
-        </p>
+        <h1 class="font-display text-[28px] md:text-[32px] leading-tight font-semibold text-white">Dynasty Rankings</h1>
+        <p class="text-sm text-zinc-400 -mt-0.5">Live from Google Sheet • <span class="text-amber-400 font-medium">RosterAudit Pro</span></p>
       </div>
     <div class="flex items-center gap-3">
-      <button id="exportBtn" class="h-10 px-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition flex items-center gap-2">
+      <button id="exportBtn" class="glass hover:bg-white/10 transition px-4 h-10 rounded-xl text-sm font-medium flex items-center gap-2">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export CSV
       </button>
-      <button id="settingsToggle" class="h-10 px-3.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-200 text-sm font-medium transition flex items-center gap-2">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 0 0 1-2.03-2.53L12 17l-1.45-.22a1.65 1.65 0 0 1-2.03 2.53 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 0 0 0 .33-1.82 1.65 0 0 1 0-2.06 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06c.51 1.24.64 1.82.33A1.65 0 0 1 9 6.35V6a2 2 0 0 1 4 0v.35c.22.34.52.63.88.85a1.65 0 0 1 2.03-2.53c.58.31 1.31.18 1.82-.33l.06-.06a2 2 0 1 1 2.83l-.06.06c-.51.51-.64 1.24-.33 1.82A1.65 0 0 1 19.4 15z"/></svg>
-        Settings
+      <button id="settingsBtn" class="glass hover:bg-white/10 transition size-10 rounded-xl flex items-center justify-center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 1-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 1-1-1.51 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 0 0 0 .33-1.82 1.65 0 0 1-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 1 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 1 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 1 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 1 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 1-1.51 1z"/></svg>
       </button>
     </div>
   </header>
 
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-    <div class="glass rounded-2xl border border-white/10 bg-white/[0.04] shadow-glass p-4">
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Players</p>
-          <p id="statPlayers" class="font-display text-2xl font-semibold mt-1">—</p>
-        </div>
-        <div class="size-9 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center text-sky-300">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </div>
-      </div>
-      <p class="text-xs text-slate-500 mt-2">Total in view</p>
+  <!-- Stats -->
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="glass rounded-2xl p-4">
+      <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium mb-1">Players</div>
+      <div id="statPlayers" class="font-display text-3xl font-semibold text-white">—</div>
+      <div class="text-xs text-zinc-500 mt-1">in current view</div>
     </div>
-    <div class="glass rounded-2xl border border-white/10 bg-white/[0.04] shadow-glass p-4">
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Avg Value</p>
-          <p id="statAvgVal" class="font-display text-2xl font-semibold mt-1">—</p>
-        </div>
-        <div class="size-9 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-300">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
-        </div>
-      </div>
-      <p class="text-xs text-slate-500 mt-2">Dynasty market</p>
+    <div class="glass rounded-2xl p-4">
+      <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium mb-1">Avg Value</div>
+      <div id="statValue" class="font-display text-3xl font-semibold text-white">—</div>
+      <div class="text-xs text-zinc-500 mt-1">dynasty value</div>
     </div>
-    <div class="glass rounded-2xl border border-white/10 bg-white/[0.04] shadow-glass p-4">
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Avg PPG</p>
-          <p id="statAvgPPG" class="font-display text-2xl font-semibold mt-1">—</p>
-        </div>
-        <div class="size-9 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-300">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        </div>
-      </div>
-      <p class="text-xs text-slate-500 mt-2">2025 projection</p>
+    <div class="glass rounded-2xl p-4">
+      <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium mb-1">Avg PPG</div>
+      <div id="statPPG" class="font-display text-3xl font-semibold text-white">—</div>
+      <div class="text-xs text-zinc-500 mt-1">fantasy points</div>
     </div>
-    <div class="glass rounded-2xl border border-white/10 bg-white/[0.04] shadow-glass p-4">
-      <div class="flex items-start justify-between">
-        <div>
-          <p class="text-xs uppercase tracking-wider text-slate-400 font-medium">Last Updated</p>
-          <p id="statUpdated" class="font-display text-lg font-semibold mt-1 truncate">—</p>
-        </div>
-        <div class="size-9 rounded-xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center text-orange-300">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
-      <p id="statFetched" class="text-xs text-slate-500 mt-2">Never fetched</p>
+    <div class="glass rounded-2xl p-4">
+      <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium mb-1">Last Updated</div>
+      <div id="statUpdated" class="font-display text-2xl font-semibold text-white">—</div>
+      <div class="text-xs text-zinc-500 mt-1">auto-synced</div>
     </div>
-  </div>
+  </section>
 
-  <!-- Settings Panel -->
-  <div id="settingsPanel" class="hidden mb-6 glass rounded-2xl border border-white/10 bg-white/[0.04] shadow-glass p-5">
-    <div class="grid md:grid-cols-[1fr_auto] gap-5 items-end">
-      <div>
-        <label class="block text-xs uppercase tracking-wider text-slate-400 font-medium mb-2">Google Sheet CSV URL</label>
-        <div class="flex gap-2">
-          <input id="csvUrlInput" type="url" class="w-full h-11 px-3.5 rounded-xl bg-black/30 border border-white/10 focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-sm placeholder-slate-500" />
-          <button id="saveUrlBtn" class="h-11 px-4 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-sm font-medium">Save</button>
-        </div>
-        <p class="text-xs text-slate-500 mt-2">Changing URL will trigger immediate refresh. Must be pub?output=csv.</p>
-      </div>
-      <div class="text-xs text-slate-500">
-        <p class="font-medium text-slate-400 mb-1">Columns expected:</p>
-        <code class="text-[11px] bg-black/40 border border-white/10 rounded-lg px-2 py-1 inline-block">sleeper_id, name, team, pos, age, number, value, ppg, ppg_source, last_updated</code>
-      </div>
-    </div>
-  </div>
-
-  <!-- Control Bar -->
-  <div class="glass rounded-2xl border border-white/10 bg-white/[0.04] shadow-glass p-4 sm:p-5 mb-6">
-    <div class="flex flex-col lg:flex-row gap-4">
-      <!-- Search -->
-      <div class="flex-1 min-w-0">
-        <div class="relative">
-          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="searchInput" placeholder="Search player, team..." class="w-full h-11 pl-10 pr-3.5 rounded-xl bg-black/30 border border-white/10 focus:outline-none focus:ring-2 focus:ring-amber-500/50 text-sm placeholder-slate-500" />
-        </div>
-      </div>
+  <!-- Controls -->
+  <section class="glass-strong rounded-[20px] p-4 md:p-5 mb-6">
+    <div class="flex flex-wrap items-center gap-3">
       <!-- Position Chips -->
-      <div class="flex items-center gap-1.5 flex-wrap">
-        <button data-pos="ALL" class="pos-chip h-9 px-3 rounded-full text-sm font-medium border transition bg-amber-500 text-slate-900 border-amber-400">All</button>
-        <button data-pos="QB" class="pos-chip h-9 px-3 rounded-full text-sm font-medium border transition bg-white/5 border-white/10 hover:bg-white/10">QB</button>
-        <button data-pos="RB" class="pos-chip h-9 px-3 rounded-full text-sm font-medium border transition bg-white/5 border-white/10 hover:bg-white/10">RB</button>
-        <button data-pos="WR" class="pos-chip h-9 px-3 rounded-full text-sm font-medium border transition bg-white/5 border-white/10 hover:bg-white/10">WR</button>
-        <button data-pos="TE" class="pos-chip h-9 px-3 rounded-full text-sm font-medium border transition bg-white/5 border-white/10 hover:bg-white/10">TE</button>
+      <div class="flex items-center gap-1.5 p-1 rounded-xl bg-black/30 border border-white/10">
+        <button data-pos="All" class="pos-chip px-3 h-8 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">All</button>
+        <button data-pos="QB" class="pos-chip px-3 h-8 rounded-lg text-sm font-medium hover:bg-white/5 text-zinc-300">QB</button>
+        <button data-pos="RB" class="pos-chip px-3 h-8 rounded-lg text-sm font-medium hover:bg-white/5 text-zinc-300">RB</button>
+        <button data-pos="WR" class="pos-chip px-3 h-8 rounded-lg text-sm font-medium hover:bg-white/5 text-zinc-300">WR</button>
+        <button data-pos="TE" class="pos-chip px-3 h-8 rounded-lg text-sm font-medium hover:bg-white/5 text-zinc-300">TE</button>
       </div>
-    </div>
 
-    <div class="mt-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="flex items-center gap-2">
-          <label class="text-xs uppercase tracking-wider text-slate-400 font-medium">Team</label>
-          <select id="teamSelect" class="h-9 pl-3 pr-8 rounded-xl bg-black/30 border border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"></select>
-        </div>
-        <label class="flex items-center gap-2 cursor-pointer select-none">
-          <input id="ppgOnlyToggle" type="checkbox" class="sr-only peer">
-          <div class="w-10 h-6 rounded-full bg-white/10 border border-white/10 peer-checked:bg-amber-500/30 peer-checked:border-amber-500/50 relative transition">
-            <div class="absolute top-0.5 left-0.5 size-5 bg-white rounded-full shadow transition peer-checked:translate-x-4"></div>
+      <!-- Team -->
+      <div class="relative">
+        <select id="teamSelect" class="appearance-none pl-3 pr-9 h-10 rounded-xl bg-black/30 border border-white/10 text-sm font-medium text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+          <option value="All">All Teams</option>
+        </select>
+        <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-60" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <!-- Search -->
+      <div class="relative flex-1 min-w-[200px]">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="searchInput" type="text" placeholder="Search player or team…" class="w-full pl-10 pr-3 h-10 rounded-xl bg-black/30 border border-white/10 text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+      </div>
+
+      <!-- Toggles -->
+      <div class="flex items-center gap-4 pl-1">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input id="ppgOnly" type="checkbox" class="sr-only">
+          <div class="toggle-track w-10 h-6 rounded-full bg-white/10 border border-white/10 relative">
+            <div class="toggle-thumb absolute top-0.5 left-0.5 size-5 rounded-full bg-zinc-300"></div>
           </div>
-          <span class="text-sm text-slate-300">PPG only</span>
+          <span class="text-sm text-zinc-300">PPG only</span>
         </label>
-      </div>
 
-      <div class="flex flex-wrap items-center gap-2.5">
-        <div class="flex items-center gap-2 h-9 px-3 rounded-xl bg-black/30 border border-white/10">
+        <div class="flex items-center gap-2">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input id="autoToggle" type="checkbox" class="sr-only peer">
-            <div class="w-9 h-5 rounded-full bg-white/10 border border-white/10 peer-checked:bg-emerald-500/30 peer-checked:border-emerald-500/50 relative transition">
-              <div class="absolute top-0.5 left-0.5 size-4 bg-white rounded-full shadow transition peer-checked:translate-x-4"></div>
+            <input id="autoRefresh" type="checkbox" class="sr-only">
+            <div class="toggle-track w-10 h-6 rounded-full bg-white/10 border border-white/10 relative">
+              <div class="toggle-thumb absolute top-0.5 left-0.5 size-5 rounded-full bg-zinc-300"></div>
             </div>
-            <span class="text-xs font-medium text-slate-300">Auto</span>
+            <span class="text-sm text-zinc-300">Auto-refresh</span>
           </label>
-          <div class="w-px h-5 bg-white/10"></div>
-          <select id="intervalSelect" class="bg-transparent text-xs focus:outline-none pr-6">
-            <option value="1">1m</option>
-            <option value="5" selected>5m</option>
-            <option value="10">10m</option>
-            <option value="30">30m</option>
+          <select id="refreshInterval" class="h-8 pl-2 pr-6 rounded-lg bg-black/30 border border-white/10 text-xs text-zinc-300 focus:outline-none">
+            <option value="15">15s</option>
+            <option value="30" selected>30s</option>
+            <option value="60">60s</option>
           </select>
-          <span id="countdown" class="text-xs tabular-nums text-slate-400 w-[90px] text-right">—</span>
+          <span id="countdown" class="text-xs font-mono text-amber-400 w-10 text-right">—</span>
         </div>
-
-        <button id="refreshBtn" class="h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-sm font-semibold flex items-center gap-1.5 transition">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-          Refresh
-        </button>
       </div>
+
+      <!-- Refresh -->
+      <button id="refreshBtn" class="ml-auto md:ml-0 h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm flex items-center gap-2 transition shadow-[0_0_30px_rgba(245,158,11,0.25)]">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Refresh
+      </button>
     </div>
-  </div>
+  </section>
 
   <!-- Table -->
-  <div class="glass rounded-2xl border border-white/10 bg-white/[0.04] shadow-glass overflow-hidden">
-    <div class="overflow-x-auto scrollbar-thin max-h-[65vh]">
+  <section class="glass-strong rounded-[20px] overflow-hidden">
+    <div class="overflow-x-auto scrollbar-thin max-h-[70vh]">
       <table class="w-full text-sm">
-        <thead class="sticky top-0 z-10 backdrop-blur-xl bg-slate-900/80 border-b border-white/10">
-          <tr class="text-left text-xs uppercase tracking-wider text-slate-400">
-            <th class="py-3 pl-5 pr-3 font-medium">#</th>
-            <th class="py-3 px-3 font-medium min-w-[220px]">Player</th>
-            <th class="py-3 px-3 font-medium">Pos</th>
-            <th class="py-3 px-3 font-medium">Team</th>
-            <th class="py-3 px-3 font-medium">Age</th>
-            <th class="py-3 px-3 font-medium text-right cursor-pointer select-none hover:text-slate-200" data-sort="value">
-              <span class="inline-flex items-center gap-1">Value
-                <svg id="sortValueIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </span>
-            </th>
-            <th class="py-3 px-3 font-medium text-right cursor-pointer select-none hover:text-slate-200" data-sort="ppg">
-              <span class="inline-flex items-center gap-1">PPG
-                <svg id="sortPPGIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-40"><polyline points="6 9 12 15 18 9"/></svg>
-              </span>
-            </th>
-            <th class="py-3 pl-3 pr-5 font-medium">Source</th>
+        <thead class="sticky top-0 z-10 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/10">
+          <tr class="text-[11px] uppercase tracking-wider text-zinc-500">
+            <th class="text-left font-medium px-5 py-3 w-14">#</th>
+            <th class="text-left font-medium px-5 py-3 min-w-[260px]">Player</th>
+            <th class="text-left font-medium px-5 py-3">Team</th>
+            <th class="text-left font-medium px-5 py-3">Pos</th>
+            <th class="text-left font-medium px-5 py-3">Age</th>
+            <th class="text-left font-medium px-5 py-3 min-w-[180px]">Value</th>
+            <th class="text-left font-medium px-5 py-3">PPG</th>
           </tr>
         </thead>
         <tbody id="tableBody" class="divide-y divide-white/[0.06]">
-          <!-- rows injected -->
+          <!-- rows -->
         </tbody>
       </table>
       <div id="emptyState" class="hidden py-20 text-center">
-        <div class="mx-auto size-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-slate-500"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </div>
-        <p class="font-display text-lg">No players match filters</p>
-        <p class="text-sm text-slate-500 mt-1">Try adjusting search or position chips.</p>
+        <div class="text-5xl mb-3">🔍</div>
+        <p class="text-zinc-400">No players match your filters</p>
       </div>
       <div id="loadingState" class="py-20 text-center">
-        <div class="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm">
-          <span class="size-4 rounded-full border-2 border-amber-400 border-t-transparent animate-spin"></span>
-          Loading rankings...
+        <div class="inline-flex items-center gap-3 text-zinc-400">
+          <svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          Loading dynasty rankings...
         </div>
       </div>
     </div>
 
     <!-- Pagination -->
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-white/10 bg-black/20">
-      <p id="pageInfo" class="text-xs text-slate-400">—</p>
+    <div class="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-black/20">
+      <div id="pageInfo" class="text-xs text-zinc-500">—</div>
       <div class="flex items-center gap-2">
-        <button id="prevPage" class="h-8 px-3 rounded-lg bg-white/5 border border-white/10 text-xs hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed">Prev</button>
-        <div id="pageNumbers" class="flex items-center gap-1"></div>
-        <button id="nextPage" class="h-8 px-3 rounded-lg bg-white/5 border border-white/10 text-xs hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+        <button id="prevPage" class="h-8 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm disabled:opacity-40 disabled:cursor-not-allowed">Prev</button>
+        <button id="nextPage" class="h-8 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Footer -->
-  <footer class="mt-8 text-center text-xs text-slate-600">
-    RosterAudit Dynasty Rankings • Glass UI v1 • Data © respective sources
+  <footer class="text-center text-xs text-zinc-600 mt-8 pb-4">
+    RosterAudit Pro • Dynasty Rankings Dashboard • Data syncs live from Google Sheets
   </footer>
 </div>
 
-<!-- Toast -->
-<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden">
-  <div class="glass rounded-xl border border-white/10 bg-slate-900/90 shadow-2xl px-4 py-3 flex items-center gap-3 text-sm">
-    <span id="toastIcon" class="size-7 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300">!</span>
-    <div>
-      <p id="toastTitle" class="font-medium leading-tight">Error</p>
-      <p id="toastMsg" class="text-xs text-slate-400 leading-tight"></p>
+<!-- Settings Modal -->
+<div id="settingsModal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md">
+    <div class="glass-strong rounded-2xl p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-display text-xl font-semibold text-white">Settings</h3>
+        <button id="closeSettings" class="size-8 rounded-lg hover:bg-white/10 flex items-center justify-center">✕</button>
+      </div>
+      <div class="space-y-4 text-sm">
+        <div>
+          <label class="block text-zinc-400 mb-1">CSV Source</label>
+          <input id="csvUrlInput" type="text" class="w-full h-10 px-3 rounded-xl bg-black/40 border border-white/10 text-xs font-mono" />
+        </div>
+        <div class="flex items-center justify-between pt-2">
+          <span class="text-zinc-300">Highlight top 10 values</span>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input id="highlightTop" type="checkbox" class="sr-only" checked>
+            <div class="toggle-track w-10 h-6 rounded-full bg-white/10 border border-white/10 relative">
+              <div class="toggle-thumb absolute top-0.5 left-0.5 size-5 rounded-full bg-zinc-300"></div>
+            </div>
+          </label>
+        </div>
+        <p class="text-xs text-zinc-500 pt-2">Changes are saved locally.</p>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
 (() => {
-  const DEFAULT_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
-  
+  const CSV_URL_DEFAULT = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
   const state = {
     raw: [],
     filtered: [],
+    pos: 'All',
+    team: 'All',
     search: '',
-    pos: 'ALL',
-    team: 'ALL',
     ppgOnly: false,
-    sortKey: 'value',
-    sortDir: 'desc',
     page: 1,
-    perPage: 25,
-    lastFetch: null,
-    lastDataUpdate: null,
-    autoEnabled: false,
-    intervalMin: 5,
-    countdownSec: 0,
+    pageSize: 50,
+    autoRefresh: false,
+    intervalSec: 30,
+    countdown: 30,
     timer: null,
-    url: localStorage.getItem('ra_csv_url') || DEFAULT_URL,
-    maxValue: 0
+    countdownTimer: null,
+    maxValue: 0,
+    highlightTop: true,
+    csvUrl: CSV_URL_DEFAULT,
   };
 
-  const els = {
-    statPlayers: document.getElementById('statPlayers'),
-    statAvgVal: document.getElementById('statAvgVal'),
-    statAvgPPG: document.getElementById('statAvgPPG'),
-    statUpdated: document.getElementById('statUpdated'),
-    statFetched: document.getElementById('statFetched'),
-    tableBody: document.getElementById('tableBody'),
-    emptyState: document.getElementById('emptyState'),
-    loadingState: document.getElementById('loadingState'),
-    searchInput: document.getElementById('searchInput'),
-    posChips: [...document.querySelectorAll('.pos-chip')],
-    teamSelect: document.getElementById('teamSelect'),
-    ppgOnlyToggle: document.getElementById('ppgOnlyToggle'),
-    refreshBtn: document.getElementById('refreshBtn'),
-    autoToggle: document.getElementById('autoToggle'),
-    intervalSelect: document.getElementById('intervalSelect'),
-    countdown: document.getElementById('countdown'),
-    pageInfo: document.getElementById('pageInfo'),
-    prevPage: document.getElementById('prevPage'),
-    nextPage: document.getElementById('nextPage'),
-    pageNumbers: document.getElementById('pageNumbers'),
-    exportBtn: document.getElementById('exportBtn'),
-    settingsToggle: document.getElementById('settingsToggle'),
-    settingsPanel: document.getElementById('settingsPanel'),
-    csvUrlInput: document.getElementById('csvUrlInput'),
-    saveUrlBtn: document.getElementById('saveUrlBtn'),
-    sortValueIcon: document.getElementById('sortValueIcon'),
-    sortPPGIcon: document.getElementById('sortPPGIcon'),
-    toast: document.getElementById('toast'),
-    toastTitle: document.getElementById('toastTitle'),
-    toastMsg: document.getElementById('toastMsg')
-  };
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
 
-  els.csvUrlInput.value = state.url;
+  const statPlayers = $('#statPlayers');
+  const statValue = $('#statValue');
+  const statPPG = $('#statPPG');
+  const statUpdated = $('#statUpdated');
+  const tableBody = $('#tableBody');
+  const emptyState = $('#emptyState');
+  const loadingState = $('#loadingState');
+  const teamSelect = $('#teamSelect');
+  const searchInput = $('#searchInput');
+  const ppgOnly = $('#ppgOnly');
+  const autoRefresh = $('#autoRefresh');
+  const refreshInterval = $('#refreshInterval');
+  const countdownEl = $('#countdown');
+  const refreshBtn = $('#refreshBtn');
+  const exportBtn = $('#exportBtn');
+  const prevPage = $('#prevPage');
+  const nextPage = $('#nextPage');
+  const pageInfo = $('#pageInfo');
+  const settingsBtn = $('#settingsBtn');
+  const settingsModal = $('#settingsModal');
+  const closeSettings = $('#closeSettings');
+  const csvUrlInput = $('#csvUrlInput');
+  const highlightTop = $('#highlightTop');
 
-  // Utils
-  const fmt = {
-    int: n => isFinite(n) ? Math.round(n).toLocaleString() : '—',
-    ppg: n => isFinite(n) && n>0 ? n.toFixed(1) : '—',
-    date: d => d ? new Date(d).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—',
-    time: d => d ? new Date(d).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'
-  };
+  // Init from localStorage
+  try {
+    const saved = JSON.parse(localStorage.getItem('ra_dynasty_settings') || '{}');
+    if (saved.csvUrl) state.csvUrl = saved.csvUrl;
+    if (saved.highlightTop !== undefined) state.highlightTop = saved.highlightTop;
+  } catch {}
 
-  function showToast(title, msg, type='error'){
-    els.toastTitle.textContent = title;
-    els.toastMsg.textContent = msg;
-    els.toast.classList.remove('hidden');
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(()=> els.toast.classList.add('hidden'), 4000);
+  csvUrlInput.value = state.csvUrl;
+  highlightTop.checked = state.highlightTop;
+
+  function saveSettings() {
+    localStorage.setItem('ra_dynasty_settings', JSON.stringify({
+      csvUrl: state.csvUrl,
+      highlightTop: state.highlightTop,
+    }));
   }
 
-  function parseCSV(text){
-    const lines = text.trim().split(/\r?\n/);
-    if(!lines.length) return [];
-    const header = splitCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
-    const idx = Object.fromEntries(header.map((h,i)=>[h,i]));
-    const out = [];
-    for(let i=1;i<lines.length;i++){
-      if(!lines[i].trim()) continue;
-      const cols = splitCSVLine(lines[i]);
-      const get = k => cols[idx[k]]?.trim() ?? '';
-      const value = parseFloat(get('value')) || 0;
-      const ppg = parseFloat(get('ppg')) || 0;
-      out.push({
-        sleeper_id: get('sleeper_id'),
-        name: get('name'),
-        team: get('team').toUpperCase(),
-        pos: get('pos').toUpperCase(),
-        age: parseFloat(get('age')) || null,
-        number: get('number'),
-        value,
-        ppg,
-        ppg_source: get('ppg_source'),
-        last_updated: get('last_updated')
-      });
-    }
-    return out;
+  function initials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
   }
 
-  function splitCSVLine(line){
-    const res=[]; let cur=''; let inQ=false;
-    for(let i=0;i<line.length;i++){
-      const c=line[i];
-      if(c==='"'){
-        if(inQ && line[i+1]==='"'){cur+='"'; i++;} else {inQ=!inQ;}
-      } else if(c===',' && !inQ){res.push(cur); cur='';}
-      else cur+=c;
-    }
-    res.push(cur);
-    return res;
+  function posClass(pos) {
+    const p = (pos || '').toUpperCase();
+    if (p === 'QB') return 'pos-qb';
+    if (p === 'RB') return 'pos-rb';
+    if (p === 'WR') return 'pos-wr';
+    if (p === 'TE') return 'pos-te';
+    return 'pos-other';
   }
 
-  async function fetchCSV(url, retries=2){
-    const bust = url + (url.includes('?')?'&':'?') + 't=' + Date.now();
-    for(let attempt=0; attempt<=retries; attempt++){
-      try{
-        const res = await fetch(bust, {cache:'no-store'});
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        const text = await res.text();
-        return text;
-      }catch(e){
-        if(attempt===retries) throw e;
-        await new Promise(r=>setTimeout(r, 1000*(attempt+1)));
+  function normalizeRow(row) {
+    // Flexible column mapping
+    const get = (...keys) => {
+      for (const k of keys) {
+        for (const rk in row) {
+          if (rk.toLowerCase().replace(/\s|_/g, '') === k.toLowerCase().replace(/\s|_/g, '')) {
+            return row[rk];
+          }
+        }
       }
-    }
-  }
-
-  async function loadData(manual=false){
-    els.loadingState.classList.remove('hidden');
-    els.tableBody.innerHTML='';
-    els.emptyState.classList.add('hidden');
-    try{
-      const text = await fetchCSV(state.url);
-      const data = parseCSV(text);
-      state.raw = data;
-      state.lastFetch = new Date();
-      // derive last_updated max
-      const latest = data.map(d=>d.last_updated).filter(Boolean).sort().pop();
-      state.lastDataUpdate = latest || null;
-      state.maxValue = Math.max(1, ...data.map(d=>d.value));
-      populateTeams();
-      applyFilters();
-      updateStats();
-      if(manual) showToast('Refreshed','Loaded '+data.length+' players','success');
-    }catch(e){
-      console.error(e);
-      showToast('Fetch Failed', e.message || 'Could not load CSV');
-      els.loadingState.innerHTML = `<div class="py-20 text-center text-sm text-rose-400">Failed to load. Check URL & CORS.<br><button class="mt-3 px-3 py-1.5 rounded-lg bg-white/10 text-xs" onclick="location.reload()">Retry</button></div>`;
-    }finally{
-      els.loadingState.classList.add('hidden');
-    }
-  }
-
-  function populateTeams(){
-    const teams = [...new Set(state.raw.map(d=>d.team).filter(Boolean))].sort();
-    els.teamSelect.innerHTML = '<option value="ALL">All Teams</option>' + teams.map(t=>`<option value="${t}">${t}</option>`).join('');
-    els.teamSelect.value = state.team;
-  }
-
-  function applyFilters(){
-    let data = state.raw.slice();
-    if(state.search){
-      const q = state.search.toLowerCase();
-      data = data.filter(d => d.name.toLowerCase().includes(q) || d.team.toLowerCase().includes(q) || d.pos.toLowerCase().includes(q));
-    }
-    if(state.pos !== 'ALL') data = data.filter(d=>d.pos===state.pos);
-    if(state.team !== 'ALL') data = data.filter(d=>d.team===state.team);
-    if(state.ppgOnly) data = data.filter(d=>d.ppg>0);
-    // sort
-    data.sort((a,b)=>{
-      const k = state.sortKey;
-      const av = a[k]||0, bv = b[k]||0;
-      return state.sortDir==='desc' ? bv-av : av-bv;
-    });
-    state.filtered = data;
-    state.page = Math.min(state.page, Math.max(1, Math.ceil(data.length/state.perPage)));
-    renderTable();
-    renderPagination();
-  }
-
-  function posBadge(pos){
-    const map = {
-      QB: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-      RB: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
-      WR: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
-      TE: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+      return '';
     };
-    return map[pos] || 'bg-white/10 text-slate-300 border-white/20';
+    const player = get('player','name');
+    const team = get('team','tm');
+    const pos = get('pos','position');
+    const age = parseFloat(get('age')) || 0;
+    const value = parseFloat(get('value','dynastyvalue','val')) || 0;
+    const ppg = parseFloat(get('ppg','fantasypointspergame','pts')) || 0;
+    const rank = parseInt(get('rank','#','rk')) || 0;
+    const number = get('number','num','jersey') || rank;
+    return { rank, player, team, pos, age, value, ppg, number };
   }
 
-  function renderTable(){
-    const start = (state.page-1)*state.perPage;
-    const slice = state.filtered.slice(start, start+state.perPage);
-    if(!slice.length){
-      els.tableBody.innerHTML='';
-      els.emptyState.classList.remove('hidden');
-      return;
+  async function loadCSV() {
+    loadingState.classList.remove('hidden');
+    tableBody.innerHTML = '';
+    emptyState.classList.add('hidden');
+    try {
+      const url = state.csvUrl + (state.csvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now();
+      const res = await fetch(url);
+      const text = await res.text();
+      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true, dynamicTyping: false });
+      const rows = parsed.data.map(normalizeRow).filter(r => r.player);
+      state.raw = rows;
+      state.maxValue = Math.max(1, ...rows.map(r => r.value));
+      // Populate teams
+      const teams = [...new Set(rows.map(r => r.team).filter(Boolean))].sort();
+      teamSelect.innerHTML = '<option value="All">All Teams</option>' + teams.map(t => `<option value="${t}">${t}</option>`).join('');
+      applyFilters();
+      statUpdated.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      console.error(e);
+      tableBody.innerHTML = `<tr><td colspan="7" class="px-5 py-10 text-center text-red-400">Failed to load CSV. Check console.</td></tr>`;
+    } finally {
+      loadingState.classList.add('hidden');
     }
-    els.emptyState.classList.add('hidden');
-    const rows = slice.map((d,i)=>{
-      const rank = start + i + 1;
-      const valPct = Math.max(4, (d.value/state.maxValue)*100);
-      const ppgCls = d.ppg>0 ? 'text-slate-100' : 'text-slate-600';
-      return `<tr class="hover:bg-white/[0.04] transition">
-        <td class="py-3 pl-5 pr-3 text-slate-500 tabular-nums">${rank}</td>
-        <td class="py-3 px-3">
-          <div class="flex items-center gap-3">
-            <div class="size-9 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 border border-white/10 flex items-center justify-center font-display font-semibold text-sm">${d.name.split(' ').map(s=>s[0]).slice(0,2).join('')}</div>
-            <div class="min-w-0">
-              <div class="font-medium truncate leading-tight">${d.name}</div>
-              <div class="text-xs text-slate-500">#${d.number||'—'} • ${d.age?d.age.toFixed(1):'—'} yo</div>
-            </div>
-          </div>
-        </td>
-        <td class="py-3 px-3"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${posBadge(d.pos)}">${d.pos}</span></td>
-        <td class="py-3 px-3 text-slate-300 font-medium">${d.team||'FA'}</td>
-        <td class="py-3 px-3 text-slate-400 tabular-nums">${d.age?d.age.toFixed(1):'—'}</td>
-        <td class="py-3 px-3 text-right">
-          <div class="flex items-center justify-end gap-3">
-            <div class="w-24 hidden sm:block">
-              <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-amber-400 to-orange-500" style="width:${valPct}%"></div>
+  }
+
+  function applyFilters() {
+    const s = state.search.toLowerCase();
+    let data = state.raw.filter(r => {
+      if (state.pos !== 'All' && r.pos.toUpperCase() !== state.pos) return false;
+      if (state.team !== 'All' && r.team !== state.team) return false;
+      if (state.ppgOnly && !(r.ppg > 0)) return false;
+      if (s && !(`${r.player} ${r.team}`.toLowerCase().includes(s))) return false;
+      return true;
+    });
+    // Sort by Value desc
+    data.sort((a,b) => b.value - a.value || b.ppg - a.ppg);
+    state.filtered = data;
+    state.page = 1;
+    render();
+  }
+
+  function render() {
+    const start = (state.page - 1) * state.pageSize;
+    const pageRows = state.filtered.slice(start, start + state.pageSize);
+    
+    // Stats
+    statPlayers.textContent = state.filtered.length.toLocaleString();
+    const avgVal = state.filtered.length ? (state.filtered.reduce((a,b)=>a+b.value,0)/state.filtered.length) : 0;
+    const avgPPG = state.filtered.length ? (state.filtered.reduce((a,b)=>a+b.ppg,0)/state.filtered.length) : 0;
+    statValue.textContent = avgVal ? avgVal.toFixed(0) : '—';
+    statPPG.textContent = avgPPG ? avgPPG.toFixed(1) : '—';
+
+    // Table
+    if (pageRows.length === 0) {
+      tableBody.innerHTML = '';
+      emptyState.classList.remove('hidden');
+    } else {
+      emptyState.classList.add('hidden');
+      tableBody.innerHTML = pageRows.map((r, i) => {
+        const idx = start + i + 1;
+        const pct = Math.min(100, (r.value / state.maxValue) * 100);
+        const topGlow = state.highlightTop && idx <= 10 ? 'shadow-[inset_0_0_0_1px_rgba(245,158,11,0.25)] bg-amber-500/[0.03]' : '';
+        return `
+        <tr class="group hover:bg-white/[0.04] transition ${topGlow}">
+          <td class="px-5 py-3 text-zinc-500 font-medium">${idx}</td>
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-3">
+              <div class="size-9 rounded-full bg-gradient-to-br from-amber-500/30 to-amber-600/20 border border-amber-500/20 flex items-center justify-center font-display font-semibold text-amber-200 text-[13px]">${initials(r.player)}</div>
+              <div>
+                <div class="font-medium text-white leading-tight">${r.player}</div>
+                <div class="text-xs text-zinc-500">#${r.number || r.rank || '—'} • ${r.age ? r.age + ' yo' : '—'}</div>
               </div>
             </div>
-            <span class="tabular-nums font-medium">${fmt.int(d.value)}</span>
-          </div>
-        </td>
-        <td class="py-3 px-3 text-right tabular-nums ${ppgCls}">${fmt.ppg(d.ppg)}</td>
-        <td class="py-3 pl-3 pr-5 text-slate-500 text-xs">${d.ppg_source||'—'}</td>
-      </tr>`;
-    }).join('');
-    els.tableBody.innerHTML = rows;
-  }
-
-  function renderPagination(){
-    const total = state.filtered.length;
-    const pages = Math.max(1, Math.ceil(total/state.perPage));
-    const start = total? (state.page-1)*state.perPage+1 : 0;
-    const end = Math.min(state.page*state.perPage, total);
-    els.pageInfo.textContent = `${total.toLocaleString()} players • Showing ${start}-${end}`;
-    els.prevPage.disabled = state.page<=1;
-    els.nextPage.disabled = state.page>=pages;
-    // page numbers (max 5)
-    const frag=[];
-    const maxBtn=5;
-    let s = Math.max(1, state.page - Math.floor(maxBtn/2));
-    let e = Math.min(pages, s+maxBtn-1);
-    s = Math.max(1, e-maxBtn+1);
-    for(let i=s;i<=e;i++){
-      frag.push(`<button data-page="${i}" class="size-8 rounded-lg text-xs font-medium border ${i===state.page?'bg-amber-500 text-slate-900 border-amber-400':'bg-white/5 border-white/10 hover:bg-white/10'}">${i}</button>`);
+          </td>
+          <td class="px-5 py-3 text-zinc-300">${r.team || '—'}</td>
+          <td class="px-5 py-3">
+            <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-semibold border ${posClass(r.pos)}">${r.pos || '—'}</span>
+          </td>
+          <td class="px-5 py-3 text-zinc-400">${r.age ? r.age.toFixed(1).replace('.0','') : '—'}</td>
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-3">
+              <div class="w-28 h-2 rounded-full bg-white/10 overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full" style="width:${pct}%"></div>
+              </div>
+              <span class="font-mono text-zinc-200 w-12 text-right">${r.value ? r.value.toFixed(0) : '—'}</span>
+            </div>
+          </td>
+          <td class="px-5 py-3 font-mono text-zinc-300">${r.ppg ? r.ppg.toFixed(1) : '—'}</td>
+        </tr>`;
+      }).join('');
     }
-    els.pageNumbers.innerHTML = frag.join('');
-    els.pageNumbers.querySelectorAll('button').forEach(b=>b.onclick=()=>{state.page=+b.dataset.page; renderTable(); renderPagination(); window.scrollTo({top:0,behavior:'smooth'});});
+
+    // Pagination
+    const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+    pageInfo.textContent = `${state.filtered.length === 0 ? 0 : start+1}–${Math.min(start+state.pageSize, state.filtered.length)} of ${state.filtered.length}`;
+    prevPage.disabled = state.page <= 1;
+    nextPage.disabled = state.page >= totalPages;
   }
 
-  function updateStats(){
-    const data = state.filtered;
-    els.statPlayers.textContent = data.length.toLocaleString();
-    const avgVal = data.length ? data.reduce((s,d)=>s+d.value,0)/data.length : 0;
-    const ppgData = data.filter(d=>d.ppg>0);
-    const avgPPG = ppgData.length ? ppgData.reduce((s,d)=>s+d.ppg,0)/ppgData.length : 0;
-    els.statAvgVal.textContent = fmt.int(avgVal);
-    els.statAvgPPG.textContent = fmt.ppg(avgPPG);
-    els.statUpdated.textContent = state.lastDataUpdate ? fmt.date(state.lastDataUpdate) : '—';
-    els.statFetched.textContent = state.lastFetch ? 'Fetched '+fmt.time(state.lastFetch) : 'Never fetched';
-  }
-
-  function startAuto(){
-    stopAuto();
-    if(!state.autoEnabled) return;
-    state.countdownSec = state.intervalMin*60;
-    updateCountdown();
-    state.timer = setInterval(()=>{
-      state.countdownSec--;
-      if(state.countdownSec<=0){
-        loadData();
-        state.countdownSec = state.intervalMin*60;
-      }
-      updateCountdown();
-    },1000);
-  }
-  function stopAuto(){
-    if(state.timer) clearInterval(state.timer);
-    state.timer=null;
-    els.countdown.textContent='—';
-  }
-  function updateCountdown(){
-    const m = Math.floor(state.countdownSec/60);
-    const s = state.countdownSec%60;
-    els.countdown.textContent = `Next ${m}:${s.toString().padStart(2,'0')}`;
-  }
-
-  function exportCSV(){
-    const cols = ['rank','name','team','pos','age','value','ppg','ppg_source','last_updated'];
-    const data = state.filtered.map((d,i)=>({rank:i+1,...d}));
-    const csv = [cols.join(',')].concat(data.map(r=>cols.map(c=>{
-      const v = r[c]??'';
-      const s = String(v).replace(/"/g,'""');
-      return /[",\n]/.test(s) ? `"${s}"` : s;
-    }).join(','))).join('\n');
-    const blob = new Blob([csv],{type:'text/csv'});
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download='rosterAudit_dynasty_rankings.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
-  // Events
-  els.searchInput.addEventListener('input', e=>{state.search=e.target.value; state.page=1; applyFilters(); updateStats();});
-  els.posChips.forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+  // Event Listeners
+  $$('.pos-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
       state.pos = btn.dataset.pos;
-      els.posChips.forEach(b=>{
-        const active = b===btn;
-        b.classList.toggle('bg-amber-500', active);
-        b.classList.toggle('text-slate-900', active);
-        b.classList.toggle('border-amber-400', active);
-        b.classList.toggle('bg-white/5', !active);
-        b.classList.toggle('border-white/10', !active);
-      });
-      state.page=1; applyFilters(); updateStats();
-    });
-  });
-  els.teamSelect.addEventListener('change', e=>{state.team=e.target.value; state.page=1; applyFilters(); updateStats();});
-  els.ppgOnlyToggle.addEventListener('change', e=>{state.ppgOnly=e.target.checked; state.page=1; applyFilters(); updateStats();});
-  els.refreshBtn.addEventListener('click', ()=>loadData(true));
-  els.autoToggle.addEventListener('change', e=>{state.autoEnabled=e.target.checked; if(state.autoEnabled) startAuto(); else stopAuto();});
-  els.intervalSelect.addEventListener('change', e=>{state.intervalMin=+e.target.value; if(state.autoEnabled) startAuto();});
-  els.prevPage.addEventListener('click', ()=>{if(state.page>1){state.page--; renderTable(); renderPagination();}});
-  els.nextPage.addEventListener('click', ()=>{const pages=Math.ceil(state.filtered.length/state.perPage); if(state.page<pages){state.page++; renderTable(); renderPagination();}});
-  els.exportBtn.addEventListener('click', exportCSV);
-  els.settingsToggle.addEventListener('click', ()=> els.settingsPanel.classList.toggle('hidden'));
-  els.saveUrlBtn.addEventListener('click', ()=>{
-    const url = els.csvUrlInput.value.trim();
-    if(!url) return;
-    state.url = url;
-    localStorage.setItem('ra_csv_url', url);
-    showToast('URL Saved','Refreshing...','success');
-    loadData(true);
-  });
-  // sort headers
-  document.querySelectorAll('[data-sort]').forEach(th=>{
-    th.addEventListener('click', ()=>{
-      const key = th.dataset.sort;
-      if(state.sortKey===key){
-        state.sortDir = state.sortDir==='desc'?'asc':'desc';
-      }else{
-        state.sortKey=key;
-        state.sortDir='desc';
-      }
-      // update icons
-      els.sortValueIcon.classList.toggle('opacity-40', state.sortKey!=='value');
-      els.sortPPGIcon.classList.toggle('opacity-40', state.sortKey!=='ppg');
-      els.sortValueIcon.style.transform = state.sortKey==='value' && state.sortDir==='asc' ? 'rotate(180deg)' : '';
-      els.sortPPGIcon.style.transform = state.sortKey==='ppg' && state.sortDir==='asc' ? 'rotate(180deg)' : '';
+      $$('.pos-chip').forEach(b => b.classList.remove('bg-amber-500/20','text-amber-300','border','border-amber-500/30'));
+      btn.classList.add('bg-amber-500/20','text-amber-300','border','border-amber-500/30');
       applyFilters();
     });
   });
 
-  // Init
-  loadData();
+  teamSelect.addEventListener('change', e => { state.team = e.target.value; applyFilters(); });
+  searchInput.addEventListener('input', e => { state.search = e.target.value; applyFilters(); });
+  ppgOnly.addEventListener('change', e => { state.ppgOnly = e.target.checked; applyFilters(); });
+
+  prevPage.addEventListener('click', () => { if (state.page > 1) { state.page--; render(); } });
+  nextPage.addEventListener('click', () => { state.page++; render(); });
+
+  refreshBtn.addEventListener('click', () => { loadCSV(); resetCountdown(); });
+
+  exportBtn.addEventListener('click', () => {
+    const csv = Papa.unparse(state.filtered);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `dynasty-rankings-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  });
+
+  function startAutoRefresh() {
+    stopAutoRefresh();
+    state.intervalSec = parseInt(refreshInterval.value, 10);
+    state.countdown = state.intervalSec;
+    countdownEl.textContent = state.countdown + 's';
+    state.timer = setInterval(() => { loadCSV(); }, state.intervalSec * 1000);
+    state.countdownTimer = setInterval(() => {
+      state.countdown--;
+      if (state.countdown <= 0) state.countdown = state.intervalSec;
+      countdownEl.textContent = state.countdown + 's';
+    }, 1000);
+  }
+  function stopAutoRefresh() {
+    clearInterval(state.timer);
+    clearInterval(state.countdownTimer);
+    countdownEl.textContent = '—';
+  }
+  function resetCountdown() {
+    if (state.autoRefresh) { state.countdown = state.intervalSec; }
+  }
+
+  autoRefresh.addEventListener('change', e => {
+    state.autoRefresh = e.target.checked;
+    if (state.autoRefresh) startAutoRefresh(); else stopAutoRefresh();
+  });
+  refreshInterval.addEventListener('change', () => { if (state.autoRefresh) startAutoRefresh(); });
+
+  // Settings modal
+  settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+  closeSettings.addEventListener('click', () => settingsModal.classList.add('hidden'));
+  settingsModal.addEventListener('click', e => { if (e.target === settingsModal.firstElementChild) settingsModal.classList.add('hidden'); });
+  csvUrlInput.addEventListener('change', e => { state.csvUrl = e.target.value.trim() || CSV_URL_DEFAULT; saveSettings(); });
+  highlightTop.addEventListener('change', e => { state.highlightTop = e.target.checked; saveSettings(); render(); });
+
+  // Initial load
+  loadCSV();
 })();
 </script>
 </body>
