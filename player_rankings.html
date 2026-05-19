@@ -1,598 +1,756 @@
-
-
-Ask Meta AI...
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RosterAudit Dynasty Rankings Dashboard</title>
+<title>Dynasty Rankings • Live Google Sheet</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root { color-scheme: dark; }
-  html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
-  * { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.3) transparent; }
-  ::-webkit-scrollbar { width: 8px; height: 8px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(148,163,184,.3); border-radius: 999px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,.5); }
-  .glass { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-  .glass-strong { background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04)); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-  .shimmer { position: relative; overflow: hidden; }
-  .shimmer::after { content:''; position:absolute; inset:0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent); transform: translateX(-100%); animation: shimmer 1.8s infinite; }
+  html { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .glass-strong {
+    background: linear-gradient(180deg, rgba(15,23,42,0.8), rgba(15,23,42,0.6));
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+  input[type="range"] {
+    -webkit-appearance: none; height: 6px; background: rgba(255,255,255,0.1); border-radius: 999px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: #fbbf24; border: 2px solid #1c1917; box-shadow: 0 0 0 3px rgba(251,191,36,0.25);
+    cursor: pointer; transition: transform .15s ease;
+  }
+  input[type="range"]::-webkit-slider-thumb:active { transform: scale(0.95); }
+  .shimmer {
+    position: relative; overflow: hidden;
+  }
+  .shimmer::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    transform: translateX(-100%); animation: shimmer 1.8s infinite;
+  }
   @keyframes shimmer { 100% { transform: translateX(100%); } }
-  .fade-in { animation: fade .3s ease-out; }
-  @keyframes fade { from { opacity:0; transform: translateY(4px);} }
 </style>
 </head>
-<body class="min-h-screen bg-[#020617] text-slate-100 antialiased selection:bg-fuchsia-500/30">
-  <!-- Background -->
-  <div class="fixed inset-0 -z-10">
-    <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(139,92,246,.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(56,189,248,.2),transparent_60%),radial-gradient(40%_40%_at_0%_100%,rgba(236,72,153,.15),transparent_60%),#020617]"></div>
-    <div class="absolute inset-0 opacity-[0.03] mix-blend-soft-light" style="background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22 viewBox=%220 0 400 400%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/></filter><rect width=%22400%22 height=%22400%22 filter=%22url(%23n)%22/></svg>')"></div>
+<body class="min-h-screen bg-[#020617] text-slate-100 antialiased selection:bg-amber-400/30">
+  <!-- Background Orbs -->
+  <div class="fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-amber-500/10 blur-[140px]"></div>
+    <div class="absolute top-1/3 -right-40 w-[500px] h-[500px] rounded-full bg-fuchsia-500/10 blur-[140px]"></div>
+    <div class="absolute bottom-0 left-1/4 w-[700px] h-[700px] rounded-full bg-indigo-500/10 blur-[160px]"></div>
   </div>
 
-  <div class="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-10">
+  <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
     <!-- Header -->
     <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
       <div class="flex items-center gap-4">
-        <div class="size-12 rounded-2xl glass-strong border border-white/10 flex items-center justify-center shadow-2xl shadow-fuchsia-500/10">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-fuchsia-400">
-            <path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" stroke="currentColor" stroke-width="1.5" fill="url(#g)"/>
-            <defs><linearGradient id="g" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#e879f9"/><stop offset="1" stop-color="#60a5fa"/></linearGradient></defs>
+        <div class="w-12 h-12 rounded-2xl glass flex items-center justify-center shadow-lg shadow-amber-500/10">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" class="text-amber-400">
+            <path d="M12 2l2.5 7.5H22l-6 4.5 2.5 7.5-6.5-4.5-6.5 4.5 2.5-7.5-6-4.5h7.5z" fill="currentColor" opacity=".9"/>
           </svg>
         </div>
         <div>
-          <h1 class="text-[1.75rem] md:text-3xl font-semibold tracking-tight">Dynasty Rankings</h1>
-          <p class="text-sm text-slate-400 -mt-0.5">RosterAudit • Live values, PPG & movers</p>
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Dynasty Rankings Dashboard</h1>
+          <p class="text-slate-400 text-sm mt-0.5">Live from Google Sheets • Auto-refresh on load</p>
         </div>
       </div>
-
-      <div class="flex items-center gap-3">
-        <div id="statusPill" class="glass border border-white/10 rounded-full px-3 py-1.5 flex items-center gap-2 text-xs font-medium">
-          <span class="size-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="mono">READY</span>
-        </div>
-        <button id="refreshBtn" class="group relative inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 px-4 py-2 text-sm font-medium transition active:scale-[.98]">
-          <svg class="size-4 transition-transform group-active:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1018 0 9 9 0 00-18 0"/><path d="M9 9l-3 3 3 3"/></svg>
+      <div class="flex items-center gap-2">
+        <span id="liveDot" class="hidden items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full glass">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          LIVE
+        </span>
+        <button id="refreshBtn" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl glass hover:bg-white/10 transition text-sm font-medium">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           Refresh
-        </button>
-        <button id="csvBtn" class="inline-flex items-center gap-2 rounded-xl bg-fuchsia-500/20 hover:bg-fuchsia-500/30 border border-fuchsia-500/30 text-fuchsia-200 px-4 py-2 text-sm font-medium transition active:scale-[.98]">
-          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16v-8M8 12l4 4 4-4"/><path d="M20 16v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2"/></svg>
-          Export CSV
         </button>
       </div>
     </header>
 
-    <!-- Controls -->
-    <section class="glass-strong border border-white/10 rounded-[1.25rem] shadow-2xl shadow-black/40 p-4 md:p-5 mb-6">
-      <div class="flex flex-wrap items-center gap-4">
-        <!-- Format -->
-        <div class="flex items-center gap-2">
-          <span class="text-xs uppercase tracking-wider text-slate-400 font-medium">Format</span>
-          <div class="flex bg-black/30 rounded-xl p-1 border border-white/10">
-            <button data-format="sf" class="toggle-btn px-3 py-1.5 text-sm rounded-lg transition">SF</button>
-            <button data-format="1qb" class="toggle-btn px-3 py-1.5 text-sm rounded-lg transition">1QB</button>
-          </div>
-        </div>
-
-        <!-- Scoring -->
-        <div class="flex items-center gap-2">
-          <span class="text-xs uppercase tracking-wider text-slate-400 font-medium">Scoring</span>
-          <div class="flex bg-black/30 rounded-xl p-1 border border-white/10">
-            <button data-scoring="ppr" class="toggle-btn px-3 py-1.5 text-sm rounded-lg transition">PPR</button>
-            <button data-scoring="half" class="toggle-btn px-3 py-1.5 text-sm rounded-lg transition">Half</button>
-            <button data-scoring="std" class="toggle-btn px-3 py-1.5 text-sm rounded-lg transition">Std</button>
-          </div>
-        </div>
-
-        <!-- TE Premium -->
-        <label class="flex items-center gap-3 cursor-pointer select-none">
-          <span class="text-xs uppercase tracking-wider text-slate-400 font-medium">TE Premium</span>
+    <!-- URL Input Card -->
+    <section class="glass-strong rounded-3xl p-5 sm:p-6 shadow-2xl shadow-black/40 mb-8">
+      <div class="flex flex-col lg:flex-row gap-4">
+        <div class="flex-1">
+          <label for="csvUrl" class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-2">Google Sheet Published CSV URL</label>
           <div class="relative">
-            <input id="tepToggle" type="checkbox" class="sr-only peer">
-            <div class="w-11 h-6 rounded-full bg-black/40 border border-white/10 peer-checked:bg-fuchsia-500/30 transition"></div>
-            <div class="absolute top-0.5 left-0.5 size-5 rounded-full bg-white/90 peer-checked:translate-x-5 transition"></div>
+            <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <input id="csvUrl" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv" class="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-900/70 border border-white/10 focus:border-amber-400/60 focus:ring-4 focus:ring-amber-400/10 outline-none transition text-sm" />
           </div>
-        </label>
-
-        <div class="h-6 w-px bg-white/10 hidden md:block"></div>
-
-        <!-- Positions -->
-        <div class="flex items-center gap-2 flex-wrap">
-          <button data-pos="All" class="pos-chip px-3 py-1.5 text-sm rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition">All</button>
-          <button data-pos="QB" class="pos-chip px-3 py-1.5 text-sm rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition">QB</button>
-          <button data-pos="RB" class="pos-chip px-3 py-1.5 text-sm rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition">RB</button>
-          <button data-pos="WR" class="pos-chip px-3 py-1.5 text-sm rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition">WR</button>
-          <button data-pos="TE" class="pos-chip px-3 py-1.5 text-sm rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition">TE</button>
+          <p class="mt-2 text-xs text-slate-500">Saved to localStorage. Auto-loads on next visit.</p>
         </div>
+        <div class="flex lg:flex-col gap-2 lg:justify-end">
+          <button id="loadBtn" class="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-400 text-slate-900 font-semibold hover:bg-amber-300 active:bg-amber-500 transition shadow-lg shadow-amber-500/25">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Load
+          </button>
+          <button id="saveBtn" class="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl glass hover:bg-white/10 transition text-sm font-medium">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save
+          </button>
+        </div>
+      </div>
 
-        <div class="flex-1 min-w-[200px]">
-          <div class="relative">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4-4"/></svg>
-            <input id="searchInput" placeholder="Search player…" class="w-full pl-9 pr-3 py-2 rounded-xl bg-black/30 border border-white/10 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/50 transition" />
-          </div>
+      <!-- Status Bar -->
+      <div id="statusBar" class="mt-4 hidden">
+        <div class="flex flex-wrap items-center gap-3 text-xs">
+          <span id="statusPill" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium"></span>
+          <span id="statusText" class="text-slate-400"></span>
+          <button id="retryBtn" class="hidden ml-auto text-amber-400 hover:text-amber-300 font-medium">Retry</button>
         </div>
       </div>
     </section>
 
-    <!-- Error Banner -->
-    <div id="errorBanner" class="hidden mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200 flex items-start gap-3">
-      <svg class="size-5 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-      <div class="flex-1">
-        <p class="font-medium">Failed to load data</p>
-        <p id="errorText" class="text-red-200/80 text-xs mt-0.5"></p>
+    <!-- Stats Cards -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="glass rounded-3xl p-5">
+        <div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Total Players</div>
+        <div id="statTotal" class="text-3xl font-bold mono">—</div>
+        <div class="text-xs text-slate-500 mt-1">in current view</div>
       </div>
-      <button id="retryBtn" class="text-xs underline hover:no-underline">Retry</button>
+      <div class="glass rounded-3xl p-5">
+        <div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Avg Value</div>
+        <div id="statAvgVal" class="text-3xl font-bold mono">—</div>
+        <div class="text-xs text-slate-500 mt-1">mean of Value</div>
+      </div>
+      <div class="glass rounded-3xl p-5">
+        <div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Avg PPG</div>
+        <div id="statAvgPpg" class="text-3xl font-bold mono">—</div>
+        <div class="text-xs text-slate-500 mt-1">mean of PPG</div>
+      </div>
+      <div class="glass rounded-3xl p-5">
+        <div class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Last Updated</div>
+        <div id="statUpdated" class="text-lg font-semibold leading-tight">—</div>
+        <div class="text-xs text-slate-500 mt-1">from sheet</div>
+      </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="glass-strong rounded-3xl p-5 sm:p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-semibold tracking-tight">Filters</h2>
+        <button id="clearFilters" class="text-xs px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition">Clear all</button>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Search -->
+        <div class="lg:col-span-4">
+          <label class="block text-xs text-slate-400 mb-1.5">Search name / team</label>
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="searchInput" type="text" placeholder="e.g. Jefferson, MIN" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 focus:border-amber-400/60 focus:ring-4 focus:ring-amber-400/10 outline-none text-sm" />
+          </div>
+        </div>
+        <!-- Position -->
+        <div class="lg:col-span-3">
+          <label class="block text-xs text-slate-400 mb-1.5">Position</label>
+          <div id="posChips" class="flex flex-wrap gap-1.5">
+            <!-- chips injected -->
+          </div>
+        </div>
+        <!-- Team -->
+        <div class="lg:col-span-2">
+          <label class="block text-xs text-slate-400 mb-1.5">Team</label>
+          <select id="teamSelect" class="w-full py-2.5 px-3 rounded-xl bg-slate-900/60 border border-white/10 focus:border-amber-400/60 focus:ring-4 focus:ring-amber-400/10 outline-none text-sm">
+            <option value="">All Teams</option>
+          </select>
+        </div>
+        <!-- PPG Only -->
+        <div class="lg:col-span-3 flex items-end">
+          <label class="inline-flex items-center gap-3 cursor-pointer select-none py-2">
+            <input id="ppgOnly" type="checkbox" class="sr-only peer">
+            <div class="w-11 h-6 rounded-full bg-slate-800 border border-white/10 peer-checked:bg-amber-400 transition relative">
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white peer-checked:translate-x-5 transition"></div>
+            </div>
+            <span class="text-sm text-slate-300">PPG only (has points)</span>
+          </label>
+        </div>
+        <!-- Sliders -->
+        <div class="lg:col-span-6">
+          <label class="block text-xs text-slate-400 mb-2">Min Value: <span id="minValLabel" class="mono text-amber-300 font-medium">0</span></label>
+          <input id="minVal" type="range" min="0" max="10000" step="50" value="0" class="w-full">
+        </div>
+        <div class="lg:col-span-6">
+          <label class="block text-xs text-slate-400 mb-2">Min PPG: <span id="minPpgLabel" class="mono text-amber-300 font-medium">0.0</span></label>
+          <input id="minPpg" type="range" min="0" max="35" step="0.5" value="0" class="w-full">
+        </div>
+      </div>
+    </section>
+
+    <!-- Table Toolbar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <div class="text-sm text-slate-400">
+        Showing <span id="showingCount" class="text-slate-200 font-medium">0</span> of <span id="totalCount" class="text-slate-200 font-medium">0</span> players
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="exportBtn" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl glass hover:bg-white/10 transition text-sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Export CSV
+        </button>
+      </div>
     </div>
 
     <!-- Table -->
-    <section class="glass border border-white/10 rounded-[1.25rem] overflow-hidden shadow-2xl shadow-black/40">
+    <div class="glass-strong rounded-3xl overflow-hidden shadow-2xl shadow-black/40">
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="sticky top-0 z-10 backdrop-blur-xl bg-slate-900/80 border-b border-white/10">
-            <tr class="text-[11px] uppercase tracking-wider text-slate-400">
-              <th class="text-right font-medium px-4 py-3 w-14">#</th>
-              <th class="text-left font-medium px-4 py-3 min-w-[240px]">Player</th>
-              <th class="text-left font-medium px-4 py-3">Pos</th>
-              <th class="text-right font-medium px-4 py-3">Value</th>
-              <th class="text-right font-medium px-4 py-3">PPG</th>
-              <th class="text-right font-medium px-4 py-3">7D</th>
-              <th class="text-right font-medium px-4 py-3">30D</th>
+          <thead class="sticky top-0 z-10 bg-slate-900/90 backdrop-blur border-b border-white/10">
+            <tr class="text-xs uppercase tracking-wider text-slate-400">
+              <th class="text-left font-semibold px-4 py-3 cursor-pointer select-none hover:text-slate-200" data-sort="name">Player</th>
+              <th class="text-left font-semibold px-4 py-3 cursor-pointer select-none hover:text-slate-200 hidden sm:table-cell" data-sort="team">Team</th>
+              <th class="text-left font-semibold px-4 py-3 cursor-pointer select-none hover:text-slate-200" data-sort="pos">Pos</th>
+              <th class="text-left font-semibold px-4 py-3 cursor-pointer select-none hover:text-slate-200 hidden md:table-cell" data-sort="age">Age</th>
+              <th class="text-left font-semibold px-4 py-3 cursor-pointer select-none hover:text-slate-200" data-sort="value">Value</th>
+              <th class="text-left font-semibold px-4 py-3 cursor-pointer select-none hover:text-slate-200" data-sort="ppg">PPG</th>
             </tr>
           </thead>
           <tbody id="tableBody" class="divide-y divide-white/[0.04]">
-            <!-- rows injected -->
+            <!-- rows -->
           </tbody>
         </table>
       </div>
-      <div id="tableFooter" class="border-t border-white/10 px-4 py-3 text-xs text-slate-500 flex items-center justify-between">
-        <span id="rowCount">0 players</span>
-        <span class="mono">rosteraudit.com • sleeper.app</span>
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden py-20 text-center">
+        <div class="inline-flex w-14 h-14 rounded-2xl glass items-center justify-center mb-4">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="text-slate-500"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <h3 class="font-semibold text-lg">No players match your filters</h3>
+        <p class="text-sm text-slate-500 mt-1">Try adjusting search, positions, or sliders.</p>
       </div>
+      <!-- Loading -->
+      <div id="loadingState" class="hidden py-20 text-center">
+        <div class="inline-flex items-center gap-3">
+          <div class="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-slate-300">Loading rankings…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between mt-4">
+      <button id="prevPage" class="px-3 py-2 rounded-xl glass hover:bg-white/10 transition text-sm disabled:opacity-40 disabled:cursor-not-allowed">Previous</button>
+      <div id="pageInfo" class="text-sm text-slate-400 mono"></div>
+      <button id="nextPage" class="px-3 py-2 rounded-xl glass hover:bg-white/10 transition text-sm disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+    </div>
+
+    <!-- Instructions -->
+    <section class="mt-12">
+      <details class="group glass rounded-3xl p-5 sm:p-6 open:bg-slate-900/40 transition">
+        <summary class="flex items-center justify-between cursor-pointer list-none">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl glass flex items-center justify-center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-400"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            </div>
+            <h3 class="font-semibold">How to publish your Google Sheet</h3>
+          </div>
+          <svg class="w-5 h-5 text-slate-500 group-open:rotate-180 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="mt-5 grid md:grid-cols-2 gap-6 text-sm text-slate-300 leading-relaxed">
+          <ol class="space-y-2 list-decimal list-inside">
+            <li>Open your Google Sheet with columns: <span class="mono text-amber-300">sleeper_id, name, team, pos, age, number, value, ppg, ppg_source, last_updated</span></li>
+            <li>File → Share → Publish to web</li>
+            <li>Choose the <strong>Values</strong> tab (or your rankings tab)</li>
+            <li>Format: <strong>Comma-separated values (.csv)</strong></li>
+            <li>Click Publish and copy the link</li>
+            <li>Paste the link above and hit Load (then Save)</li>
+          </ol>
+          <div class="glass rounded-2xl p-4 text-xs">
+            <div class="text-slate-400 uppercase tracking-wider font-semibold mb-2">Tips</div>
+            <ul class="space-y-1.5 text-slate-400">
+              <li>• URL should contain <span class="mono">output=csv</span> or end with <span class="mono">pub?output=csv</span></li>
+              <li>• Cache-busting is automatic (?t= timestamp)</li>
+              <li>• Data stays in your browser only. Sheet must be public.</li>
+              <li>• Export button downloads the currently filtered view.</li>
+            </ul>
+          </div>
+        </div>
+      </details>
     </section>
 
-    <footer class="mt-10 text-center text-xs text-slate-600">
-      Built with RosterAudit API • Cached locally for speed
+    <footer class="mt-12 py-8 text-center text-xs text-slate-600">
+      Built for dynasty grinders • Dark glass UI • Amber accents
     </footer>
   </div>
 
 <script>
 (() => {
-  const STATE = {
-    format: 'sf',
-    scoring: 'ppr',
-    tep: false,
-    position: 'All',
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+
+  const STORAGE_KEY = 'dynasty_csv_url_v1';
+  const SETTINGS_KEY = 'dynasty_settings_v1';
+
+  const state = {
+    raw: [],
+    filtered: [],
+    sortKey: 'value',
+    sortDir: 'desc',
+    page: 1,
+    pageSize: 50,
+    maxValue: 10000,
+    pos: 'All',
+    team: '',
     search: '',
-    rows: [],
-    loading: false,
+    minVal: 0,
+    minPpg: 0,
+    ppgOnly: false,
   };
 
-  const DOM = {
-    statusPill: document.getElementById('statusPill'),
-    tableBody: document.getElementById('tableBody'),
-    rowCount: document.getElementById('rowCount'),
-    searchInput: document.getElementById('searchInput'),
-    refreshBtn: document.getElementById('refreshBtn'),
-    csvBtn: document.getElementById('csvBtn'),
-    tepToggle: document.getElementById('tepToggle'),
-    errorBanner: document.getElementById('errorBanner'),
-    errorText: document.getElementById('errorText'),
-    retryBtn: document.getElementById('retryBtn'),
+  const els = {
+    csvUrl: $('#csvUrl'),
+    loadBtn: $('#loadBtn'),
+    saveBtn: $('#saveBtn'),
+    refreshBtn: $('#refreshBtn'),
+    statusBar: $('#statusBar'),
+    statusPill: $('#statusPill'),
+    statusText: $('#statusText'),
+    retryBtn: $('#retryBtn'),
+    liveDot: $('#liveDot'),
+    statTotal: $('#statTotal'),
+    statAvgVal: $('#statAvgVal'),
+    statAvgPpg: $('#statAvgPpg'),
+    statUpdated: $('#statUpdated'),
+    searchInput: $('#searchInput'),
+    posChips: $('#posChips'),
+    teamSelect: $('#teamSelect'),
+    ppgOnly: $('#ppgOnly'),
+    minVal: $('#minVal'),
+    minValLabel: $('#minValLabel'),
+    minPpg: $('#minPpg'),
+    minPpgLabel: $('#minPpgLabel'),
+    tableBody: $('#tableBody'),
+    emptyState: $('#emptyState'),
+    loadingState: $('#loadingState'),
+    showingCount: $('#showingCount'),
+    totalCount: $('#totalCount'),
+    prevPage: $('#prevPage'),
+    nextPage: $('#nextPage'),
+    pageInfo: $('#pageInfo'),
+    exportBtn: $('#exportBtn'),
+    clearFilters: $('#clearFilters'),
   };
 
-  // Persistence
-  const SETTINGS_KEY = 'ra_dashboard_settings_v1';
-  function loadSettings() {
-    try {
-      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-      STATE.format = s.format || 'sf';
-      STATE.scoring = s.scoring || 'ppr';
-      STATE.tep = !!s.tep;
-      STATE.position = s.position || 'All';
-      STATE.search = s.search || '';
-    } catch {}
-  }
-  function saveSettings() {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-      format: STATE.format,
-      scoring: STATE.scoring,
-      tep: STATE.tep,
-      position: STATE.position,
-      search: STATE.search,
-    }));
-  }
+  // Init position chips
+  const POSITIONS = ['All', 'QB', 'RB', 'WR', 'TE'];
+  els.posChips.innerHTML = POSITIONS.map(p => `
+    <button data-pos="${p}" class="px-3 py-1.5 rounded-full text-sm font-medium border transition ${p==='All' ? 'bg-amber-400 text-slate-900 border-amber-400' : 'glass border-white/10 hover:bg-white/10'}">${p}</button>
+  `).join('');
 
-  // Cache helpers
-  const now = () => Date.now();
-  function getCache(key, maxAgeMs) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return null;
-      const { ts, data } = JSON.parse(raw);
-      if (now() - ts > maxAgeMs) return null;
-      return data;
-    } catch { return null; }
+  // Load saved URL and settings
+  const savedUrl = localStorage.getItem(STORAGE_KEY) || '';
+  if (savedUrl) {
+    els.csvUrl.value = savedUrl;
+    loadData(savedUrl);
   }
-  function setCache(key, data) {
-    localStorage.setItem(key, JSON.stringify({ ts: now(), data }));
-  }
+  const savedSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+  Object.assign(state, savedSettings);
 
-  // Proxy fetch
-  async function fetchWithProxy(url, label='') {
-    const proxies = [
-      { name: 'direct', fn: u => u },
-      { name: 'allorigins', fn: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}` },
-      { name: 'corsproxy', fn: u => `https://corsproxy.io/?${encodeURIComponent(u)}` },
-    ];
-    let lastErr;
-    for (const p of proxies) {
-      try {
-        console.log(`[Fetch] ${label} → ${p.name}`);
-        const res = await fetch(p.fn(url), { cache: 'no-store' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const ct = res.headers.get('content-type') || '';
-        const data = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
-        console.log(`[Fetch] ${label} ✓ via ${p.name}`);
-        return data;
-      } catch (e) {
-        console.warn(`[Fetch] ${label} ✗ ${p.name}: ${e.message}`);
-        lastErr = e;
-        continue;
-      }
-    }
-    throw lastErr || new Error('All proxies failed');
-  }
+  // Event listeners
+  els.loadBtn.addEventListener('click', () => {
+    const url = els.csvUrl.value.trim();
+    if (!url) return showStatus('error', 'Enter a CSV URL first');
+    loadData(url);
+  });
+  els.saveBtn.addEventListener('click', () => {
+    const url = els.csvUrl.value.trim();
+    if (!url) return showStatus('error', 'Nothing to save');
+    localStorage.setItem(STORAGE_KEY, url);
+    showStatus('success', 'URL saved to localStorage');
+  });
+  els.refreshBtn.addEventListener('click', () => {
+    const url = els.csvUrl.value.trim() || localStorage.getItem(STORAGE_KEY);
+    if (url) loadData(url);
+  });
+  els.retryBtn.addEventListener('click', () => {
+    const url = els.csvUrl.value.trim() || localStorage.getItem(STORAGE_KEY);
+    if (url) loadData(url);
+  });
 
-  // Endpoints
-  const EP = {
-    sleeperPlayers: 'https://api.sleeper.app/v1/players/nfl',
-    values: (key) => `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${key}`,
-    ppgRankings: 'https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings',
-    movers: 'https://rosteraudit.com/wp-json/ra/v1/movers?limit=200',
-    embed: (id) => `https://rosteraudit.com/wp-json/ra/v1/projections/embed/${id}`,
-  };
+  els.searchInput.addEventListener('input', debounce(e => {
+    state.search = e.target.value.toLowerCase().trim();
+    state.page = 1;
+    applyFilters();
+  }, 200));
 
-  // Status
-  function setStatus(state, msg='') {
-    const dot = DOM.statusPill.querySelector('span');
-    const text = DOM.statusPill.querySelector('span.mono');
-    DOM.statusPill.classList.remove('border-emerald-500/30','border-amber-500/30','border-red-500/30');
-    if (state === 'loading') {
-      dot.className = 'size-2 rounded-full bg-amber-400 animate-pulse';
-      text.textContent = msg || 'LOADING';
-      DOM.statusPill.classList.add('border-amber-500/30');
-    } else if (state === 'error') {
-      dot.className = 'size-2 rounded-full bg-red-500';
-      text.textContent = 'ERROR';
-      DOM.statusPill.classList.add('border-red-500/30');
-    } else {
-      dot.className = 'size-2 rounded-full bg-emerald-400';
-      text.textContent = 'READY';
-      DOM.statusPill.classList.add('border-emerald-500/30');
-    }
-  }
+  els.posChips.addEventListener('click', e => {
+    const btn = e.target.closest('button[data-pos]');
+    if (!btn) return;
+    state.pos = btn.dataset.pos;
+    updatePosChips();
+    state.page = 1;
+    applyFilters();
+  });
 
-  // Data loading
-  async function loadData(force=false) {
-    if (STATE.loading) return;
-    STATE.loading = true;
-    setStatus('loading','INITIALIZING');
-    DOM.errorBanner.classList.add('hidden');
-    DOM.refreshBtn.disabled = true;
-    DOM.refreshBtn.classList.add('opacity-60','cursor-not-allowed');
+  els.teamSelect.addEventListener('change', e => {
+    state.team = e.target.value;
+    state.page = 1;
+    applyFilters();
+  });
 
-    try {
-      // 1. Sleeper players
-      setStatus('loading','PLAYERS');
-      const PLAYER_CACHE_KEY = 'ra_cache_players';
-      let players = !force ? getCache(PLAYER_CACHE_KEY, 24*60*60*1000) : null;
-      if (!players) {
-        console.log('[Phase] Fetching Sleeper players');
-        players = await fetchWithProxy(EP.sleeperPlayers, 'sleeper_players');
-        setCache(PLAYER_CACHE_KEY, players);
+  els.ppgOnly.addEventListener('change', e => {
+    state.ppgOnly = e.target.checked;
+    state.page = 1;
+    applyFilters();
+  });
+
+  els.minVal.addEventListener('input', e => {
+    state.minVal = +e.target.value;
+    els.minValLabel.textContent = state.minVal.toLocaleString();
+    state.page = 1;
+    applyFilters();
+  });
+
+  els.minPpg.addEventListener('input', e => {
+    state.minPpg = +e.target.value;
+    els.minPpgLabel.textContent = state.minPpg.toFixed(1);
+    state.page = 1;
+    applyFilters();
+  });
+
+  els.clearFilters.addEventListener('click', () => {
+    state.search = '';
+    state.pos = 'All';
+    state.team = '';
+    state.minVal = 0;
+    state.minPpg = 0;
+    state.ppgOnly = false;
+    els.searchInput.value = '';
+    els.teamSelect.value = '';
+    els.ppgOnly.checked = false;
+    els.minVal.value = 0;
+    els.minPpg.value = 0;
+    els.minValLabel.textContent = '0';
+    els.minPpgLabel.textContent = '0.0';
+    updatePosChips();
+    state.page = 1;
+    applyFilters();
+  });
+
+  $$('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (state.sortKey === key) {
+        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
       } else {
-        console.log('[Cache] Sleeper players hit');
+        state.sortKey = key;
+        state.sortDir = key === 'value' || key === 'ppg' || key === 'age' ? 'desc' : 'asc';
       }
+      updateSortIndicators();
+      applyFilters();
+    });
+  });
 
-      const playersMap = players; // object keyed by id
+  els.prevPage.addEventListener('click', () => {
+    if (state.page > 1) { state.page--; renderTable(); }
+  });
+  els.nextPage.addEventListener('click', () => {
+    const maxPage = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+    if (state.page < maxPage) { state.page++; renderTable(); }
+  });
 
-      // 2. Values
-      setStatus('loading','VALUES');
-      const formatKey = `${STATE.format}_${STATE.scoring}${STATE.tep ? '_tep' : ''}`;
-      const VALUES_CACHE_KEY = `ra_cache_values_${formatKey}`;
-      let valuesResp = !force ? getCache(VALUES_CACHE_KEY, 60*60*1000) : null;
-      if (!valuesResp) {
-        console.log('[Phase] Fetching values', formatKey);
-        valuesResp = await fetchWithProxy(EP.values(formatKey), 'values');
-        setCache(VALUES_CACHE_KEY, valuesResp);
-      }
+  els.exportBtn.addEventListener('click', exportCSV);
 
-      // Normalize values to array
-      const valuesArr = Array.isArray(valuesResp) ? valuesResp
-        : (valuesResp.data || valuesResp.players || valuesResp.values || Object.values(valuesResp));
+  function updatePosChips() {
+    $$('#posChips button').forEach(btn => {
+      const active = btn.dataset.pos === state.pos;
+      btn.className = `px-3 py-1.5 rounded-full text-sm font-medium border transition ${active ? 'bg-amber-400 text-slate-900 border-amber-400' : 'glass border-white/10 hover:bg-white/10'}`;
+    });
+  }
 
-      // 3. PPG rankings
-      setStatus('loading','PPG');
-      const PPG_CACHE_KEY = 'ra_cache_ppg';
-      let ppgResp = !force ? getCache(PPG_CACHE_KEY, 60*60*1000) : null;
-      if (!ppgResp) {
-        console.log('[Phase] Fetching PPG rankings');
-        ppgResp = await fetchWithProxy(EP.ppgRankings, 'ppg');
-        setCache(PPG_CACHE_KEY, ppgResp);
-      }
-      const ppgArr = Array.isArray(ppgResp) ? ppgResp : (ppgResp.data || Object.values(ppgResp));
-      const ppgMap = new Map();
-      for (const p of ppgArr) {
-        const id = p.sleeper_id || p.player_id || p.id;
-        const val = p.ppg || p.value || p.projected_ppg || p.avg;
-        if (id) ppgMap.set(String(id), Number(val) || null);
-      }
+  function updateSortIndicators() {
+    $$('th[data-sort]').forEach(th => {
+      const key = th.dataset.sort;
+      const isActive = key === state.sortKey;
+      th.innerHTML = th.textContent.replace(/ [↑↓]/, '') + (isActive ? (state.sortDir === 'asc' ? ' ↑' : ' ↓') : '');
+    });
+  }
 
-      // 4. Movers
-      setStatus('loading','MOVERS');
-      const MOVERS_CACHE_KEY = 'ra_cache_movers';
-      let moversResp = !force ? getCache(MOVERS_CACHE_KEY, 60*60*1000) : null;
-      if (!moversResp) {
-        console.log('[Phase] Fetching movers');
-        moversResp = await fetchWithProxy(EP.movers, 'movers');
-        setCache(MOVERS_CACHE_KEY, moversResp);
-      }
-      const moversArr = Array.isArray(moversResp) ? moversResp : (moversResp.data || []);
-      const moversMap = new Map();
-      for (const m of moversArr) {
-        const id = m.sleeper_id || m.player_id || m.id;
-        if (id) moversMap.set(String(id), {
-          d7: m.change_7d ?? m['7d'] ?? m.week ?? 0,
-          d30: m.change_30d ?? m['30d'] ?? m.month ?? 0,
-        });
-      }
-
-      // Build rows
-      setStatus('loading','MERGING');
-      const rows = [];
-      for (const v of valuesArr) {
-        const id = String(v.sleeper_id || v.player_id || v.id || v.sleeperId || '');
-        if (!id) continue;
-        const p = playersMap[id];
-        if (!p) continue;
-        const pos = p.position || v.position || '';
-        if (!['QB','RB','WR','TE'].includes(pos)) continue;
-        const name = p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || v.name || 'Unknown';
-        const team = p.team || v.team || '';
-        const value = Number(v.value ?? v.dynasty_value ?? v.rank_value ?? 0) || 0;
-        const ppg = ppgMap.get(id) ?? null;
-        const mover = moversMap.get(id) || { d7:0, d30:0 };
-        rows.push({
-          id, name, pos, team, value, ppg,
-          d7: Number(mover.d7)||0,
-          d30: Number(mover.d30)||0,
-          search: `${name} ${team} ${pos}`.toLowerCase(),
-        });
-      }
-
-      // Sort by value desc
-      rows.sort((a,b)=> b.value - a.value);
-
-      STATE.rows = rows;
-      console.log(`[Data] Built ${rows.length} rows`);
-
-      // Fill missing PPG for top 100
-      await fillMissingPPG(rows);
-
-      render();
-      setStatus('ready');
+  async function loadData(url) {
+    showLoading(true);
+    showStatus('loading', 'Fetching CSV…');
+    els.liveDot.classList.add('hidden');
+    try {
+      const bust = url.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`;
+      const res = await fetch(url + bust, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const data = parseCSV(text);
+      if (!data.length) throw new Error('CSV parsed but no rows found');
+      state.raw = data;
+      state.maxValue = Math.max(1000, ...data.map(d => d.value || 0));
+      els.minVal.max = Math.ceil(state.maxValue / 100) * 100;
+      // Populate teams
+      const teams = [...new Set(data.map(d => d.team).filter(Boolean))].sort();
+      els.teamSelect.innerHTML = `<option value="">All Teams</option>` + teams.map(t => `<option value="${t}">${t}</option>`).join('');
+      // Restore settings to UI
+      els.searchInput.value = state.search;
+      els.ppgOnly.checked = state.ppgOnly;
+      els.minVal.value = state.minVal;
+      els.minPpg.value = state.minPpg;
+      els.minValLabel.textContent = state.minVal.toLocaleString();
+      els.minPpgLabel.textContent = state.minPpg.toFixed(1);
+      updatePosChips();
+      applyFilters();
+      showStatus('success', `Loaded ${data.length.toLocaleString()} players`);
+      els.liveDot.classList.remove('hidden');
+      els.liveDot.classList.add('flex');
+      saveSettings();
     } catch (err) {
       console.error(err);
-      setStatus('error');
-      DOM.errorText.textContent = err.message || String(err);
-      DOM.errorBanner.classList.remove('hidden');
+      showStatus('error', `Failed to load: ${err.message}`);
     } finally {
-      STATE.loading = false;
-      DOM.refreshBtn.disabled = false;
-      DOM.refreshBtn.classList.remove('opacity-60','cursor-not-allowed');
+      showLoading(false);
     }
   }
 
-  // Fill missing PPG via embed
-  async function fillMissingPPG(rows) {
-    const EMBED_CACHE_KEY = 'ra_cache_embed_map';
-    let embedCache = getCache(EMBED_CACHE_KEY, 24*60*60*1000) || {};
-    const need = rows
-      .filter(r => r.value > 0 && (r.ppg === null || r.ppg === 0))
-      .sort((a,b)=> b.value - a.value)
-      .slice(0, 100);
+  function parseCSV(text) {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) return [];
+    const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+    const idx = {
+      sleeper_id: headers.indexOf('sleeper_id'),
+      name: headers.indexOf('name'),
+      team: headers.indexOf('team'),
+      pos: headers.indexOf('pos'),
+      age: headers.indexOf('age'),
+      number: headers.indexOf('number'),
+      value: headers.indexOf('value'),
+      ppg: headers.indexOf('ppg'),
+      ppg_source: headers.indexOf('ppg_source'),
+      last_updated: headers.indexOf('last_updated'),
+    };
+    const out = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCSVLine(lines[i]);
+      if (cols.length < 3) continue;
+      const get = k => idx[k] >= 0 ? (cols[idx[k]] || '').trim() : '';
+      const row = {
+        sleeper_id: get('sleeper_id'),
+        name: get('name'),
+        team: get('team'),
+        pos: get('pos'),
+        age: parseFloat(get('age')) || null,
+        number: get('number'),
+        value: parseFloat(get('value')) || 0,
+        ppg: parseFloat(get('ppg')) || 0,
+        ppg_source: get('ppg_source'),
+        last_updated: get('last_updated'),
+      };
+      if (row.name) out.push(row);
+    }
+    return out;
+  }
 
-    if (need.length === 0) return;
-
-    console.log(`[Phase] Filling missing PPG for ${need.length} players`);
-    setStatus('loading', `PPG EMBED 0/${need.length}`);
-
-    const concurrency = 5;
-    let idx = 0;
-    let done = 0;
-
-    async function worker() {
-      while (idx < need.length) {
-        const i = idx++;
-        const row = need[i];
-        const id = row.id;
-        try {
-          if (embedCache[id] && typeof embedCache[id].ppg === 'number') {
-            row.ppg = embedCache[id].ppg;
-          } else {
-            const data = await fetchWithProxy(EP.embed(id), `embed_${id}`);
-            // Try to extract ppg
-            const ppg = Number(data.ppg ?? data.projected_ppg ?? data.avg_ppg ?? data?.projections?.ppg ?? 0) || null;
-            embedCache[id] = { ppg, ts: now() };
-            row.ppg = ppg;
-            setCache(EMBED_CACHE_KEY, embedCache);
-          }
-        } catch (e) {
-          console.warn('Embed fail', id, e.message);
-          row.ppg = row.ppg ?? null;
-        }
-        done++;
-        setStatus('loading', `PPG EMBED ${done}/${need.length}`);
-        // modest yield to UI
-        if (done % 10 === 0) await new Promise(r => setTimeout(r, 0));
+  // Robust CSV line parser (handles quotes)
+  function parseCSVLine(line) {
+    const out = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        out.push(cur); cur = '';
+      } else {
+        cur += ch;
       }
     }
-
-    await Promise.all(Array.from({length: concurrency}, () => worker()));
-    console.log('[Phase] Embed fill complete');
+    out.push(cur);
+    return out;
   }
 
-  // Rendering
-  function render() {
-    // Update controls UI
-    document.querySelectorAll('[data-format]').forEach(b=>{
-      b.classList.toggle('bg-white/15', b.dataset.format === STATE.format);
-      b.classList.toggle('text-white', b.dataset.format === STATE.format);
-      b.classList.toggle('text-slate-300', b.dataset.format !== STATE.format);
-    });
-    document.querySelectorAll('[data-scoring]').forEach(b=>{
-      b.classList.toggle('bg-white/15', b.dataset.scoring === STATE.scoring);
-      b.classList.toggle('text-white', b.dataset.scoring === STATE.scoring);
-      b.classList.toggle('text-slate-300', b.dataset.scoring !== STATE.scoring);
-    });
-    DOM.tepToggle.checked = STATE.tep;
-    document.querySelectorAll('.pos-chip').forEach(b=>{
-      const active = b.dataset.pos === STATE.position;
-      b.classList.toggle('bg-fuchsia-500/20', active);
-      b.classList.toggle('border-fuchsia-500/40', active);
-      b.classList.toggle('text-fuchsia-200', active);
-    });
-    DOM.searchInput.value = STATE.search;
-
-    // Filter
-    const q = STATE.search.trim().toLowerCase();
-    let filtered = STATE.rows;
-    if (STATE.position !== 'All') filtered = filtered.filter(r => r.pos === STATE.position);
-    if (q) filtered = filtered.filter(r => r.search.includes(q));
-
-    // Render rows
-    const frag = document.createDocumentFragment();
-    filtered.slice(0, 500).forEach((r, i) => {
-      const tr = document.createElement('tr');
-      tr.className = 'hover:bg-white/[0.03] transition';
-      tr.innerHTML = `
-        <td class="text-right px-4 py-2.5 text-slate-500 mono">${i+1}</td>
-        <td class="px-4 py-2.5">
-          <div class="flex items-center gap-3">
-            <img src="https://sleepercdn.com/content/nfl/players/thumb/${r.id}.jpg" onerror="this.style.display='none'" class="size-9 rounded-xl bg-black/40 border border-white/10 object-cover"/>
-            <div class="min-w-0">
-              <div class="font-medium leading-tight truncate">${escapeHtml(r.name)}</div>
-              <div class="text-xs text-slate-500">${r.team||'FA'} • #${r.id.slice(0,4)}</div>
-            </div>
-          </div>
-        </td>
-        <td class="px-4 py-2.5">
-          <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium border ${posClass(r.pos)}">${r.pos}</span>
-        </td>
-        <td class="text-right px-4 py-2.5 mono font-medium">${r.value ? r.value.toLocaleString() : '—'}</td>
-        <td class="text-right px-4 py-2.5 mono">${r.ppg ? r.ppg.toFixed(1) : '—'}</td>
-        <td class="text-right px-4 py-2.5 mono ${deltaClass(r.d7)}">${fmtDelta(r.d7)}</td>
-        <td class="text-right px-4 py-2.5 mono ${deltaClass(r.d30)}">${fmtDelta(r.d30)}</td>
-      `;
-      frag.appendChild(tr);
-    });
-    DOM.tableBody.innerHTML = '';
-    DOM.tableBody.appendChild(frag);
-    DOM.rowCount.textContent = `${filtered.length.toLocaleString()} players • ${STATE.rows.length.toLocaleString()} total`;
-  }
-
-  function posClass(pos) {
-    switch(pos) {
-      case 'QB': return 'border-sky-500/30 bg-sky-500/10 text-sky-300';
-      case 'RB': return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300';
-      case 'WR': return 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300';
-      case 'TE': return 'border-amber-500/30 bg-amber-500/10 text-amber-300';
-      default: return 'border-white/10 bg-white/5 text-slate-300';
+  function applyFilters() {
+    let arr = state.raw.slice();
+    if (state.search) {
+      arr = arr.filter(r => (r.name + ' ' + r.team).toLowerCase().includes(state.search));
     }
-  }
-  function deltaClass(v){ return v>0?'text-emerald-400': v<0?'text-red-400':'text-slate-500'; }
-  function fmtDelta(v){
-    if (!v) return '—';
-    const s = v>0?'+':'';
-    return `${s}${Number(v).toFixed(1)}`;
-  }
-  function escapeHtml(s){ return s.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-  // CSV export
-  function exportCSV() {
-    const q = STATE.search.trim().toLowerCase();
-    let filtered = STATE.rows;
-    if (STATE.position !== 'All') filtered = filtered.filter(r => r.pos === STATE.position);
-    if (q) filtered = filtered.filter(r => r.search.includes(q));
-
-    const headers = ['Rank','Player','Pos','Team','Value','PPG','7D','30D','SleeperID'];
-    const lines = [headers.join(',')];
-    filtered.forEach((r,i)=>{
-      const row = [
-        i+1,
-        `"${r.name.replace(/"/g,'""')}"`,
-        r.pos,
-        r.team||'',
-        r.value||'',
-        r.ppg? r.ppg.toFixed(2):'',
-        r.d7||'',
-        r.d30||'',
-        r.id
-      ];
-      lines.push(row.join(','));
+    if (state.pos !== 'All') {
+      arr = arr.filter(r => r.pos === state.pos);
+    }
+    if (state.team) {
+      arr = arr.filter(r => r.team === state.team);
+    }
+    if (state.minVal > 0) {
+      arr = arr.filter(r => r.value >= state.minVal);
+    }
+    if (state.minPpg > 0) {
+      arr = arr.filter(r => r.ppg >= state.minPpg);
+    }
+    if (state.ppgOnly) {
+      arr = arr.filter(r => r.ppg > 0);
+    }
+    // Sort
+    const key = state.sortKey;
+    const dir = state.sortDir === 'asc' ? 1 : -1;
+    arr.sort((a,b) => {
+      let av = a[key], bv = b[key];
+      if (typeof av === 'string') av = av.toLowerCase();
+      if (typeof bv === 'string') bv = bv.toLowerCase();
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
     });
-    const blob = new Blob([lines.join('\n')], {type:'text/csv'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `rosteraudit_${STATE.format}_${STATE.scoring}${STATE.tep?'_tep':''}.csv`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    state.filtered = arr;
+    updateStats();
+    renderTable();
+    saveSettings();
   }
 
-  // Events
-  document.querySelectorAll('[data-format]').forEach(b=> b.addEventListener('click',()=>{
-    STATE.format = b.dataset.format;
-    saveSettings();
-    loadData();
-  }));
-  document.querySelectorAll('[data-scoring]').forEach(b=> b.addEventListener('click',()=>{
-    STATE.scoring = b.dataset.scoring;
-    saveSettings();
-    loadData();
-  }));
-  DOM.tepToggle.addEventListener('change', e=>{
-    STATE.tep = e.target.checked;
-    saveSettings();
-    loadData();
-  });
-  document.querySelectorAll('.pos-chip').forEach(b=> b.addEventListener('click',()=>{
-    STATE.position = b.dataset.pos;
-    saveSettings();
-    render();
-  }));
-  let searchDebounce;
-  DOM.searchInput.addEventListener('input', e=>{
-    clearTimeout(searchDebounce);
-    searchDebounce = setTimeout(()=>{
-      STATE.search = e.target.value;
-      saveSettings();
-      render();
-    }, 200);
-  });
-  DOM.refreshBtn.addEventListener('click', ()=> loadData(true));
-  DOM.retryBtn.addEventListener('click', ()=> loadData(true));
-  DOM.csvBtn.addEventListener('click', exportCSV);
+  function updateStats() {
+    const total = state.filtered.length;
+    const avgVal = total ? (state.filtered.reduce((s,r)=>s+r.value,0)/total) : 0;
+    const ppgArr = state.filtered.filter(r=>r.ppg>0);
+    const avgPpg = ppgArr.length ? (ppgArr.reduce((s,r)=>s+r.ppg,0)/ppgArr.length) : 0;
+    const lastUpd = state.raw[0]?.last_updated || '—';
+    els.statTotal.textContent = total.toLocaleString();
+    els.statAvgVal.textContent = avgVal ? Math.round(avgVal).toLocaleString() : '—';
+    els.statAvgPpg.textContent = avgPpg ? avgPpg.toFixed(1) : '—';
+    els.statUpdated.textContent = formatDate(lastUpd);
+    els.showingCount.textContent = Math.min(state.pageSize, total - (state.page-1)*state.pageSize).toLocaleString();
+    els.totalCount.textContent = total.toLocaleString();
+  }
 
-  // Init
-  loadSettings();
-  render();
-  loadData();
+  function formatDate(s) {
+    if (!s || s === '—') return '—';
+    const d = new Date(s);
+    if (!isNaN(d)) return d.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+    return s;
+  }
+
+  function renderTable() {
+    const start = (state.page - 1) * state.pageSize;
+    const pageRows = state.filtered.slice(start, start + state.pageSize);
+    if (!pageRows.length) {
+      els.tableBody.innerHTML = '';
+      els.emptyState.classList.remove('hidden');
+    } else {
+      els.emptyState.classList.add('hidden');
+      const maxVal = Math.max(...state.filtered.map(r=>r.value), 1);
+      els.tableBody.innerHTML = pageRows.map(r => {
+        const valPct = Math.min(100, (r.value / maxVal) * 100);
+        const posColor = r.pos === 'QB' ? 'text-sky-400' : r.pos === 'RB' ? 'text-emerald-400' : r.pos === 'WR' ? 'text-fuchsia-400' : 'text-amber-400';
+        return `
+          <tr class="hover:bg-white/[0.03] transition">
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400">#${r.number || '—'}</div>
+                <div>
+                  <div class="font-medium leading-tight">${escapeHtml(r.name)}</div>
+                  <div class="text-xs text-slate-500 sm:hidden">${r.team} • ${r.pos}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-3 hidden sm:table-cell">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-white/5 text-xs font-medium">${escapeHtml(r.team || 'FA')}</span>
+            </td>
+            <td class="px-4 py-3">
+              <span class="font-semibold ${posColor}">${r.pos}</span>
+            </td>
+            <td class="px-4 py-3 hidden md:table-cell text-slate-300">${r.age ? r.age.toFixed(1) : '—'}</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3 min-w-[160px]">
+                <div class="flex-1 h-2 rounded-full bg-slate-800 overflow-hidden">
+                  <div class="h-full bg-gradient-to-r from-amber-500 to-amber-300" style="width:${valPct}%"></div>
+                </div>
+                <span class="mono text-sm font-medium w-14 text-right">${Math.round(r.value).toLocaleString()}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              <span class="mono font-medium ${r.ppg>0?'text-slate-100':'text-slate-600'}">${r.ppg ? r.ppg.toFixed(1) : '—'}</span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    // Pagination
+    const maxPage = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+    els.pageInfo.textContent = `Page ${state.page} / ${maxPage}`;
+    els.prevPage.disabled = state.page <= 1;
+    els.nextPage.disabled = state.page >= maxPage;
+    updateSortIndicators();
+  }
+
+  function showStatus(type, msg) {
+    els.statusBar.classList.remove('hidden');
+    els.retryBtn.classList.toggle('hidden', type !== 'error');
+    const colors = {
+      loading: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+      success: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+      error: 'bg-rose-500/20 text-rose-300 border-rose-500/30',
+    };
+    els.statusPill.className = `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium border ${colors[type]||''}`;
+    els.statusPill.textContent = type.toUpperCase();
+    els.statusText.textContent = msg;
+  }
+
+  function showLoading(isLoading) {
+    els.loadingState.classList.toggle('hidden', !isLoading);
+    if (isLoading) els.emptyState.classList.add('hidden');
+  }
+
+  function exportCSV() {
+    if (!state.filtered.length) return;
+    const headers = ['name','team','pos','age','value','ppg','number','sleeper_id','ppg_source','last_updated'];
+    const rows = [headers.join(',')];
+    for (const r of state.filtered) {
+      rows.push(headers.map(h => csvEscape(r[h])).join(','));
+    }
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dynasty_rankings_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function csvEscape(v) {
+    if (v == null) return '';
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function debounce(fn, ms) {
+    let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+  }
+
+  function saveSettings() {
+    const settings = {
+      sortKey: state.sortKey,
+      sortDir: state.sortDir,
+      pos: state.pos,
+      team: state.team,
+      search: state.search,
+      minVal: state.minVal,
+      minPpg: state.minPpg,
+      ppgOnly: state.ppgOnly,
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }
+
+  // Initial UI sync
+  updatePosChips();
+  updateSortIndicators();
 })();
 </script>
 </body>
