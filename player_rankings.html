@@ -2,606 +2,178 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Dynasty Player Rankings • Glass</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dynasty Player Rankings • Roster Audit</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#050507;
-    --panel:rgba(255,255,255,.04);
-    --panel-2:rgba(255,255,255,.06);
-    --border:rgba(255,255,255,.08);
-    --text:#e6e7eb;
-    --muted:#9aa0aa;
-    --amber:#f59e0b;
-    --amber-2:#fb923c;
-    --fuchsia:#d946ef;
-    --emerald:#10b981;
-    --sky:#0ea5e9;
-    --orange:#f97316;
-    --radius:16px;
-    --shadow:0 10px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.03);
+  :root { color-scheme: dark; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+ .display { font-family: 'Space Grotesk', sans-serif; }
+ .glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.08); }
+ .glass-hover:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+ .scrollbar-thin::-webkit-scrollbar { width: 6px; height:6px; }
+ .scrollbar-thin::-webkit-scrollbar-thumb { background:#52525b; border-radius:999px; }
+ .scrollbar-thin::-webkit-scrollbar-track { background:transparent; }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;
-    line-height:1.4;
-    -webkit-font-smoothing:antialiased;
-    overflow-x:hidden;
-  }
-  body::before{
-    content:"";
-    position:fixed;inset:-20%;
-    background:
-      radial-gradient(40% 40% at 10% 10%, rgba(251,146,60,.15), transparent 60%),
-      radial-gradient(35% 35% at 90% 20%, rgba(217,70,239,.12), transparent 60%),
-      radial-gradient(45% 45% at 50% 100%, rgba(14,165,233,.10), transparent 60%),
-      linear-gradient(180deg, #050507 0%, #07090f 100%);
-    filter:blur(20px);
-    z-index:-1;
-  }
-  .wrap{
-    max-width:1200px;
-    margin:0 auto;
-    padding:24px 16px 80px;
-  }
-  header{
-    position:sticky;top:0;z-index:40;
-    backdrop-filter:blur(12px) saturate(140%);
-    background:linear-gradient(180deg, rgba(5,5,7,.85), rgba(5,5,7,.65));
-    border-bottom:1px solid var(--border);
-    margin:-24px -16px 24px;
-    padding:16px;
-  }
-  .head-inner{
-    max-width:1200px;margin:0 auto;
-    display:flex;align-items:center;gap:16px;flex-wrap:wrap;
-  }
-  .brand{
-    display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.2px;
-  }
-  .logo{
-    width:36px;height:36px;border-radius:12px;
-    background:conic-gradient(from 210deg, var(--amber), var(--amber-2), var(--fuchsia), var(--sky), var(--amber));
-    box-shadow:0 0 30px rgba(245,158,11,.35);
-    display:grid;place-items:center;font-size:18px;
-  }
-  .brand span{font-size:18px}
-  .spacer{flex:1}
-  .badge{
-    font-size:12px;padding:4px 10px;border-radius:999px;
-    background:var(--panel);border:1px solid var(--border);color:var(--muted);
-  }
-  .badge.live{color:#a7f3d0;border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.08)}
-  .badge.demo{color:#fed7aa;border-color:rgba(249,115,22,.35);background:rgba(249,115,22,.08)}
-  .glass{
-    background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    backdrop-filter:blur(16px) saturate(140%);
-  }
-  .panel{
-    padding:16px;
-  }
-  .controls{
-    display:grid;gap:16px;
-  }
-  .row{
-    display:flex;flex-wrap:wrap;gap:12px;align-items:center;
-  }
-  .chips{display:flex;gap:8px;flex-wrap:wrap}
-  .chip{
-    padding:8px 12px;border-radius:999px;border:1px solid var(--border);
-    background:var(--panel);color:var(--text);font-size:13px;font-weight:600;
-    cursor:pointer;user-select:none;transition:.2s;
-  }
-  .chip:hover{transform:translateY(-1px);background:var(--panel-2)}
-  .chip.active{outline:2px solid rgba(245,158,11,.5);background:rgba(245,158,11,.10)}
-  .chip.pos-qb.active{outline-color:rgba(217,70,239,.6)}
-  .chip.pos-rb.active{outline-color:rgba(16,185,129,.6)}
-  .chip.pos-wr.active{outline-color:rgba(14,165,233,.6)}
-  .chip.pos-te.active{outline-color:rgba(249,115,22,.6)}
-  select, input[type="search"], button{
-    background:var(--panel);color:var(--text);border:1px solid var(--border);
-    border-radius:12px;padding:10px 12px;font-size:14px;outline:none;
-  }
-  select:focus, input[type="search"]:focus, button:focus{border-color:rgba(245,158,11,.6);box-shadow:0 0 0 3px rgba(245,158,11,.15)}
-  input[type="search"]{min-width:220px;flex:1}
-  .toggle{
-    display:inline-flex;align-items:center;gap:10px;padding:8px 12px;border-radius:999px;
-    background:var(--panel);border:1px solid var(--border);font-size:13px;
-  }
-  .toggle input{accent-color:var(--amber);width:16px;height:16px}
-  .btn{
-    cursor:pointer;font-weight:600;background:linear-gradient(180deg, rgba(245,158,11,.2), rgba(245,158,11,.1));
-    border-color:rgba(245,158,11,.4);
-  }
-  .btn:hover{transform:translateY(-1px)}
-  .stats{
-    display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between;
-    padding:12px 16px;margin-top:12px;border-top:1px dashed var(--border);font-size:13px;color:var(--muted);
-  }
-  .table-wrap{
-    margin-top:20px;overflow:hidden;
-  }
-  table{width:100%;border-collapse:separate;border-spacing:0}
-  thead th{
-    position:sticky;top:0;z-index:5;
-    background:rgba(5,5,7,.8);backdrop-filter:blur(8px);
-    text-align:left;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
-    padding:12px 16px;border-bottom:1px solid var(--border);
-  }
-  tbody td{
-    padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px;
-  }
-  tbody tr:hover{background:rgba(255,255,255,.03)}
-  .rank{width:70px;color:var(--muted);font-variant-numeric:tabular-nums}
-  .player{font-weight:600}
-  .meta{font-size:12px;color:var(--muted)}
-  .pill{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;
-    border:1px solid var(--border);background:var(--panel);
-  }
-  .pill.qb{color:#f5d0fe;border-color:rgba(217,70,239,.35);background:rgba(217,70,239,.10)}
-  .pill.rb{color:#a7f3d0;border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.10)}
-  .pill.wr{color:#bae6fd;border-color:rgba(14,165,233,.35);background:rgba(14,165,233,.10)}
-  .pill.te{color:#fed7aa;border-color:rgba(249,115,22,.35);background:rgba(249,115,22,.10)}
-  .value{font-variant-numeric:tabular-nums;font-weight:700}
-  .ppg{font-variant-numeric:tabular-nums;color:#fef3c7}
-  .load-more{
-    display:flex;justify-content:center;padding:16px;
-  }
-  .load-more button{
-    padding:10px 16px;border-radius:999px
-  }
-  footer{
-    margin-top:24px;color:var(--muted);font-size:12px;text-align:center;
-  }
-  .status{
-    font-size:12px;color:var(--amber-2);padding:8px 16px;border-top:1px dashed var(--border)
-  }
-  .sr{position:absolute;width:1px;height:1px;overflow:hidden}
-  @media (max-width:720px){
-    thead th:nth-child(4), tbody td:nth-child(4){display:none}
-    .head-inner{gap:10px}
-    input[type="search"]{min-width:0;width:100%}
+ .shimmer {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
   }
 </style>
 </head>
-<body>
-<header>
-  <div class="head-inner">
-    <div class="brand">
-      <div class="logo">◆</div>
-      <span>Dynasty Player Rankings</span>
-    </div>
-    <span id="sourceBadge" class="badge">Loading…</span>
-    <div class="spacer"></div>
-    <div class="meta">Dark Glass • Amber Accent</div>
+<body class="min-h-screen bg-[#050507] text-zinc-100 antialiased selection:bg-amber-500/30 selection:text-amber-200">
+  <!-- Background -->
+  <div class="fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(245,158,11,0.15),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(139,92,246,0.12),transparent_60%),radial-gradient(40%_40%_at_0%_100%,rgba(14,165,233,0.10),transparent_60%),#050507]"></div>
+    <div class="absolute inset-0 opacity-[0.03] mix-blend-soft-light" style="background-image: repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 40px), repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 40px);"></div>
   </div>
-</header>
 
-<div class="wrap">
-  <section class="glass panel controls">
-    <div class="row">
-      <div class="chips" id="posChips">
-        <button class="chip pos-qb active" data-pos="QB">QB</button>
-        <button class="chip pos-rb active" data-pos="RB">RB</button>
-        <button class="chip pos-wr active" data-pos="WR">WR</button>
-        <button class="chip pos-te active" data-pos="TE">TE</button>
+  <div class="max-w- mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-10">
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+      <div class="flex items-start gap-3">
+        <div class="size-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-[0_0_40px_rgba(245,158,11,0.35)] flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L19 7v10l-7 5-7-5V7l7-5Z" stroke="black" stroke-opacity=".7" stroke-width="1.5" fill="url(#g)"/>
+            <defs><linearGradient id="g" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#fff"/><stop offset="1" stop-color="#fef3c7"/></linearGradient></defs>
+          </svg>
+        </div>
+        <div>
+          <h1 class="display text- md:text- font-bold leading-tight tracking-tight">Dynasty Player Rankings</h1>
+          <p class="text-zinc-400 text-sm mt-0.5">Live values • PPG • Trends from Roster Audit</p>
+        </div>
       </div>
-      <label class="toggle">
-        <input id="tePremium" type="checkbox" />
-        <span>TE Premium</span>
-      </label>
-      <select id="formatSel" title="Format">
-        <option value="sf">Superflex</option>
-        <option value="1qb">1QB</option>
-      </select>
-      <select id="scoringSel" title="Scoring">
-        <option value="ppr">PPR</option>
-        <option value="half">Half PPR</option>
-        <option value="standard">Standard</option>
-      </select>
-    </div>
-    <div class="row">
-      <input id="search" type="search" placeholder="Search player or team…  ⌘K" />
-      <button id="exportBtn" class="btn" title="Export CSV">⬇ Export CSV</button>
-      <button id="reloadBtn" title="Reload">↻ Reload</button>
-    </div>
-    <div class="stats">
-      <div><strong id="count">0</strong> players • Sorted by Value ▼</div>
-      <div id="lastUpdated">—</div>
-    </div>
-    <div id="enhanceStatus" class="status" hidden></div>
-  </section>
+      <div class="flex items-center gap-2">
+        <span id="presetBadge" class="glass rounded-full px-3 py-1.5 text-xs font-medium text-amber-300 border-amber-500/20 flex items-center gap-1.5">
+          <span class="size-1.5 rounded-full bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.8)]"></span>
+          <span class="uppercase tracking-wider font-semibold">sf_ppr</span>
+        </span>
+        <div class="relative">
+          <button id="settingsBtn" class="glass glass-hover rounded-full px-3.5 py-1.5 text-sm font-medium flex items-center gap-1.5 transition">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0.33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 0 0 0-1.82-.33 1.65 0 0 1-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 0 0 1-1-1.51 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0.33-1.82 1.65 0 0 1-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 1 1.51-1 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09A1.65 0 0 1 10.09 3H12a2 2 0 1 1 0 4h-.09a1.65 0 0 1-1.51 1 1.65 0 0 0 1.82.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 1-1.51-1Z"/></svg>
+            Settings
+          </button>
+          <div id="settingsPopover" class="hidden absolute right-0 mt-2 w- z-40 glass rounded-2xl p-4 shadow-2xl">
+            <h3 class="display font-semibold mb-3">Ranking Settings</h3>
+            <div class="space-y-3">
+              <div>
+                <label class="text-xs uppercase tracking-wider text-zinc-400 font-medium">Format</label>
+                <select id="formatSelect" class="mt-1 w-full bg-zinc-900/70 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+                  <option value="sf">Superflex</option>
+                  <option value="1qb">1QB</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs uppercase tracking-wider text-zinc-400 font-medium">Scoring</label>
+                <select id="scoringSelect" class="mt-1 w-full bg-zinc-900/70 border border-white/10 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+                  <option value="ppr">PPR</option>
+                  <option value="half">Half PPR</option>
+                  <option value="standard">Standard</option>
+                </select>
+              </div>
+              <p class="text- text-zinc-500 leading-relaxed pt-1">Changes save automatically and refetch rankings. TE Premium toggle is next to position filters.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
 
-  <section class="glass table-wrap">
-    <table id="rankTable" aria-describedby="tableDesc">
-      <thead>
-        <tr>
-          <th class="rank">Rank</th>
-          <th>Player</th>
-          <th>Pos</th>
-          <th>Value</th>
-          <th>PPG</th>
-        </tr>
-      </thead>
-      <tbody id="tbody">
-        <tr><td colspan="5" style="padding:24px;color:var(--muted)">Loading rankings…</td></tr>
-      </tbody>
-    </table>
-    <div class="load-more">
-      <button id="loadMoreBtn">Load more</button>
+    <!-- Controls -->
+    <div class="glass rounded-2xl p-3 md:p-4 mb-5">
+      <div class="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+        <div class="flex flex-wrap items-center gap-2">
+          <div id="posChips" class="flex items-center gap-1.5 p-1 rounded-xl bg-black/30 border border-white/5">
+            <!-- chips injected -->
+          </div>
+          <div class="h-6 w-px bg-white/10 mx-1 hidden sm:block"></div>
+          <label class="flex items-center gap-2 cursor-pointer group">
+            <span class="text-xs font-medium text-zinc-300 group-hover:text-white transition">TE Premium</span>
+            <button id="tepToggle" type="button" class="relative inline-flex h-6 w-11 items-center rounded-full transition bg-zinc-800 border border-white/10">
+              <span class="inline-block size-4 transform rounded-full bg-zinc-400 transition translate-x-1"></span>
+            </button>
+          </label>
+        </div>
+        <div class="flex items-center gap-2 w-full lg:w-auto">
+          <div class="relative flex-1 lg:w-">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3"/></svg>
+            <input id="searchInput" placeholder="Search player or team..." class="w-full pl-9 pr-3 py-2.5 bg-black/40 border border-white/10 rounded-xl text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition" />
+          </div>
+          <button id="exportBtn" class="glass glass-hover rounded-xl px-3.5 py-2.5 text-sm font-medium flex items-center gap-1.5 whitespace-nowrap transition">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
+        </div>
+      </div>
     </div>
-  </section>
 
-  <footer>
-    Rankings merge Sleeper player pool with RosterAudit values & projections. Glassmorphism theme.
-    <div id="tableDesc" class="sr">Dynasty rankings table with rank, player, position, value, and points per game.</div>
-  </footer>
-</div>
+    <!-- Stats bar -->
+    <div class="flex items-center justify-between mb-3 px-1">
+      <p id="countText" class="text-sm text-zinc-400">Loading players…</p>
+      <p class="text- uppercase tracking-wider text-zinc-500">Auto-refreshes hourly • Sleeper sync daily</p>
+    </div>
+
+    <!-- Table Card -->
+    <div class="glass rounded-2xl overflow-hidden">
+      <div class="overflow-x-auto scrollbar-thin">
+        <table class="w-full min-w-">
+          <thead class="bg-white/[0.02] border-b border-white/10 sticky top-0 backdrop-blur-xl z-10">
+            <tr class="text- uppercase tracking-wider text-zinc-400">
+              <th class="text-left font-semibold px-4 py-3 w-">Rank</th>
+              <th class="text-left font-semibold px-4 py-3">Player</th>
+              <th class="text-left font-semibold px-4 py-3 w-">Pos</th>
+              <th class="text-right font-semibold px-4 py-3 w-">Value</th>
+              <th class="text-right font-semibold px-4 py-3 w-">PPG</th>
+              <th class="text-right font-semibold px-4 py-3 w-">7D</th>
+              <th class="text-right font-semibold px-4 py-3 w-">30D</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-white/[0.04]">
+            <!-- rows injected -->
+          </tbody>
+        </table>
+      </div>
+      <!-- Loading skeleton -->
+      <div id="skeleton" class="p-4 space-y-3">
+        <div class="shimmer h-14 rounded-xl"></div>
+        <div class="shimmer h-14 rounded-xl"></div>
+        <div class="shimmer h-14 rounded-xl"></div>
+        <div class="shimmer h-14 rounded-xl"></div>
+        <div class="shimmer h-14 rounded-xl"></div>
+      </div>
+      <!-- Error state -->
+      <div id="errorState" class="hidden p-12 text-center">
+        <div class="mx-auto size-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h3 class="display text-xl font-semibold mb-2">Failed to load rankings</h3>
+        <p id="errorMsg" class="text-zinc-400 text-sm mb-5 max-w-md mx-auto">We couldn't reach the data sources. Please try again.</p>
+        <button id="retryBtn" class="glass glass-hover rounded-xl px-4 py-2 text-sm font-medium">Retry</button>
+      </div>
+      <!-- Empty state -->
+      <div id="emptyState" class="hidden p-12 text-center">
+        <p class="text-zinc-400">No players match your filters.</p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
+      <p>Data powered by <a href="https://rosteraudit.com" target="_blank" rel="noopener" class="text-amber-300 hover:text-amber-200 underline decoration-amber-500/30 underline-offset-4">Roster Audit</a> & Sleeper API • Values update hourly</p>
+      <p class="text-zinc-600">© <span id="year"></span> Dynasty Rankings</p>
+    </footer>
+  </div>
 
 <script>
-(function(){
+(() => {
+  // Config
   const SLEEPER_PLAYERS_URL = 'https://api.sleeper.app/v1/players/nfl';
-  const RA_VALUES_URL = key => `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${key}`;
+  const RA_VALUES_URL = (key) => `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${key}`;
   const RA_PPG_URL = 'https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings';
-  const RA_PLAYER_PAGE_URL = id => `https://rosteraudit.com/wp-json/ra/v1/player-page/${id}?api_key=ra_9d018b4d4039fa9d914c55fecbd873678cd171a9`;
-
-  const TTL = { players: 24*60*60*1000, values: 60*60*1000, ppg: 60*60*1000, playerPage: 60*60*1000 };
-
-  const state = {
-    settings: loadSettings(),
-    posFilter: new Set(['QB','RB','WR','TE']),
-    search:'',
-    data:[],
-    filtered:[],
-    displayCount:100,
-    source:'loading',
-    enhancing:{total:0,done:0}
-  };
-
-  const $ = s=>document.querySelector(s);
-  const tbody = $('#tbody');
-  const countEl = $('#count');
-  const sourceBadge = $('#sourceBadge');
-  const lastUpdatedEl = $('#lastUpdated');
-  const enhanceStatus = $('#enhanceStatus');
-
-  function loadSettings(){
-    try{
-      const s = JSON.parse(localStorage.getItem('dynasty_settings')||'{}');
-      return {
-        format: s.format || 'sf',
-        scoring: s.scoring || 'ppr',
-        tePremium: !!s.tePremium
-      };
-    }catch{ return {format:'sf',scoring:'ppr',tePremium:false}; }
-  }
-  function saveSettings(){
-    try{ localStorage.setItem('dynasty_settings', JSON.stringify(state.settings)); }catch{}
-  }
-
-  function getCache(key){
-    try{
-      const raw = localStorage.getItem('cache_'+key);
-      if(!raw) return null;
-      const {t, v} = JSON.parse(raw);
-      return {t, v};
-    }catch{return null}
-  }
-  function setCache(key, v){
-    try{ localStorage.setItem('cache_'+key, JSON.stringify({t:Date.now(), v})); }catch{}
-  }
-  async function cachedFetch(key, ttl, fetcher){
-    const c = getCache(key);
-    if(c && Date.now()-c.t < ttl) return c.v;
-    const v = await fetcher();
-    setCache(key, v);
-    return v;
-  }
-
-  async function fetchWithProxy(url){
-    const proxies = [
-      u=>u,
-      u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
-      u=>'https://corsproxy.io/?'+encodeURIComponent(u)
-    ];
-    let lastErr;
-    for(const p of proxies){
-      try{
-        const res = await fetch(p(url), {cache:'no-store'});
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        const ct = res.headers.get('content-type')||'';
-        if(ct.includes('application/json')) return await res.json();
-        const txt = await res.text();
-        return JSON.parse(txt);
-      }catch(e){ lastErr=e; }
-    }
-    throw lastErr||new Error('Fetch failed');
-  }
-
-  function formatKey(){
-    const {format, scoring, tePremium} = state.settings;
-    return `${format}_${scoring}${tePremium?'_tep':''}`;
-  }
-
-  function calcAge(birth){
-    if(!birth) return null;
-    const b = new Date(birth);
-    if(isNaN(b)) return null;
-    const diff = Date.now()-b.getTime();
-    return Math.floor(diff/ (365.25*24*3600*1000));
-  }
-
-  function buildPPGMap(raw, scoring){
-    const map = new Map();
-    if(!Array.isArray(raw)) return map;
-    for(const r of raw){
-      const id = r.player_id || r.sleeper_id || r.id || r.playerId;
-      if(!id) continue;
-      let ppg = r[scoring] ?? r[`ppg_${scoring}`] ?? r.ppg ?? r.ppg_ppr ?? r.ppg_half ?? r.ppg_std;
-      if(typeof ppg === 'string') ppg = parseFloat(ppg);
-      if(Number.isFinite(ppg)) map.set(String(id), ppg);
-    }
-    return map;
-  }
-
-  async function loadLive(){
-    const key = formatKey();
-    const {scoring}= state.settings;
-    const [sleeper, values, ppgRaw] = await Promise.all([
-      cachedFetch('sleeper_players', TTL.players, ()=>fetchWithProxy(SLEEPER_PLAYERS_URL)),
-      cachedFetch('ra_values_'+key, TTL.values, ()=>fetchWithProxy(RA_VALUES_URL(key))),
-      cachedFetch('ra_ppg_'+scoring, TTL.ppg, ()=>fetchWithProxy(RA_PPG_URL))
-    ]);
-
-    const ppgMap = buildPPGMap(ppgRaw, scoring);
-    const valuesObj = values && typeof values === 'object' ? values : {};
-
-    const list = [];
-    for(const id in sleeper){
-      const p = sleeper[id];
-      if(!p || !p.position) continue;
-      const pos = p.position.toUpperCase();
-      if(!['QB','RB','WR','TE'].includes(pos)) continue;
-      if(!p.team) continue;
-      const vEntry = valuesObj[id] || valuesObj[p.player_id] || null;
-      let val = null;
-      if(vEntry){
-        if(state.settings.format==='sf' && vEntry.sf!=null) val = vEntry.sf;
-        else if(state.settings.format==='1qb' && (vEntry['1qb']!=null || vEntry.one_qb!=null)) val = vEntry['1qb'] ?? vEntry.one_qb;
-        else val = vEntry.value ?? vEntry.val;
-      }
-      if(val==null) continue;
-      const name = [p.first_name, p.last_name].filter(Boolean).join(' ') || p.full_name || 'Unknown';
-      list.push({
-        id:String(id),
-        name,
-        pos,
-        team:p.team,
-        age: calcAge(p.birth_date),
-        value:Number(val),
-        ppg: ppgMap.has(String(id)) ? Number(ppgMap.get(String(id))) : null
-      });
-    }
-    list.sort((a,b)=>b.value-a.value);
-    list.forEach((p,i)=>p.rank=i+1);
-    return list;
-  }
-
-  function generateSynthetic(){
-    const first = ['Jayden','Caleb','Jordan','Malik','Chris','A.J.','DeVonta','Breece','Jahmyr','Bijan','Justin','JaMarr','CeeDee','Puka','Garrett','Drake','Marvin','Rome','Brock','Trey','Sam','Dak','Joe','Josh','Lamar','Patrick','Jalen','Anthony','Kyler','Trevor','Nico','Tank','Zay','Jaylen','Christian','Saquon','Derrick','Kenneth','Isiah','Rachaad','Travis','George','Mark','T.J.','David','Dalton','Jake','Michael','Tyler','Brandon'];
-    const last = ['Daniels','Williams','Love','Nabers','Olave','Brown','Smith','Hall','Gibbs','Robinson','Jefferson','Chase','Lamb','Nacua','Wilson','London','Harrison','Odunze','Bowers','McBride','LaPorta','Prescott','Burrow','Allen','Jackson','Mahomes','Hurts','Richardson','Murray','Lawrence','Collins','Dell','Flowers','Waddle','McCaffrey','Barkley','Henry','Walker','Pacheco','White','Kelce','Kittle','Andrews','Hockenson','Njoku','Kincaid','Ferguson','Pittman','Lockett','Aiyuk'];
-    const rand = (a,b)=>Math.random()*(b-a)+a;
-    const pick = arr=>arr[Math.floor(Math.random()*arr.length)];
-    const make = (pos, count, vMin, vMax, ppgMin, ppgMax)=>{
-      const out=[];
-      for(let i=0;i<count;i++){
-        const name = pick(first)+' '+pick(last);
-        out.push({
-          id:'syn_'+pos+'_'+i,
-          name,
-          pos,
-          team:['ARI','ATL','BAL','BUF','CAR','CHI','CIN','CLE','DAL','DEN','DET','GB','HOU','IND','JAX','KC','LAC','LAR','LV','MIA','MIN','NE','NO','NYG','NYJ','PHI','PIT','SEA','SF','TB','TEN','WAS'][Math.floor(Math.random()*32)],
-          age: Math.floor(rand(21,30)),
-          value: Math.round(rand(vMin,vMax)),
-          ppg: Number(rand(ppgMin,ppgMax).toFixed(1))
-        });
-      }
-      return out;
-    };
-    const qbs = make('QB',60,2000,8000,17,26);
-    const rbs = make('RB',150,1000,9000,10,22);
-    const wrs = make('WR',280,1000,9500,10,21);
-    const tes = make('TE',110,500,7000,8,18);
-    const all = [...qbs,...rbs,...wrs,...tes];
-    all.sort((a,b)=>b.value-a.value);
-    all.forEach((p,i)=>p.rank=i+1);
-    return all;
-  }
-
-  async function enhancePPG(list){
-    const missing = list.filter(p=>p.ppg==null && p.rank<=300 && !String(p.id).startsWith('syn_'));
-    if(missing.length===0) return;
-    state.enhancing.total = missing.length;
-    state.enhancing.done = 0;
-    enhanceStatus.hidden = false;
-    updateEnhanceStatus();
-
-    const queue = missing.slice();
-    const concurrency = 5;
-    const workers = Array.from({length:concurrency}, ()=>worker());
-    async function worker(){
-      while(queue.length){
-        const p = queue.shift();
-        try{
-          const data = await cachedFetch('player_page_'+p.id, TTL.playerPage, ()=>fetchWithProxy(RA_PLAYER_PAGE_URL(p.id)));
-          const scoring = state.settings.scoring;
-          let ppg = data?.projections?.ppg ?? data?.projections?.[scoring] ?? data?.ppg ?? data?.stats?.ppg;
-          if(typeof ppg==='string') ppg = parseFloat(ppg);
-          if(Number.isFinite(ppg)){
-            p.ppg = Number(ppg.toFixed(1));
-            // update row if visible
-            const row = document.querySelector(`tr[data-id="${CSS.escape(p.id)}"] .ppg`);
-            if(row) row.textContent = p.ppg.toFixed(1);
-          }
-        }catch{}
-        state.enhancing.done++;
-        updateEnhanceStatus();
-      }
-    }
-    await Promise.all(workers);
-    setTimeout(()=>{ enhanceStatus.hidden=true; }, 1200);
-  }
-
-  function updateEnhanceStatus(){
-    enhanceStatus.textContent = `Enhancing PPG from player cards… ${state.enhancing.done}/${state.enhancing.total}`;
-  }
-
-  function applyFilters(){
-    const s = state.search.toLowerCase();
-    const pos = state.posFilter;
-    state.filtered = state.data.filter(p=>{
-      if(!pos.has(p.pos)) return false;
-      if(!s) return true;
-      return p.name.toLowerCase().includes(s) || p.team.toLowerCase().includes(s);
-    });
-    state.displayCount = 100;
-    render();
-  }
-
-  function render(){
-    countEl.textContent = state.filtered.length.toLocaleString();
-    lastUpdatedEl.textContent = 'Updated '+new Date().toLocaleString();
-    const slice = state.filtered.slice(0, state.displayCount);
-    if(slice.length===0){
-      tbody.innerHTML = `<tr><td colspan="5" style="padding:24px;color:var(--muted)">No players match filters.</td></tr>`;
-      return;
-    }
-    const rows = slice.map(p=>{
-      const pillClass = p.pos==='QB'?'qb':p.pos==='RB'?'rb':p.pos==='WR'?'wr':'te';
-      return `<tr data-id="${p.id}">
-        <td class="rank">${p.rank}</td>
-        <td>
-          <div class="player">${escapeHtml(p.name)}</div>
-          <div class="meta">${p.team} • Age ${p.age??'—'}</div>
-        </td>
-        <td><span class="pill ${pillClass}">${p.pos}</span></td>
-        <td class="value">${p.value.toLocaleString()}</td>
-        <td class="ppg">${p.ppg!=null? p.ppg.toFixed(1):'—'}</td>
-      </tr>`;
-    }).join('');
-    tbody.innerHTML = rows;
-  }
-
-  function escapeHtml(s){ return s.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-
-  async function loadData(){
-    state.source='loading';
-    sourceBadge.textContent='Loading…';
-    sourceBadge.className='badge';
-    tbody.innerHTML = `<tr><td colspan="5" style="padding:24px;color:var(--muted)">Loading rankings…</td></tr>`;
-    try{
-      const live = await loadLive();
-      if(live.length>=50){
-        state.data = live;
-        state.source='live';
-        sourceBadge.textContent='Live data';
-        sourceBadge.className='badge live';
-        applyFilters();
-        enhancePPG(state.data);
-      }else{
-        throw new Error('Too few players');
-      }
-    }catch(e){
-      console.warn(e);
-      state.data = generateSynthetic();
-      state.source='demo';
-      sourceBadge.textContent='Demo data';
-      sourceBadge.className='badge demo';
-      applyFilters();
-    }
-  }
-
-  function exportCSV(){
-    const rows = [['Rank','Player','Pos','Team','Age','Value','PPG']];
-    for(const p of state.filtered){
-      rows.push([p.rank,p.name,p.pos,p.team,p.age??'',p.value,p.ppg??'']);
-    }
-    const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv],{type:'text/csv'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href=url; a.download='dynasty_rankings.csv'; a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  // Bind UI
-  function bindUI(){
-    $('#posChips').addEventListener('click',e=>{
-      const btn = e.target.closest('.chip');
-      if(!btn) return;
-      const pos = btn.dataset.pos;
-      if(state.posFilter.has(pos)){
-        state.posFilter.delete(pos);
-        btn.classList.remove('active');
-      }else{
-        state.posFilter.add(pos);
-        btn.classList.add('active');
-      }
-      applyFilters();
-    });
-    $('#tePremium').checked = state.settings.tePremium;
-    $('#tePremium').addEventListener('change',e=>{
-      state.settings.tePremium = e.target.checked;
-      saveSettings();
-      loadData();
-    });
-    $('#formatSel').value = state.settings.format;
-    $('#formatSel').addEventListener('change',e=>{
-      state.settings.format = e.target.value;
-      saveSettings();
-      loadData();
-    });
-    $('#scoringSel').value = state.settings.scoring;
-    $('#scoringSel').addEventListener('change',e=>{
-      state.settings.scoring = e.target.value;
-      saveSettings();
-      loadData();
-    });
-    const searchEl = $('#search');
-    let t;
-    searchEl.addEventListener('input',e=>{
-      clearTimeout(t);
-      t=setTimeout(()=>{
-        state.search = e.target.value.trim();
-        applyFilters();
-      },150);
-    });
-    // cmd+k focus
-    window.addEventListener('keydown',e=>{
-      if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k'){
-        e.preventDefault(); searchEl.focus();
-      }
-    });
-    $('#exportBtn').addEventListener('click',exportCSV);
-    $('#reloadBtn').addEventListener('click',loadData);
-    $('#loadMoreBtn').addEventListener('click',()=>{
-      state.displayCount += 100;
-      render();
-    });
-  }
-
-  bindUI();
-  loadData();
-})();
-</script>
-</body>
-</html>
+  const RA_MOVERS_URL = 'https://rosteraudit.com/wp-json/ra/v1/movers?limit=200';
+  const RA_EMBED_URL = (id) => `
