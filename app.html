@@ -1,642 +1,695 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Roster Audit — Gold Edition</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Roster Audit — Gold</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: dark; }
-  body { font-family: Inter, system-ui, -apple-system, sans-serif; }
-  .display { font-family: Sora, Inter, sans-serif; }
-  .gold { color: #FACC15; }
-  .gold-bg { background: linear-gradient(135deg, #FDE047 0%, #FACC15 50%, #CA8A04 100%); }
-  .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-  .shimmer { position: relative; overflow: hidden; }
-  .shimmer::after { content:""; position:absolute; inset:0; background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.08) 50%,transparent 60%); transform:translateX(-100%); animation:shimmer 2.5s infinite; }
-  @keyframes shimmer { 100% { transform:translateX(100%); } }
-  .no-scrollbar::-webkit-scrollbar { display:none; }
-  .no-scrollbar { -ms-overflow-style:none; scrollbar-width:none; }
+  :root{
+    --bg:#0a0700; --card:#141008; --elev:#1c1408; --border:#3d2a0a;
+    --text:#fde68a; --muted:#d4b373; --accent:#fbbf24;
+  }
+  html,body{background:var(--bg);color:var(--text);font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;}
+  .card{background:var(--card);border:1px solid var(--border);}
+  .elev{background:var(--elev);}
+  .muted{color:var(--muted);}
+  .accent{color:var(--accent);}
+  .pill{border:1px solid var(--border);background:var(--elev);}
+  .table-head{position:sticky;top:0;background:var(--card);z-index:10;}
+  .row-hover:hover{background:rgba(251,191,36,0.04);}
+  .expand-row{background:var(--elev);border-top:1px dashed var(--border);}
+  .bar-seg{height:8px;}
+  .metal-plat{background:linear-gradient(180deg,#f9fafb,#d1d5db);color:#111;}
+  .metal-gold{background:linear-gradient(180deg,#fde68a,#fbbf24);color:#111;}
+  .metal-silver{background:linear-gradient(180deg,#e5e7eb,#a1a1aa);color:#111;}
+  .metal-bronze{background:linear-gradient(180deg,#fdba74,#92400e);color:#111;}
+  .metal-iron{background:linear-gradient(180deg,#a1a1aa,#52525b);color:#111;}
+  .badge{border:1px solid var(--border);background:#0f0a00;}
+  .tooltip{position:fixed;pointer-events:none;background:#0f0a00;border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.6);max-width:340px;z-index:9999;font-size:12px;line-height:1.4;}
+  .no-ellipsis{white-space:normal;word-break:break-word;}
+  input,button,select{background:var(--elev);border:1px solid var(--border);color:var(--text);}
+  input::placeholder{color:#7c5d2a;}
+  *{scrollbar-width:thin;scrollbar-color:#3d2a0a #0a0700;}
+  ::-webkit-scrollbar{height:8px;width:8px}::-webkit-scrollbar-track{background:#0a0700}::-webkit-scrollbar-thumb{background:#3d2a0a;border-radius:4px}
 </style>
 </head>
-<body class="bg-[#0a0a0b] text-zinc-100 min-h-screen">
-<div class="fixed inset-0 pointer-events-none">
-  <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(250,204,21,0.15),transparent_60%)]"></div>
-  <div class="absolute inset-0 bg-[radial-gradient(40%_40%_at_100%_0%,rgba(250,204,21,0.08),transparent_60%)]"></div>
-</div>
-
-<div class="relative max-w-[1400px] mx-auto px-4 md:px-8 py-8">
+<body class="min-h-screen">
+<div class="max-w-[1280px] mx-auto p-4 md:p-6">
   <!-- Header -->
-  <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
-    <div>
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl gold-bg flex items-center justify-center shadow-lg shadow-amber-500/20">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2L15 8.5L22 9L17 14L18.5 21L12 17.5L5.5 21L7 14L2 9L9 8.5L12 2Z" fill="#0a0a0b"/></svg>
-        </div>
-        <h1 class="display text-3xl md:text-4xl font-bold tracking-tight">Roster Audit</h1>
-        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/20">GOLD</span>
-      </div>
-      <p class="text-zinc-400 mt-2 max-w-xl">PPG starters, dynasty values, pick capital, and championship windows — auto-synced from Sleeper + Sheets.</p>
+  <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+    <div class="flex items-center gap-3">
+      <h1 class="text-[28px] md:text-[32px] font-black tracking-tight">Roster Audit</h1>
+      <span class="pill px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase accent">SF LOCKED</span>
     </div>
-
-    <div class="flex flex-col sm:flex-row gap-3">
-      <div class="flex items-center gap-2 bg-zinc-900/70 border border-zinc-800 rounded-xl px-3 py-2.5 w-full sm:w-[360px] glass">
-        <svg class="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
-        <input id="leagueInput" placeholder="Sleeper League ID" class="bg-transparent outline-none w-full text-sm placeholder-zinc-600" />
-        <button id="saveBtn" class="text-xs font-medium text-amber-300 hover:text-amber-200">Save</button>
-      </div>
-      <button id="loadBtn" class="gold-bg text-black font-semibold px-5 py-2.5 rounded-xl shadow-lg shadow-amber-500/25 hover:brightness-110 active:brightness-95 transition">Audit League</button>
+    <div class="flex flex-wrap items-center gap-2">
+      <input id="leagueId" placeholder="League ID" class="px-3 py-2 rounded-lg w-[200px] text-sm outline-none focus:border-[#fbbf24]" />
+      <button id="loadBtn" class="px-4 py-2 rounded-lg text-sm font-bold bg-[#fbbf24] text-black hover:brightness-110 active:brightness-95">Load</button>
+      <input id="search" placeholder="Search teams…" class="px-3 py-2 rounded-lg w-[180px] text-sm outline-none focus:border-[#fbbf24]" />
     </div>
   </header>
 
-  <!-- League Meta -->
-  <div id="leagueMeta" class="hidden mb-8">
-    <div class="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 flex flex-wrap items-center gap-6 glass">
-      <div class="flex items-center gap-3">
-        <img id="leagueAvatar" class="w-12 h-12 rounded-xl object-cover bg-zinc-800" alt="">
-        <div>
-          <div id="leagueName" class="font-semibold text-lg leading-tight"></div>
-          <div id="leagueSub" class="text-xs text-zinc-500"></div>
-        </div>
-      </div>
-      <div class="h-10 w-px bg-zinc-800 hidden md:block"></div>
-      <div class="flex flex-wrap gap-4 text-sm">
-        <div><span class="text-zinc-500">Season:</span> <span id="metaSeason" class="font-medium"></span></div>
-        <div><span class="text-zinc-500">Teams:</span> <span id="metaTeams" class="font-medium"></span></div>
-        <div><span class="text-zinc-500">Roster:</span> <span id="metaRoster" class="font-medium"></span></div>
-        <div><span class="text-zinc-500">Updated:</span> <span id="metaUpdated" class="font-medium"></span></div>
-      </div>
-      <div class="ml-auto flex items-center gap-2">
-        <span class="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20" id="syncStatus">Synced</span>
-      </div>
+  <!-- Tier Legend -->
+  <div class="card rounded-2xl p-4 mb-4">
+    <div class="flex flex-wrap items-center gap-2 text-xs">
+      <span class="muted mr-1">Tier Legend:</span>
+      <span class="metal-plat px-2.5 py-1 rounded-full font-bold">Platinum • Elite</span>
+      <span class="metal-gold px-2.5 py-1 rounded-full font-bold">Gold • Contender</span>
+      <span class="metal-silver px-2.5 py-1 rounded-full font-bold">Silver • Solid</span>
+      <span class="metal-bronze px-2.5 py-1 rounded-full font-bold">Bronze • Fringe</span>
+      <span class="metal-iron px-2.5 py-1 rounded-full font-bold">Iron • Rebuild</span>
     </div>
   </div>
 
-  <!-- Controls -->
-  <div class="flex flex-wrap items-center gap-3 mb-6 text-xs">
-    <div class="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-full px-3 py-1.5">
-      <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-      <span class="text-zinc-400">Auto-load enabled</span>
+  <!-- Table -->
+  <div class="card rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="table-head text-[11px] uppercase tracking-wider muted">
+          <tr class="border-b border-[var(--border)]">
+            <th class="text-left px-4 py-3 cursor-pointer" data-sort="rank">#</th>
+            <th class="text-left px-4 py-3 cursor-pointer" data-sort="team">Team</th>
+            <th class="text-right px-3 py-3 cursor-pointer" data-sort="qb">QB</th>
+            <th class="text-right px-3 py-3 cursor-pointer" data-sort="rb">RB</th>
+            <th class="text-right px-3 py-3 cursor-pointer" data-sort="wr">WR</th>
+            <th class="text-right px-3 py-3 cursor-pointer" data-sort="te">TE</th>
+            <th class="text-right px-3 py-3 cursor-pointer" data-sort="pk">PK</th>
+            <th class="text-right px-4 py-3 cursor-pointer" data-sort="ppg">PPG</th>
+            <th class="text-right px-4 py-3 cursor-pointer" data-sort="value">Value</th>
+            <th class="text-right px-4 py-3 cursor-pointer" data-sort="age">Age</th>
+          </tr>
+        </thead>
+        <tbody id="tbody" class="divide-y divide-[var(--border)]"></tbody>
+      </table>
     </div>
-    <div class="flex items-center gap-2">
-      <button id="sortValue" class="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 hover:border-amber-500/40 hover:text-amber-300 transition">Sort: Value</button>
-      <button id="sortPPG" class="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 hover:border-amber-500/40 hover:text-amber-300 transition">Sort: PPG</button>
-      <button id="sortPicks" class="px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 hover:border-amber-500/40 hover:text-amber-300 transition">Sort: Picks</button>
+    <div id="emptyState" class="hidden p-10 text-center muted">Enter a League ID and click Load.</div>
+    <div id="loadingState" class="hidden p-10 text-center">
+      <div class="inline-block animate-pulse accent font-bold">Loading league…</div>
     </div>
   </div>
 
-  <!-- Teams Grid -->
-  <div id="teamsGrid" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6"></div>
-
-  <!-- Empty State -->
-  <div id="emptyState" class="text-center py-24 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/30">
-    <div class="w-14 h-14 rounded-2xl gold-bg mx-auto flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 2L15 8.5L22 9L17 14L18.5 21L12 17.5L5.5 21L7 14L2 9L9 8.5L12 2Z" fill="#0a0a0b"/></svg>
+  <!-- Tier Explanations -->
+  <div class="card rounded-2xl p-5 mt-5">
+    <h3 class="font-black text-lg mb-2">Tier Explanations</h3>
+    <div class="grid md:grid-cols-2 gap-4 text-sm leading-relaxed muted">
+      <div><span class="text-[var(--text)] font-bold">Platinum</span> — Top 10% by starter PPG. Elite starters at premium positions with depth to survive injuries. Championship favorite.</div>
+      <div><span class="text-[var(--text)] font-bold">Gold</span> — Top 30%. Strong starting lineup, one clear positional advantage, viable path to title with health.</div>
+      <div><span class="text-[var(--text)] font-bold">Silver</span> — Middle 40%. Competitive roster with balanced value. Needs breakout or trade to contend.</div>
+      <div><span class="text-[var(--text)] font-bold">Bronze</span> — Bottom 30%. Flawed starters, age concerns, or shallow depth. Playoff bubble at best.</div>
+      <div class="md:col-span-2"><span class="text-[var(--text)] font-bold">Iron</span> — Bottom 10%. Full rebuild recommended. Maximize pick value and youth.</div>
     </div>
-    <h3 class="display text-xl font-semibold mb-2">Load a league to audit</h3>
-    <p class="text-zinc-500 max-w-md mx-auto">Enter a Sleeper League ID above. We’ll pull rosters, PPG, dynasty values from your sheet, calculate optimal starters, pick capital, and tier.</p>
   </div>
 
-  <!-- Tier Explainer -->
-  <section class="mt-16">
-    <h2 class="display text-2xl font-bold mb-4">Tier Explanations</h2>
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-      <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-        <div class="font-semibold text-amber-300 mb-1">CHAMPIONSHIP WINDOW</div>
-        <p class="text-zinc-400">Top 25% PPG starters + top 40% total value + prime age core (avg starter age 25-29). Win-now roster with depth.</p>
-      </div>
-      <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-        <div class="font-semibold text-amber-300 mb-1">CONTENDER</div>
-        <p class="text-zinc-400">Above-median PPG and value. Can compete now but may lack elite upside or depth at a key spot.</p>
-      </div>
-      <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-        <div class="font-semibold text-amber-300 mb-1">COMPETITIVE</div>
-        <p class="text-zinc-400">Middle of pack. One spike week away, but roster holes or age cliffs limit ceiling.</p>
-      </div>
-      <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-        <div class="font-semibold text-amber-300 mb-1">REBUILDING</div>
-        <p class="text-zinc-400">High pick capital + Young Core. Value is future-focused. PPG starters below median by design.</p>
-      </div>
-      <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-        <div class="font-semibold text-amber-300 mb-1">TANKING</div>
-        <p class="text-zinc-400">Low PPG, low value, few premium picks. Needs consolidation and asset acquisition.</p>
-      </div>
-      <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-        <div class="font-semibold text-zinc-300 mb-1">Badges</div>
-        <p class="text-zinc-400">Young Core (3+ ≤25y high-value players), Elite Value (top 25% total), High Scoring (top 25% PPG), QB Strong (≥19 PPG QB), Pick Rich (top 33% pick capital).</p>
-      </div>
-    </div>
-  </section>
-
-  <footer class="mt-16 pt-8 border-t border-zinc-900 text-xs text-zinc-600 flex justify-between">
-    <span>© Roster Audit</span>
-    <span class="text-zinc-700">Gold Theme • Full names, compact lists, auto-load</span>
+  <footer class="text-center muted text-xs mt-8 pb-10">
+    Gold theme • Superflex locked • Picks projected by PPG tier
   </footer>
 </div>
 
+<div id="tooltip" class="tooltip hidden"></div>
+
 <script>
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
-const SLEEPER = 'https://api.sleeper.app/v1';
-
-const el = id => document.getElementById(id);
-const leagueInput = el('leagueInput');
-const loadBtn = el('loadBtn');
-const saveBtn = el('saveBtn');
-const teamsGrid = el('teamsGrid');
-const emptyState = el('emptyState');
-const leagueMeta = el('leagueMeta');
-
-let state = {
-  league: null,
-  users: [],
-  rosters: [],
-  picks: [],
-  players: null,
-  sheetMap: new Map(),
-  pickValueMap: new Map(),
-  teams: [],
-  sort: 'value'
-};
-
-// Helpers
-const fmtVal = v => {
-  if (v == null || isNaN(v)) return '—';
-  v = +v;
-  if (v >= 1000) return (v/1000).toFixed(1).replace(/\.0$/,'') + 'k';
-  return v.toLocaleString();
-};
-const fmtInt = n => n?.toLocaleString() ?? '—';
-const pct = (n) => `${n.toFixed(1)}`;
-const avatarUrl = id => id ? `https://sleepercdn.com/avatars/${id}` : 'https://sleepercdn.com/images/v2/icons/player_default.webp';
-
-// CSV parse
-function splitCSV(line){
-  const out=[]; let cur='', inQ=false;
-  for(let i=0;i<line.length;i++){
-    const c=line[i];
-    if(c==='\"'){ inQ=!inQ; }
-    else if(c===',' && !inQ){ out.push(cur); cur=''; }
-    else cur+=c;
-  }
-  out.push(cur);
-  return out.map(s=>s.replace(/^\"|\"$/g,'').trim());
-}
-function parseCSV(text){
-  const lines = text.split(/\r?\n/).filter(l=>l.trim());
-  if(!lines.length) return [];
-  const headers = splitCSV(lines[0]).map(h=>h.toLowerCase());
-  const rows=[];
-  for(let i=1;i<lines.length;i++){
-    const cols=splitCSV(lines[i]);
-    if(cols.length < 2) continue;
-    const obj={};
-    headers.forEach((h,idx)=> obj[h]=cols[idx]??'');
-    rows.push(obj);
-  }
-  return {headers, rows};
-}
-function detectCols(headers){
-  const lc=h=>h.toLowerCase();
-  const find = (re) => headers.find(h=>re.test(lc(h)));
-  return {
-    id: find(/player_id|id|sleeper_id/),
-    name: find(/^(full_)?name$|player/),
-    pos: find(/^pos|position/),
-    team: find(/^team$/),
-    age: find(/^age$/),
-    ppg: find(/ppg|points per game|pts\/g|fppg/),
-    value: find(/value|dyn|market|price/)
+(() => {
+  const CFG = {
+    bg:'#0a0700', card:'#141008', elev:'#1c1408', border:'#3d2a0a',
+    text:'#fde68a', muted:'#d4b373', accent:'#fbbf24'
   };
-}
-async function loadSheet(){
-  const res = await fetch(CSV_URL);
-  const text = await res.text();
-  const {headers, rows} = parseCSV(text);
-  const cols = detectCols(headers);
-  // If ppg not detected, try heuristic: numeric col between age and value
-  let ppgCol = cols.ppg;
-  if(!ppgCol && cols.age && cols.value){
-    const ageIdx = headers.indexOf(cols.age);
-    const valIdx = headers.indexOf(cols.value);
-    if(valIdx - ageIdx === 2){
-      ppgCol = headers[ageIdx+1];
+  const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
+  const $ = s => document.querySelector(s);
+  const tbody = $('#tbody');
+  const tooltip = $('#tooltip');
+  const state = {
+    leagueId: '',
+    league: null,
+    rosters: [],
+    users: [],
+    playersMap: new Map(),
+    pickChart: [],
+    picks: [],
+    rostersData: [],
+    sortKey: 'value',
+    sortDir: 'desc',
+    search: '',
+    expanded: new Set()
+  };
+
+  // Utils
+  const fmt = n => n==null||isNaN(n)?'—': Number(n).toLocaleString(undefined,{maximumFractionDigits:1});
+  const fmt1 = n => n==null||isNaN(n)?'—': Number(n).toFixed(1);
+  const cap = s => s? s.charAt(0).toUpperCase()+s.slice(1).toLowerCase() : '';
+  function splitCSV(line){
+    const res=[];let cur='',inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c=='"'){inQ=!inQ;continue}
+      if(c==','&&!inQ){res.push(cur);cur='';continue}
+      cur+=c;
     }
+    res.push(cur);
+    return res.map(s=>s.trim());
   }
-  state.sheetMap.clear();
-  state.pickValueMap.clear();
-  rows.forEach(r=>{
-    const id = r[cols.id]?.trim();
-    if(!id) return;
-    if(id.startsWith('pick_')){
-      // pick_2027_1 or pick_2027_1_??
-      const parts = id.split('_');
-      const season = parts[1];
-      const round = parts[2];
-      const val = parseFloat(r[cols.value]||'0');
-      if(season && round) state.pickValueMap.set(`${season}_${round}`, val);
-      return;
+  function parseCSV(text){
+    const lines=text.split(/\r?\n/).filter(l=>l.trim().length);
+    if(!lines.length) return [];
+    const headers=splitCSV(lines[0]).map(h=>h.toLowerCase());
+    const out=[];
+    for(let i=1;i<lines.length;i++){
+      const vals=splitCSV(lines[i]);
+      if(vals.length===1 && vals[0]==='') continue;
+      const obj={};
+      headers.forEach((h,idx)=>obj[h]=vals[idx]??'');
+      out.push(obj);
     }
-    const name = r[cols.name] || '';
-    const pos = r[cols.pos] || '';
-    const age = parseFloat(r[cols.age]||'');
-    const ppg = parseFloat(r[ppgCol||'']||'');
-    const value = parseFloat(r[cols.value]||'');
-    state.sheetMap.set(id, {
-      id, name, pos,
-      age: isNaN(age)?null:age,
-      ppg: isNaN(ppg)?0:ppg,
-      value: isNaN(value)?0:value
-    });
-  });
-}
+    return out;
+  }
 
-async function getPlayers(){
-  if(state.players) return state.players;
-  const res = await fetch(`${SLEEPER}/players/nfl`);
-  const json = await res.json();
-  state.players = json;
-  return json;
-}
+  // Load
+  async function loadAll(){
+    const id = $('#leagueId').value.trim();
+    if(!id) return;
+    state.leagueId=id;
+    localStorage.setItem('ra_league',id);
+    history.replaceState(null,'',`?league=${encodeURIComponent(id)}`);
+    $('#loadingState').classList.remove('hidden');
+    $('#emptyState').classList.add('hidden');
+    tbody.innerHTML='';
 
-async function loadLeague(leagueId){
-  emptyState.classList.add('hidden');
-  teamsGrid.innerHTML = `<div class="col-span-full text-center py-20 text-zinc-500">Loading league…</div>`;
-  leagueMeta.classList.add('hidden');
+    try{
+      const [league, rosters, users, sheetTxt, traded] = await Promise.all([
+        fetch(`https://api.sleeper.app/v1/league/${id}`).then(r=>r.json()),
+        fetch(`https://api.sleeper.app/v1/league/${id}/rosters`).then(r=>r.json()),
+        fetch(`https://api.sleeper.app/v1/league/${id}/users`).then(r=>r.json()),
+        fetch(SHEET_CSV).then(r=>r.text()),
+        fetch(`https://api.sleeper.app/v1/league/${id}/traded_picks`).then(r=>r.ok?r.json():[]).catch(()=>[])
+      ]);
+      state.league=league;
+      state.rosters=rosters;
+      state.users=users;
 
-  const [league, users, rosters, picks] = await Promise.all([
-    fetch(`${SLEEPER}/league/${leagueId}`).then(r=>r.json()),
-    fetch(`${SLEEPER}/league/${leagueId}/users`).then(r=>r.json()),
-    fetch(`${SLEEPER}/league/${leagueId}/rosters`).then(r=>r.json()),
-    fetch(`${SLEEPER}/league/${leagueId}/traded_picks`).then(r=>r.json()).catch(()=>[])
-  ]);
-  await Promise.all([loadSheet(), getPlayers()]);
-
-  state.league = league;
-  state.users = users;
-  state.rosters = rosters;
-  state.picks = picks;
-
-  // Build teams
-  const userMap = new Map(users.map(u=>[u.user_id,u]));
-  const rosterMap = new Map(rosters.map(r=>[r.roster_id,r]));
-  const players = state.players;
-
-  const starterSlots = (league.roster_positions||[]).filter(p=>!['BN','TAXI','IR'].includes(p));
-  // Ensure order: QB,RB,WR,TE,SUPER_FLEX,FLEX
-  const order = {QB:1,RB:2,WR:3,TE:4,SUPER_FLEX:5,FLEX:6};
-  starterSlots.sort((a,b)=>(order[a]||99)-(order[b]||99));
-
-  const teams = rosters.map(roster=>{
-    const user = userMap.get(roster.owner_id) || {};
-    const playerIds = roster.players || [];
-    const plist = playerIds.map(pid=>{
-      const sp = players[pid] || {};
-      const sheet = state.sheetMap.get(pid) || {};
-      const name = sheet.name || sp.full_name || sp.first_name+' '+sp.last_name || 'Unknown';
-      const pos = sheet.pos || sp.position || '';
-      const age = sheet.age ?? sp.age ?? null;
-      const ppg = sheet.ppg ?? 0;
-      const value = sheet.value ?? 0;
-      return {pid, name, pos, age, ppg, value, team: sp.team||''};
-    });
-
-    // Optimal starters
-    const pool = plist.filter(p=>p.pos).map(p=>({...p, used:false}));
-    // Sort pool by ppg desc for selection
-    pool.sort((a,b)=>b.ppg-a.ppg);
-
-    const eligible = (slotPos, playerPos)=>{
-      if(slotPos===playerPos) return true;
-      if(slotPos==='FLEX') return ['RB','WR','TE'].includes(playerPos);
-      if(slotPos==='SUPER_FLEX') return ['QB','RB','WR','TE'].includes(playerPos);
-      if(slotPos==='REC_FLEX') return ['RB','WR','TE'].includes(playerPos);
-      if(slotPos==='WRRB_FLEX') return ['RB','WR'].includes(playerPos);
-      return false;
-    };
-
-    const starters = [];
-    // Fill fixed slots first
-    const fixedSlots = starterSlots.filter(s=>!['FLEX','SUPER_FLEX','REC_FLEX','WRRB_FLEX'].includes(s));
-    const flexSlots = starterSlots.filter(s=>['FLEX','SUPER_FLEX','REC_FLEX','WRRB_FLEX'].includes(s));
-
-    const pickBest = (slot)=>{
-      let bestIdx=-1, bestPPG=-Infinity;
-      for(let i=0;i<pool.length;i++){
-        const p=pool[i];
-        if(p.used) continue;
-        if(!eligible(slot,p.pos)) continue;
-        if(p.ppg>bestPPG){ bestPPG=p.ppg; bestIdx=i; }
-      }
-      // if no ppg>0, pick highest ppg anyway (could be 0)
-      if(bestIdx===-1){
-        for(let i=0;i<pool.length;i++){
-          const p=pool[i];
-          if(p.used) continue;
-          if(!eligible(slot,p.pos)) continue;
-          bestIdx=i; break;
+      // Parse sheet
+      const rows = parseCSV(sheetTxt);
+      const players = new Map();
+      const pickChart = [];
+      for(const r of rows){
+        const id = (r.id||r.player_id||'').trim();
+        if(!id) continue;
+        if(id.toLowerCase().startsWith('pick_')){
+          pickChart.push({
+            id,
+            value: parseFloat(r.value||r.val||r.points||0)||0
+          });
+        }else{
+          const name = r.full_name||r.name||r.player||'';
+          const pos = (r.pos||r.position||'').toUpperCase();
+          const age = parseFloat(r.age||'')||null;
+          const ppg = parseFloat(r.ppg||r.fppg||r.pts||'')||0;
+          const value = parseFloat(r.value||r.val||'')||0;
+          players.set(id,{id,name,pos,age,ppg,value,team:r.team||''});
         }
       }
-      if(bestIdx>=0){
-        pool[bestIdx].used=true;
-        return {...pool[bestIdx], slot};
-      }
-      return {slot, name:'—', pos:'', ppg:0, value:0, age:null, pid:null};
-    };
+      state.playersMap=players;
+      state.pickChart=pickChart;
 
-    fixedSlots.forEach(s=>starters.push(pickBest(s)));
-    flexSlots.forEach(s=>starters.push(pickBest(s)));
+      // Picks ownership
+      state.picks = buildPicks(league, rosters, traded||[]);
 
-    const ppgStarters = starters.reduce((sum,s)=>sum+(s.ppg||0),0);
+      // Build rosters data
+      state.rostersData = buildRostersData();
 
-    // Picks future
-    const currentSeason = parseInt(league.season);
-    const ownedPicks = picks.filter(p=>p.owner_id===roster.roster_id && parseInt(p.season) > currentSeason);
-    // Group by season
-    const pickValues = ownedPicks.map(p=>{
-      const key = `${p.season}_${p.round}`;
-      let val = state.pickValueMap.get(key);
-      if(val==null){
-        // default
-        const base = {1:1000,2:400,3:150,4:80,5:30}[p.round]||10;
-        const yearsOut = parseInt(p.season) - currentSeason - 1;
-        const discount = Math.pow(0.85, Math.max(0,yearsOut));
-        val = base * discount;
-      }
-      return {...p, value:val};
-    });
-    const pickValueSum = pickValues.reduce((s,p)=>s+p.value,0);
+      // Compute PPG tiers and pick values
+      assignPpgTiers();
+      enrichPicks();
 
-    // Totals
-    const totalValue = plist.reduce((s,p)=>s+(p.value||0),0);
-    const avgStarterAge = starters.filter(s=>s.age).length ? starters.filter(s=>s.age).reduce((s,x)=>s+x.age,0)/starters.filter(s=>s.age).length : null;
-    const youngCoreCount = plist.filter(p=>p.age && p.age<=25 && p.value>=2000).length;
-    const topQB = plist.filter(p=>p.pos==='QB').sort((a,b)=>b.ppg-a.ppg)[0];
-    const qbStrong = topQB && topQB.ppg >= 19;
-
-    return {
-      roster_id: roster.roster_id,
-      user,
-      roster,
-      players: plist,
-      starters,
-      ppgStarters,
-      totalValue,
-      pickValues,
-      pickValueSum,
-      avgStarterAge,
-      youngCoreCount,
-      topQB,
-      qbStrong,
-      teamName: user.metadata?.team_name || user.display_name || `Team ${roster.roster_id}`
-    };
-  });
-
-  // Compute percentiles for badges
-  const values = teams.map(t=>t.totalValue).sort((a,b)=>a-b);
-  const ppgs = teams.map(t=>t.ppgStarters).sort((a,b)=>a-b);
-  const pickVals = teams.map(t=>t.pickValueSum).sort((a,b)=>a-b);
-  const q = arr=>p=>arr[Math.floor(p*(arr.length-1))];
-  const qVal = q(values), qPPG = q(ppgs), qPick = q(pickVals);
-  const top25Val = qVal(0.75), top25PPG = qPPG(0.75), top33Pick = qPick(0.67);
-  const medianVal = qVal(0.5), medianPPG = qPPG(0.5);
-
-  teams.forEach(t=>{
-    const badges=[];
-    if(t.youngCoreCount>=3) badges.push('Young Core');
-    if(t.totalValue>=top25Val) badges.push('Elite Value');
-    if(t.ppgStarters>=top25PPG) badges.push('High Scoring');
-    if(t.qbStrong) badges.push('QB Strong');
-    if(t.pickValueSum>=top33Pick) badges.push('Pick Rich');
-    t.badges = badges;
-
-    // Tier
-    const primeAge = t.avgStarterAge && t.avgStarterAge>=25 && t.avgStarterAge<=29;
-    if(t.ppgStarters>=top25PPG && t.totalValue>=qVal(0.6) && primeAge){
-      t.tier='CHAMPIONSHIP WINDOW';
-    }else if(t.ppgStarters>=medianPPG && t.totalValue>=medianVal){
-      t.tier='CONTENDER';
-    }else if(t.totalValue>=medianVal || t.ppgStarters>=medianPPG){
-      t.tier='COMPETITIVE';
-    }else if(t.pickValueSum>=top33Pick && t.youngCoreCount>=2){
-      t.tier='REBUILDING';
-    }else{
-      t.tier='TANKING';
-    }
-  });
-
-  state.teams = teams;
-  render();
-}
-
-function render(){
-  const {league, teams, sort} = state;
-  if(!league) return;
-  leagueMeta.classList.remove('hidden');
-  el('leagueName').textContent = league.name;
-  el('leagueSub').textContent = `${league.status?.toUpperCase()||''} • ${league.season}`;
-  el('metaSeason').textContent = league.season;
-  el('metaTeams').textContent = teams.length;
-  el('metaRoster').textContent = (league.roster_positions||[]).filter(p=>!['BN','TAXI','IR'].includes(p)).join(' • ');
-  el('metaUpdated').textContent = new Date().toLocaleDateString();
-  el('leagueAvatar').src = league.avatar ? `https://sleepercdn.com/avatars/${league.avatar}` : 'https://sleepercdn.com/images/v2/icons/league_default.webp';
-
-  const sorted = [...teams].sort((a,b)=>{
-    if(sort==='ppg') return b.ppgStarters - a.ppgStarters;
-    if(sort==='picks') return b.pickValueSum - a.pickValueSum;
-    return b.totalValue - a.totalValue;
-  });
-
-  teamsGrid.innerHTML = sorted.map(t=>teamCard(t)).join('');
-  // add listeners for expand
-  document.querySelectorAll('[data-toggle]').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      const id = btn.dataset.toggle;
-      const panel = document.getElementById(id);
-      panel.classList.toggle('hidden');
-      btn.querySelector('svg').classList.toggle('rotate-180');
-    });
-  });
-}
-
-function tierColor(tier){
-  switch(tier){
-    case 'CHAMPIONSHIP WINDOW': return 'bg-amber-500 text-black';
-    case 'CONTENDER': return 'bg-amber-400/90 text-black';
-    case 'COMPETITIVE': return 'bg-zinc-700 text-zinc-100';
-    case 'REBUILDING': return 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
-    case 'TANKING': return 'bg-zinc-800 text-zinc-400';
-    default: return 'bg-zinc-800';
-  }
-}
-function posColor(pos){
-  const map={QB:'text-sky-400',RB:'text-emerald-400',WR:'text-fuchsia-400',TE:'text-orange-400'};
-  return map[pos]||'text-zinc-500';
-}
-function teamCard(t){
-  const user = t.user;
-  const starterRows = t.starters.map(s=>`
-    <div class="flex items-center justify-between py-1">
-      <div class="flex items-center gap-2 min-w-0">
-        <span class="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 w-[70px] text-center">${s.slot}</span>
-        <span class="font-medium truncate">${s.name}</span>
-        ${s.pos?`<span class="text-xs ${posColor(s.pos)}">${s.pos}</span>`:''}
-      </div>
-      <div class="text-xs text-zinc-500">${s.ppg? s.ppg.toFixed(1):'—'}</div>
-    </div>
-  `).join('');
-
-  const playersByPos = ['QB','RB','WR','TE'].map(pos=>{
-    const list = t.players.filter(p=>p.pos===pos).sort((a,b)=>b.value-a.value);
-    if(!list.length) return '';
-    return `
-      <div class="mb-3">
-        <div class="text-[11px] uppercase tracking-wider text-zinc-600 mb-1">${pos}</div>
-        <div class="space-y-1.5">
-          ${list.slice(0,8).map(p=>`
-            <div class="flex items-center justify-between">
-              <div class="min-w-0">
-                <div class="text-sm leading-tight truncate">${p.name}</div>
-                <div class="text-[11px] text-zinc-500">${p.age? p.age : '—'} • ${p.ppg? p.ppg.toFixed(1):'0.0'} • ${fmtVal(p.value)}</div>
-              </div>
-              <div class="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">${p.team||''}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  const picksBySeason = {};
-  t.pickValues.forEach(p=>{
-    (picksBySeason[p.season] ||= []).push(p);
-  });
-  const picksHtml = Object.keys(picksBySeason).sort().map(season=>{
-    const picks = picksBySeason[season].sort((a,b)=>a.round-b.round);
-    return `
-      <div class="mb-2">
-        <div class="text-[11px] uppercase tracking-wider text-zinc-600 mb-1">${season}</div>
-        <div class="flex flex-wrap gap-1.5">
-          ${picks.map(p=>`
-            <div class="px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-xs">
-              <div class="font-medium">R${p.round}</div>
-              <div class="text-[10px] text-zinc-500">Value ${fmtInt(Math.round(p.value))}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  }).join('') || `<div class="text-xs text-zinc-600">No future picks > ${state.league.season}</div>`;
-
-  return `
-  <div class="group relative bg-zinc-900/70 border border-zinc-800 rounded-2xl overflow-hidden glass hover:border-amber-500/30 transition">
-    <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent opacity-60"></div>
-    <div class="p-5">
-      <!-- Header -->
-      <div class="flex items-start gap-3 mb-4">
-        <img src="${avatarUrl(user.avatar)}" class="w-12 h-12 rounded-xl object-cover bg-zinc-800 border border-zinc-700" alt="">
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2 flex-wrap">
-            <h3 class="font-semibold leading-tight truncate">${t.teamName}</h3>
-            <span class="text-xs px-2 py-0.5 rounded-full ${tierColor(t.tier)} font-semibold">${t.tier}</span>
-          </div>
-          <div class="text-xs text-zinc-500 truncate">@${user.display_name||'unknown'}</div>
-          <div class="flex flex-wrap gap-1.5 mt-2">
-            ${t.badges.map(b=>`<span class="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">${b}</span>`).join('')}
-          </div>
-        </div>
-      </div>
-
-      <!-- Stats -->
-      <div class="grid grid-cols-3 gap-3 mb-4">
-        <div class="bg-zinc-950/70 border border-zinc-800 rounded-xl p-3 text-center">
-          <div class="text-[10px] uppercase tracking-wider text-zinc-500">Total Value</div>
-          <div class="text-lg font-semibold gold">${fmtVal(t.totalValue)}</div>
-        </div>
-        <div class="bg-zinc-950/70 border border-zinc-800 rounded-xl p-3 text-center">
-          <div class="text-[10px] uppercase tracking-wider text-zinc-500">PPG Starters</div>
-          <div class="text-lg font-semibold text-emerald-400">${t.ppgStarters.toFixed(1)}</div>
-        </div>
-        <div class="bg-zinc-950/70 border border-zinc-800 rounded-xl p-3 text-center">
-          <div class="text-[10px] uppercase tracking-wider text-zinc-500">Pick Capital</div>
-          <div class="text-lg font-semibold text-sky-400">${fmtInt(Math.round(t.pickValueSum))}</div>
-        </div>
-      </div>
-
-      <!-- Optimal Starters -->
-      <div class="mb-4">
-        <div class="flex items-center justify-between mb-2">
-          <div class="text-xs uppercase tracking-wider text-zinc-500">Optimal Starters</div>
-          <div class="text-xs text-zinc-600">${t.starters.length} slots</div>
-        </div>
-        <div class="bg-zinc-950/50 border border-zinc-800 rounded-xl p-3">
-          ${starterRows}
-        </div>
-      </div>
-
-      <!-- Expandable -->
-      <div class="space-y-2">
-        <button data-toggle="players-${t.roster_id}" class="w-full flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm hover:border-amber-500/30 transition">
-          <span>Players by Position</span>
-          <svg class="w-4 h-4 text-zinc-600 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </button>
-        <div id="players-${t.roster_id}" class="hidden bg-zinc-950/50 border border-zinc-800 rounded-xl p-4">
-          ${playersByPos}
-        </div>
-
-        <button data-toggle="picks-${t.roster_id}" class="w-full flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm hover:border-amber-500/30 transition">
-          <span>Future Picks (${t.pickValues.length})</span>
-          <svg class="w-4 h-4 text-zinc-600 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </button>
-        <div id="picks-${t.roster_id}" class="hidden bg-zinc-950/50 border border-zinc-800 rounded-xl p-4">
-          ${picksHtml}
-        </div>
-      </div>
-    </div>
-  </div>
-  `;
-}
-
-// Init
-function init(){
-  const params = new URLSearchParams(location.search);
-  const saved = localStorage.getItem('sleeper_league_id') || params.get('league') || '';
-  if(saved) leagueInput.value = saved;
-
-  loadBtn.onclick = async ()=>{
-    const id = leagueInput.value.trim();
-    if(!id) return;
-    localStorage.setItem('sleeper_league_id', id);
-    history.replaceState(null,'','?league='+id);
-    el('syncStatus').textContent='Syncing...';
-    try{
-      await loadLeague(id);
-      el('syncStatus').textContent='Synced';
-      el('syncStatus').className='text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20';
+      render();
     }catch(e){
       console.error(e);
-      teamsGrid.innerHTML=`<div class="col-span-full text-center py-20 text-red-400">Failed to load. Check League ID.</div>`;
-      el('syncStatus').textContent='Error';
-      el('syncStatus').className='text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-300 border border-red-500/20';
+      tbody.innerHTML=`<tr><td colspan="10" class="px-4 py-10 text-center" style="color:#f87171">Failed to load: ${e.message}</td></tr>`;
+    }finally{
+      $('#loadingState').classList.add('hidden');
     }
-  };
-  saveBtn.onclick = ()=>{
-    localStorage.setItem('sleeper_league_id', leagueInput.value.trim());
-    saveBtn.textContent='Saved!';
-    setTimeout(()=>saveBtn.textContent='Save',1200);
-  };
-  el('sortValue').onclick = ()=>{ state.sort='value'; render(); };
-  el('sortPPG').onclick = ()=>{ state.sort='ppg'; render(); };
-  el('sortPicks').onclick = ()=>{ state.sort='picks'; render(); };
-
-  // Auto-load
-  if(saved){
-    loadBtn.click();
   }
-}
-init();
+
+  function buildPicks(league, rosters, traded){
+    const season = parseInt(league.season);
+    const futureSeasons = new Set();
+    traded.forEach(p=>{ if(parseInt(p.season)>season) futureSeasons.add(parseInt(p.season)); });
+    for(let y=season+1;y<=season+3;y++) futureSeasons.add(y);
+    const picks=[];
+    for(const r of rosters){
+      for(const s of futureSeasons){
+        for(let rd=1;rd<=5;rd++){
+          picks.push({season:s,round:rd,roster_id:r.roster_id,owner_id:r.roster_id,original_roster_id:r.roster_id});
+        }
+      }
+    }
+    // Apply trades
+    for(const tp of traded){
+      const s=parseInt(tp.season), rd=parseInt(tp.round), orig=tp.roster_id, owner=tp.owner_id;
+      if(s<=season) continue;
+      let idx=picks.findIndex(p=>p.season===s&&p.round===rd&&p.roster_id===orig);
+      if(idx>=0){ picks[idx].owner_id=owner; }
+      else{
+        picks.push({season:s,round:rd,roster_id:orig,owner_id:owner,original_roster_id:orig});
+      }
+    }
+    return picks.filter(p=>p.season>season);
+  }
+
+  function buildRostersData(){
+    const userMap = new Map(state.users.map(u=>[u.user_id,u]));
+    const leaguePos = state.league.roster_positions||[];
+    const slotCounts = {QB:0,RB:0,WR:0,TE:0,FLEX:0,SF:0};
+    leaguePos.forEach(p=>{
+      if(p==='QB') slotCounts.QB++;
+      else if(p==='RB') slotCounts.RB++;
+      else if(p==='WR') slotCounts.WR++;
+      else if(p==='TE') slotCounts.TE++;
+      else if(p==='FLEX') slotCounts.FLEX++;
+      else if(p==='SUPER_FLEX') slotCounts.SF++;
+    });
+    // default SF if not present
+    if(slotCounts.SF===0) slotCounts.SF=1;
+
+    const data=[];
+    for(const r of state.rosters){
+      const user=userMap.get(r.owner_id)||{};
+      const teamName=user.display_name||user.username||`Team ${r.roster_id}`;
+      const playerIds=r.players||[];
+      const players = playerIds.map(pid=>{
+        const p=state.playersMap.get(String(pid));
+        if(p) return {...p};
+        return {id:String(pid),name:`Player ${pid}`,pos:'?',age:null,ppg:0,value:0,team:''};
+      });
+      // sort players by value
+      players.sort((a,b)=>b.value-a.value);
+
+      // positional totals
+      const posVal={QB:0,RB:0,WR:0,TE:0};
+      let totalVal=0, ageSum=0, ageCnt=0;
+      players.forEach(p=>{
+        totalVal+=p.value||0;
+        if(posVal[p.pos]!=null) posVal[p.pos]+=p.value||0;
+        if(p.age) {ageSum+=p.age; ageCnt++;}
+      });
+      const avgAge = ageCnt? ageSum/ageCnt : null;
+
+      // optimal lineup
+      const {ppgTotal, breakdown, starters} = computeOptimalLineup(players, slotCounts);
+
+      // positional % for bar
+      const totalPosVal = posVal.QB+posVal.RB+posVal.WR+posVal.TE||1;
+      const posPct = {
+        QB: posVal.QB/totalPosVal*100,
+        RB: posVal.RB/totalPosVal*100,
+        WR: posVal.WR/totalPosVal*100,
+        TE: posVal.TE/totalPosVal*100
+      };
+
+      data.push({
+        roster_id:r.roster_id,
+        owner_id:r.owner_id,
+        team:teamName,
+        players,
+        posVal,
+        totalVal,
+        avgAge,
+        ppgTotal,
+        breakdown,
+        starters,
+        posPct,
+        slotCounts
+      });
+    }
+    // rank by ppg initially
+    data.sort((a,b)=>b.ppgTotal-a.ppgTotal);
+    data.forEach((d,i)=>d.rank=i+1);
+    return data;
+  }
+
+  function computeOptimalLineup(players, slots){
+    const pool = players.map(p=>({...p})).filter(p=>p.pos);
+    // separate by pos
+    const byPos = {QB:[],RB:[],WR:[],TE:[]};
+    pool.forEach(p=>{ if(byPos[p.pos]) byPos[p.pos].push(p); });
+
+    Object.values(byPos).forEach(arr=>arr.sort((a,b)=>b.ppg-a.ppg));
+
+    const used = new Set();
+    const picks = [];
+    function take(pos,count,poolArr){
+      let taken=0;
+      for(const p of poolArr){
+        if(taken>=count) break;
+        if(used.has(p.id)) continue;
+        if(pos && p.pos!==pos) continue;
+        // zero filter unless forced
+        if(p.ppg<=0 && poolArr.filter(x=>!used.has(x.id)&&x.ppg>0).length>0) continue;
+        used.add(p.id);
+        picks.push({...p,slot:pos});
+        taken++;
+      }
+      // if still need and forced, take zero ppg
+      if(taken<count){
+        for(const p of poolArr){
+          if(taken>=count) break;
+          if(used.has(p.id)) continue;
+          if(pos && p.pos!==pos) continue;
+          used.add(p.id);
+          picks.push({...p,slot:pos});
+          taken++;
+        }
+      }
+    }
+
+    // mandatory
+    take('QB',slots.QB,byPos.QB);
+    take('RB',slots.RB,byPos.RB);
+    take('WR',slots.WR,byPos.WR);
+    take('TE',slots.TE,byPos.TE);
+
+    // FLEX from RB/WR/TE
+    const flexPool=[...byPos.RB,...byPos.WR,...byPos.TE].filter(p=>!used.has(p.id)).sort((a,b)=>b.ppg-a.ppg);
+    let flexTaken=0;
+    for(const p of flexPool){
+      if(flexTaken>=slots.FLEX) break;
+      if(p.ppg<=0 && flexPool.some(x=>!used.has(x.id)&&x.ppg>0)) continue;
+      used.add(p.id);
+      picks.push({...p,slot:'FLEX'});
+      flexTaken++;
+    }
+    // force fill flex
+    if(flexTaken<slots.FLEX){
+      for(const p of flexPool){
+        if(flexTaken>=slots.FLEX) break;
+        if(used.has(p.id)) continue;
+        used.add(p.id);
+        picks.push({...p,slot:'FLEX'});
+        flexTaken++;
+      }
+    }
+
+    // SF from remaining
+    const sfPool=pool.filter(p=>!used.has(p.id)).sort((a,b)=>b.ppg-a.ppg);
+    let sfTaken=0;
+    for(const p of sfPool){
+      if(sfTaken>=slots.SF) break;
+      if(p.ppg<=0 && sfPool.some(x=>!used.has(x.id)&&x.ppg>0)) continue;
+      used.add(p.id);
+      picks.push({...p,slot:'SF'});
+      sfTaken++;
+    }
+    if(sfTaken<slots.SF){
+      for(const p of sfPool){
+        if(sfTaken>=slots.SF) break;
+        if(used.has(p.id)) continue;
+        used.add(p.id);
+        picks.push({...p,slot:'SF'});
+        sfTaken++;
+      }
+    }
+
+    const ppgTotal = picks.reduce((s,p)=>s+(p.ppg||0),0);
+    // breakdown for tooltip grouped
+    const breakdown = {};
+    picks.forEach(p=>{
+      if(!breakdown[p.slot]) breakdown[p.slot]=[];
+      breakdown[p.slot].push(p);
+    });
+    return {ppgTotal, breakdown, starters:picks};
+  }
+
+  function assignPpgTiers(){
+    const arr=[...state.rostersData].sort((a,b)=>b.ppgTotal-a.ppgTotal);
+    const n=arr.length;
+    const lateCnt=Math.max(1,Math.ceil(n*0.3));
+    const earlyCnt=Math.max(1,Math.floor(n*0.3));
+    arr.forEach((d,i)=>{
+      let tier='MID';
+      if(i<lateCnt) tier='LATE';
+      else if(i>=n-earlyCnt) tier='EARLY';
+      d.ppgTier=tier;
+    });
+    // map roster_id -> tier
+    state.tierByRoster=new Map(arr.map(d=>[d.roster_id,d.ppgTier]));
+  }
+
+  function enrichPicks(){
+    // base pick value lookup
+    function basePickValue(round,season){
+      // try chart
+      const cand = state.pickChart.find(e=>{
+        const m=e.id.toLowerCase().match(/pick.*?(\d+)/);
+        return m && parseInt(m[1])===round;
+      });
+      if(cand && cand.value>0) return cand.value;
+      const bases={1:1000,2:400,3:150,4:80,5:30};
+      const base=bases[round]||10;
+      const leagueSeason=parseInt(state.league.season);
+      const yearsAhead=season-(leagueSeason+1);
+      const disc=Math.pow(0.85, Math.max(0,yearsAhead));
+      return base*disc;
+    }
+    const tierMult={EARLY:1.4,MID:1.0,LATE:0.7};
+
+    for(const d of state.rostersData){
+      const owned = state.picks.filter(p=>p.owner_id===d.roster_id);
+      let pickValTotal=0;
+      const picksEnriched=[];
+      for(const p of owned){
+        const origTier = state.tierByRoster.get(p.roster_id)||'MID';
+        const base = basePickValue(p.round,p.season);
+        const mult = tierMult[origTier]||1;
+        const adj = base*mult;
+        pickValTotal+=adj;
+        picksEnriched.push({
+          ...p,
+          origTier,
+          base,
+          adj
+        });
+      }
+      picksEnriched.sort((a,b)=>a.season-b.season||a.round-b.round);
+      d.picks=picksEnriched;
+      d.pickValue=pickValTotal;
+    }
+
+    // badges: Pick Rich if top 30% pick value
+    const sortedPick=[...state.rostersData].sort((a,b)=>b.pickValue-a.pickValue);
+    const richThresh=sortedPick[Math.floor(sortedPick.length*0.3)]?.pickValue||0;
+    for(const d of state.rostersData){
+      const badges=[];
+      if(d.pickValue>=richThresh && d.pickValue>0) badges.push('Pick Rich');
+      // QB heavy
+      const qbPct = d.posPct.QB;
+      if(qbPct>35) badges.push('QB Heavy');
+      if(d.avgAge && d.avgAge<25.5 && d.ppgTotal>state.rostersData.reduce((s,x)=>s+x.ppgTotal,0)/state.rostersData.length) badges.push('Young Core');
+      if(d.ppgTotal>=state.rostersData[0].ppgTotal*0.95) badges.push('Win Now');
+      if(d.ppgTier==='EARLY' && d.pickValue>richThresh) badges.push('Rebuilder');
+      d.badges=badges;
+
+      // scouting summary
+      const strengths=[];
+      const posEntries=Object.entries(d.posVal).sort((a,b)=>b[1]-a[1]);
+      if(posEntries[0][1]>0) strengths.push(`${posEntries[0][0]} strength`);
+      if(d.pickValue>richThresh) strengths.push('strong pick capital');
+      const weaknesses=[];
+      if(posEntries[3][1] < posEntries[0][1]*0.3) weaknesses.push(`thin at ${posEntries[3][0]}`);
+      if(d.avgAge && d.avgAge>27.5) weaknesses.push('aging core');
+      d.scoutSummary=`${strengths.join(' • ')||'Balanced roster'}. ${weaknesses.length? 'Concerns: '+weaknesses.join(', ')+'.' : 'No major holes.'}`;
+    }
+  }
+
+  function render(){
+    let data=[...state.rostersData];
+    const q=state.search.toLowerCase();
+    if(q) data=data.filter(d=>d.team.toLowerCase().includes(q));
+    // sort
+    const key=state.sortKey;
+    const dir=state.sortDir==='asc'?1:-1;
+    data.sort((a,b)=>{
+      let av,bv;
+      switch(key){
+        case 'rank': av=a.rank; bv=b.rank; break;
+        case 'team': av=a.team.toLowerCase(); bv=b.team.toLowerCase(); break;
+        case 'qb': av=a.posVal.QB; bv=b.posVal.QB; break;
+        case 'rb': av=a.posVal.RB; bv=b.posVal.RB; break;
+        case 'wr': av=a.posVal.WR; bv=b.posVal.WR; break;
+        case 'te': av=a.posVal.TE; bv=b.posVal.TE; break;
+        case 'pk': av=a.pickValue; bv=b.pickValue; break;
+        case 'ppg': av=a.ppgTotal; bv=b.ppgTotal; break;
+        case 'value': av=a.totalVal; bv=b.totalVal; break;
+        case 'age': av=a.avgAge||0; bv=b.avgAge||0; break;
+        default: av=0;bv=0;
+      }
+      if(av<bv) return -1*dir;
+      if(av>bv) return 1*dir;
+      return 0;
+    });
+
+    tbody.innerHTML='';
+    if(!data.length){
+      $('#emptyState').classList.remove('hidden');
+      return;
+    }
+    $('#emptyState').classList.add('hidden');
+
+    const frag=document.createDocumentFragment();
+    data.forEach(d=>{
+      const tr=document.createElement('tr');
+      tr.className='row-hover cursor-pointer';
+      tr.dataset.rid=d.roster_id;
+      tr.innerHTML=`
+        <td class="px-4 py-3 text-center muted font-bold">${d.rank}</td>
+        <td class="px-4 py-3">
+          <div class="font-extrabold text-[15px] leading-tight no-ellipsis">${d.team}</div>
+          <div class="text-[11px] muted">${d.badges.slice(0,2).join(' • ')}</div>
+        </td>
+        <td class="px-3 py-3 text-right font-semibold">${fmt(d.posVal.QB)}</td>
+        <td class="px-3 py-3 text-right font-semibold">${fmt(d.posVal.RB)}</td>
+        <td class="px-3 py-3 text-right font-semibold">${fmt(d.posVal.WR)}</td>
+        <td class="px-3 py-3 text-right font-semibold">${fmt(d.posVal.TE)}</td>
+        <td class="px-3 py-3 text-right font-bold accent">${fmt(Math.round(d.pickValue))}</td>
+        <td class="px-4 py-3 text-right font-black text-[15px] ppg-cell" data-rid="${d.roster_id}">${fmt1(d.ppgTotal)}</td>
+        <td class="px-4 py-3 text-right font-bold">${fmt(Math.round(d.totalVal))}</td>
+        <td class="px-4 py-3 text-right muted">${d.avgAge?fmt1(d.avgAge):'—'}</td>
+      `;
+      frag.appendChild(tr);
+
+      if(state.expanded.has(d.roster_id)){
+        const trExp=document.createElement('tr');
+        trExp.className='expand-row';
+        trExp.innerHTML=`<td colspan="10" class="p-0">${renderExpanded(d)}</td>`;
+        frag.appendChild(trExp);
+      }
+    });
+    tbody.appendChild(frag);
+
+    // events
+    tbody.querySelectorAll('tr.row-hover').forEach(tr=>{
+      tr.addEventListener('click',e=>{
+        if(e.target.closest('.ppg-cell')) return;
+        const rid=parseInt(tr.dataset.rid);
+        if(state.expanded.has(rid)) state.expanded.delete(rid); else state.expanded.add(rid);
+        render();
+      });
+    });
+
+    // PPG tooltip
+    tbody.querySelectorAll('.ppg-cell').forEach(cell=>{
+      const rid=parseInt(cell.dataset.rid);
+      const d=state.rostersData.find(x=>x.roster_id===rid);
+      if(!d) return;
+      cell.addEventListener('mouseenter',e=>showTooltip(e,d));
+      cell.addEventListener('mousemove',e=>moveTooltip(e));
+      cell.addEventListener('mouseleave',hideTooltip);
+    });
+  }
+
+  function renderExpanded(d){
+    const posOrder=['QB','RB','WR','TE'];
+    const posColors={QB:'#fbbf24',RB:'#60a5fa',WR:'#34d399',TE:'#f472b6'};
+    const barSegs=posOrder.map(pos=>{
+      const pct=d.posPct[pos]||0;
+      return `<div class="bar-seg" style="width:${pct}%;background:${posColors[pos]}"></div>`;
+    }).join('');
+    const playersByPos={QB:[],RB:[],WR:[],TE:[],PICKS:[]};
+    d.players.filter(p=>posOrder.includes(p.pos)).forEach(p=>playersByPos[p.pos].push(p));
+    // sort each by value desc
+    posOrder.forEach(pos=>playersByPos[pos].sort((a,b)=>b.value-a.value));
+
+    const pickList = d.picks.map(p=>{
+      const label=`${p.season} R${p.round} • ${cap(p.origTier)}`;
+      return `<div class="py-1.5 border-b border-[var(--border)] last:border-0">
+        <div class="font-bold text-[13px]">${label}</div>
+        <div class="muted text-[11px]">${Math.round(p.adj).toLocaleString()} val</div>
+      </div>`;
+    }).join('') || `<div class="muted text-xs">No future picks</div>`;
+
+    const playerCol = pos => {
+      const list = playersByPos[pos].map(p=>`
+        <div class="py-1">
+          <div class="font-bold leading-tight no-ellipsis">${p.name}</div>
+          <div class="muted text-[11px]">${p.age?Math.round(p.age):'—'} • ${fmt1(p.ppg)} • ${Math.round(p.value).toLocaleString()}</div>
+        </div>
+      `).join('');
+      return `<div>
+        <h4 class="font-black uppercase tracking-wider text-[12px] mb-2 accent">${pos}</h4>
+        <div class="divide-y divide-[var(--border)]">${list||'<div class="muted text-xs">—</div>'}</div>
+      </div>`;
+    };
+
+    const badges = d.badges.map(b=>`<span class="badge px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">${b}</span>`).join('');
+
+    return `
+      <div class="p-4 md:p-5">
+        <div class="flex items-center gap-2 mb-3">${barSegs?`<div class="flex w-full rounded overflow-hidden border border-[var(--border)]">${barSegs}</div>`:''}</div>
+        <div class="grid md:grid-cols-3 gap-4 mb-4">
+          <div class="md:col-span-2 card rounded-xl p-3">
+            <div class="text-[11px] uppercase tracking-wider muted font-bold mb-1">Scouting Summary</div>
+            <div class="text-sm leading-relaxed">${d.scoutSummary}</div>
+            <div class="flex flex-wrap gap-1.5 mt-2">${badges}</div>
+          </div>
+          <div class="card rounded-xl p-3">
+            <div class="text-[11px] uppercase tracking-wider muted font-bold mb-1">Averages</div>
+            <div class="text-sm">Age <span class="font-bold">${d.avgAge?fmt1(d.avgAge):'—'}</span></div>
+            <div class="text-sm">Total Value <span class="font-bold">${Math.round(d.totalVal).toLocaleString()}</span></div>
+            <div class="text-sm">Pick Value <span class="font-bold accent">${Math.round(d.pickValue).toLocaleString()}</span></div>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-5 gap-5">
+          ${playerCol('QB')}
+          ${playerCol('RB')}
+          ${playerCol('WR')}
+          ${playerCol('TE')}
+          <div>
+            <h4 class="font-black uppercase tracking-wider text-[12px] mb-2 accent">PICKS</h4>
+            <div class="divide-y divide-[var(--border)]">${pickList}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function showTooltip(e,d){
+    const slotsOrder=['QB','RB','WR','TE','FLEX','SF'];
+    let html=`<div class="font-black mb-1 accent">Starter Breakdown</div>`;
+    slotsOrder.forEach(slot=>{
+      const arr=d.breakdown[slot]||[];
+      if(!arr.length) return;
+      html+=`<div class="mt-1.5"><span class="font-bold">${slot}:</span><br>`;
+      html+=arr.map(p=>`${p.name} (${fmt1(p.ppg)})`).join('<br>');
+      html+=`</div>`;
+    });
+    tooltip.innerHTML=html;
+    tooltip.classList.remove('hidden');
+    moveTooltip(e);
+  }
+  function moveTooltip(e){
+    const x=e.clientX+14, y=e.clientY+14;
+    tooltip.style.left=Math.min(window.innerWidth-360,x)+'px';
+    tooltip.style.top=Math.min(window.innerHeight-200,y)+'px';
+  }
+  function hideTooltip(){ tooltip.classList.add('hidden'); }
+
+  // Sorting
+  document.querySelectorAll('th[data-sort]').forEach(th=>{
+    th.addEventListener('click',()=>{
+      const key=th.dataset.sort;
+      if(state.sortKey===key){ state.sortDir=state.sortDir==='asc'?'desc':'asc'; }
+      else{ state.sortKey=key; state.sortDir='desc'; }
+      render();
+    });
+  });
+
+  $('#loadBtn').addEventListener('click',loadAll);
+  $('#leagueId').addEventListener('keydown',e=>{ if(e.key==='Enter') loadAll(); });
+  $('#search').addEventListener('input',e=>{ state.search=e.target.value; render(); });
+
+  // init
+  const params=new URLSearchParams(location.search);
+  const qLeague=params.get('league')||localStorage.getItem('ra_league')||'';
+  if(qLeague){ $('#leagueId').value=qLeague; loadAll(); }
+  else { $('#emptyState').classList.remove('hidden'); }
+})();
 </script>
 </body>
 </html>
