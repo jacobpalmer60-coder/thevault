@@ -263,18 +263,43 @@ body{
     // RosterAudit parallel with cache
     setProgress('Fetching RosterAudit values…');
     const format = STATE.format;
-    const raCacheKey = `vault_ra_v2_${format}`;
+    const raCacheKey = `vault_ra_v8_v2_${format}`;
     let ra = cacheGet(raCacheKey, 60*60*1000);
     if(!ra){
       const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${format}`;
       const ppgUrl = `https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings`;
+      const ppgAllUrl = `https://rosteraudit.com/wp-json/ra/v1/projections`;
       const picksUrl = `https://rosteraudit.com/wp-json/ra/v1/picks`;
-      const [valuesRaw, ppgRaw, picksRaw] = await Promise.all([
+      const [valuesRaw, ppgRaw, ppgAllRaw, picksRaw] = await Promise.all([
         fetchJSONFallback(valuesUrl).catch(()=>({})),
         fetchJSONFallback(ppgUrl).catch(()=>([])),
+        fetchJSONFallback(ppgAllUrl).catch(()=>([])),
         fetchJSONFallback(picksUrl).catch(()=>([])),
       ]);
-      ra = { valuesRaw, ppgRaw, picksRaw };
+      // Merge ppg sources: rankings + full projections list
+      const mergePpg = (...sources)=>{
+        const out = [];
+        const seen = new Set();
+        const push = (arr)=>{
+          if(Array.isArray(arr)){
+            arr.forEach(x=> out.push(x));
+          }else if(arr && Array.isArray(arr.rankings)){
+            arr.rankings.forEach(x=> out.push(x));
+          }else if(arr && typeof arr==='object'){
+            // projections endpoint may return object with players array
+            if(Array.isArray(arr.players)) arr.players.forEach(x=> out.push(x));
+            else if(Array.isArray(arr.data)) arr.data.forEach(x=> out.push(x));
+            else {
+              // fallback: push values
+              Object.values(arr).forEach(v=>{ if(v && typeof v==='object' && v.sleeper_id) out.push(v); });
+            }
+          }
+        };
+        sources.forEach(push);
+        return out;
+      };
+      const ppgMerged = mergePpg(ppgRaw, ppgAllRaw);
+      ra = { valuesRaw, ppgRaw: ppgMerged, picksRaw };
       cacheSet(raCacheKey, ra);
     }
     // Normalize
@@ -336,6 +361,20 @@ body{
       }
       STATE.valuesMap = valuesMap;
       STATE.ppgMap = ppgMap;
+      // Prefetch PPG via projections/embed for all rostered players missing from rankings
+      const allPids = new Set();
+      STATE.rosters.forEach(r=> (r.players||[]).forEach(pid=> allPids.add(pid)));
+      const missingPids = [...allPids].filter(pid=> !STATE.ppgMap[pid]);
+      // Limit to first 100 to avoid rate limits; rest will be fetched on expand
+      const batch = missingPids.slice(0,100);
+      await Promise.all(batch.map(async pid=>{
+        try{
+          const data = await fetchJSONFallback(`https://rosteraudit.com/wp-json/ra/v1/projections/embed/${pid}`);
+          const ppg = Number(data?.ppg || data?.ppg_ppr || data?.projections?.ppg || 0);
+          if(ppg>0) STATE.ppgMap[pid]=ppg;
+        }catch(e){}
+      }));
+
       STATE.picksData = Array.isArray(ra.picksRaw)? ra.picksRaw : (ra.picksRaw?.picks||[]);
 
     // Rebuild with values
@@ -698,33 +737,9 @@ body{
   }
 
 
-  async function toggleExpand(rid){
-    if(STATE.expanded.has(rid)){
-      STATE.expanded.delete(rid);
-      renderTable();
-      return;
-    }
-    STATE.expanded.add(rid);
-    const row = STATE.rows.find(r=>r.roster_id===rid);
-    if(row){
-      const missing = row.players.filter(p=>!p.ppg || p.ppg===0).map(p=>p.id);
-      if(missing.length){
-        // Fetch player-page for missing PPG from RosterAudit
-        await Promise.all(missing.map(async pid=>{
-          try{
-            const data = await fetchJSONFallback(`https://rosteraudit.com/wp-json/ra/v1/player-page/${pid}`);
-            // Try common fields
-            const ppg = Number(data?.projections?.ppg || data?.projections?.ppg_ppr || data?.ppg || data?.ppg_ppr || data?.dynasty?.ppg || 0);
-            if(ppg>0){
-              STATE.ppgMap[pid]=ppg;
-            }
-          }catch(e){}
-        }));
-        // Rebuild rows with new PPG data
-        buildRows();
-        applySort();
-      }
-    }
+  function toggleExpand(rid){
+    if(STATE.expanded.has(rid)) STATE.expanded.delete(rid);
+    else STATE.expanded.add(rid);
     renderTable();
   }
 
