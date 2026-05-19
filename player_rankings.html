@@ -1,282 +1,268 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dynasty Player Rankings • RosterAudit</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dynasty Player Rankings • Roster Audit</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://sleepercdn.com">
 <style>
-:root{color-scheme:dark}
-*{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
-.glass{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08)}
-.scroll-thin::-webkit-scrollbar{height:8px;width:8px}
-.scroll-thin::-webkit-scrollbar-thumb{background:#3f3f46;border-radius:999px}
-.scroll-thin::-webkit-scrollbar-track{background:transparent}
-.shimmer{position:relative;overflow:hidden;background:#1f1f23}
-.shimmer::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);animation:shimmer 1.5s infinite}
-@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-.range-thumb::-webkit-slider-thumb{appearance:none;height:18px;width:18px;border-radius:999px;background:#f59e0b;border:2px solid #000;box-shadow:0 0 0 3px rgba(245,158,11,.3)}
-.range-thumb::-moz-range-thumb{height:18px;width:18px;border-radius:999px;background:#f59e0b;border:2px solid #000;box-shadow:0 0 0 3px rgba(245,158,11,.3)}
-details>summary{list-style:none}
-details>summary::-webkit-details-marker{display:none}
+  :root { color-scheme: dark; }
+  body {
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    background: radial-gradient(1200px 800px at 80% -10%, rgba(245,158,11,.15), transparent 60%),
+                radial-gradient(1000px 600px at 0% 100%, rgba(14,165,233,.12), transparent 60%),
+                #020617;
+  }
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 999px; }
+  .chip-active { background: rgba(245,158,11,.2); color: #fbbf24; border-color: rgba(245,158,11,.4); }
+  .sort-asc::after { content: "▲"; font-size: .6em; margin-left: .4em; opacity: .7; }
+  .sort-desc::after { content: "▼"; font-size: .6em; margin-left: .4em; opacity: .7; }
+  input[type="range"] { accent-color: #f59e0b; }
+  .skeleton { background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.04) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 </style>
 </head>
-<body class="min-h-screen bg-[#020617] text-zinc-100 selection:bg-amber-500/30">
-<div class="absolute inset-0 -z-10 overflow-hidden">
-  <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] rounded-full bg-[radial-gradient(circle_at_center,rgba(245,158,11,.15),transparent_60%)] blur-3xl"></div>
-  <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(56,189,248,.12),transparent_60%)] blur-3xl"></div>
-</div>
-
+<body class="min-h-screen text-slate-100 antialiased">
 <div class="max-w-7xl mx-auto px-4 py-6 md:py-10">
   <!-- Header -->
-  <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+  <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
     <div class="flex items-center gap-3">
-      <div class="size-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.5 5 5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 2z" fill="#f59e0b"/></svg>
+      <div class="w-10 h-10 rounded-2xl glass flex items-center justify-center shadow-lg shadow-amber-500/10">
+        <span class="text-amber-400 font-black text-xl">RA</span>
       </div>
       <div>
         <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Dynasty Player Rankings</h1>
-        <p class="text-zinc-400 text-sm">Superflex • Dynasty • Live values</p>
+        <p class="text-sm text-slate-400">Live values • PPG • Trends • Roster Audit</p>
       </div>
     </div>
-    <div class="flex items-center gap-3">
-      <span id="presetBadge" class="px-3 py-1.5 rounded-full text-xs font-medium bg-zinc-800/70 border border-zinc-700/50 text-amber-300">SF • PPR</span>
-      <button id="settingsBtn" class="glass px-3 py-2 rounded-xl text-sm hover:bg-white/10 transition flex items-center gap-2">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a7.5 7.5 0 000-6l2.1-1.2-.9-1.5-2.4.4a7.5 7.5 0 00-2.6-1.5l-.4-2.4-1.7.3.4 2.4a7.5 0 00-3 0l.4-2.4-1.7-.3-.4 2.4a7.5 0 00-2.6 1.5l-2.4-.4-.9 1.5 2.1 1.2a7.5 7.5 0 000 6l-2.1 1.2.9 1.5 2.4-.4a7.5 7.5 0 002.6 1.5l.4 2.4 1.7-.3-.4-2.4a7.5 7.5 0 003 0l-.4 2.4 1.7.3.4-2.4a7.5 7.5 0 002.6-1.5l2.4.4.9-1.5-2.1-1.2z"/></svg>
-        Settings
-      </button>
-      <button id="exportBtn" class="bg-amber-500 hover:bg-amber-400 text-black font-semibold px-3 py-2 rounded-xl text-sm transition flex items-center gap-2">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 21h16"/></svg>
-        Export CSV
-      </button>
+    <div class="flex items-center gap-2">
+      <span id="presetBadge" class="px-3 py-1.5 rounded-full text-xs font-semibold glass text-amber-300 border border-amber-400/20">sf_ppr</span>
+      <div class="relative">
+        <button id="settingsBtn" class="glass px-3 py-2 rounded-xl text-sm hover:bg-white/10 transition flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 0 0 0-1.82-.33 1.65 0 0 1-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 1-1-1.51 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 0 0 0 .33-1.82 1.65 0 0 1-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 1 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 1 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 1 1 1.51 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 1-1.51 1z"/></svg>
+          Settings
+        </button>
+        <div id="settingsPop" class="hidden absolute right-0 mt-2 w-72 glass rounded-2xl shadow-2xl p-4 z-40">
+          <h3 class="font-semibold mb-3 text-sm text-slate-200">Ranking Settings</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs text-slate-400">Format</label>
+              <select id="formatSel" class="mt-1 w-full bg-slate-900/70 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <option value="sf">Superflex</option>
+                <option value="1qb">1QB</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-400">Scoring</label>
+              <select id="scoringSel" class="mt-1 w-full bg-slate-900/70 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                <option value="ppr">PPR</option>
+                <option value="half">Half PPR</option>
+                <option value="standard">Standard</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between pt-2">
+              <span class="text-xs text-slate-400">Auto-detected from league</span>
+              <button id="detectBtn" class="text-xs text-amber-400 hover:text-amber-300">Re-detect</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
-
-  <!-- Settings Popover -->
-  <div id="settingsPopover" class="hidden absolute right-4 md:right-[max(1rem,calc(50vw-40rem))] mt-2 z-40 w-[320px]">
-    <div class="glass rounded-2xl p-4 shadow-2xl">
-      <h3 class="font-semibold mb-3">League Settings</h3>
-      <div class="space-y-3">
-        <div>
-          <label class="text-xs text-zinc-400">Format</label>
-          <select id="formatSelect" class="mt-1 w-full bg-zinc-900/80 border border-zinc-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-            <option value="sf">Superflex</option>
-            <option value="1qb">1QB</option>
-          </select>
-        </div>
-        <div>
-          <label class="text-xs text-zinc-400">Scoring</label>
-          <select id="scoringSelect" class="mt-1 w-full bg-zinc-900/80 border border-zinc-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-            <option value="ppr">PPR</option>
-            <option value="half">Half PPR</option>
-            <option value="standard">Standard</option>
-          </select>
-        </div>
-        <label class="flex items-center justify-between gap-3 py-2">
-          <span class="text-sm">TE Premium</span>
-          <button id="tepToggle" class="relative inline-flex h-6 w-11 items-center rounded-full transition bg-zinc-700">
-            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-1"></span>
-          </button>
-        </label>
-        <div class="pt-2 border-t border-white/10 text-xs text-zinc-400">
-          Auto-detected from <span class="mono">vault_league_id</span> if present.
-        </div>
-        <div class="flex gap-2 pt-1">
-          <button id="saveSettings" class="flex-1 bg-amber-500 text-black font-medium py-2 rounded-xl text-sm hover:bg-amber-400">Save</button>
-          <button id="closeSettings" class="px-3 py-2 rounded-xl text-sm bg-zinc-800 hover:bg-zinc-700">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Controls -->
   <section class="glass rounded-3xl p-4 md:p-5 mb-6">
     <div class="flex flex-wrap items-center gap-3">
-      <!-- Position chips -->
-      <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-zinc-900/60 border border-zinc-800">
-        <button data-pos="ALL" class="pos-chip px-3 py-1.5 rounded-xl text-sm font-medium bg-amber-500 text-black">ALL</button>
-        <button data-pos="QB" class="pos-chip px-3 py-1.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800">QB</button>
-        <button data-pos="RB" class="pos-chip px-3 py-1.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800">RB</button>
-        <button data-pos="WR" class="pos-chip px-3 py-1.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800">WR</button>
-        <button data-pos="TE" class="pos-chip px-3 py-1.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800">TE</button>
+      <div class="flex items-center gap-2">
+        <span class="text-xs uppercase tracking-wider text-slate-400">Position</span>
+        <div id="posChips" class="flex gap-1.5">
+          <button data-pos="ALL" class="chip chip-active px-3 py-1.5 rounded-full text-xs border border-white/10 bg-white/5 hover:bg-white/10">All</button>
+          <button data-pos="QB" class="chip px-3 py-1.5 rounded-full text-xs border border-white/10 hover:bg-white/10">QB</button>
+          <button data-pos="RB" class="chip px-3 py-1.5 rounded-full text-xs border border-white/10 hover:bg-white/10">RB</button>
+          <button data-pos="WR" class="chip px-3 py-1.5 rounded-full text-xs border border-white/10 hover:bg-white/10">WR</button>
+          <button data-pos="TE" class="chip px-3 py-1.5 rounded-full text-xs border border-white/10 hover:bg-white/10">TE</button>
+        </div>
       </div>
 
-      <button id="tepQuickToggle" class="px-3 py-1.5 rounded-xl text-sm border border-zinc-700 hover:bg-zinc-800 flex items-center gap-1.5">
-        <span class="size-2 rounded-full bg-zinc-600" id="tepDot"></span> TE Premium
-      </button>
+      <div class="h-6 w-px bg-white/10 hidden md:block"></div>
+
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input id="tepToggle" type="checkbox" class="sr-only">
+        <div class="w-10 h-6 rounded-full bg-slate-800 border border-white/10 relative transition">
+          <div class="dot absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-slate-400 transition"></div>
+        </div>
+        <span class="text-sm text-slate-300">TE Premium</span>
+      </label>
 
       <div class="flex-1 min-w-[200px]">
         <div class="relative">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
-          <input id="searchInput" placeholder="Search player, team..." class="w-full pl-10 pr-3 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          <input id="searchInp" placeholder="Search player..." class="w-full bg-slate-900/70 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder-slate-500" />
+          <svg class="absolute left-3 top-2.5 text-slate-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3"/></svg>
         </div>
       </div>
 
-      <div class="flex items-center gap-3 w-full md:w-auto">
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-zinc-400">Age</span>
-          <input id="ageMin" type="range" min="18" max="40" value="18" class="range-thumb w-24 accent-amber-500">
-          <input id="ageMax" type="range" min="18" max="40" value="40" class="range-thumb w-24 accent-amber-500">
-          <span id="ageLabel" class="mono text-xs w-16 text-right">18-40</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-zinc-400">Min Val</span>
-          <input id="minVal" type="range" min="0" max="10000" step="100" value="0" class="range-thumb w-28 accent-amber-500">
-          <span id="minValLabel" class="mono text-xs w-12 text-right">0</span>
-        </div>
-      </div>
+      <button id="exportBtn" class="px-3 py-2 rounded-xl text-sm glass hover:bg-white/10 flex items-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        CSV
+      </button>
     </div>
-    <div class="flex items-center justify-between mt-4 text-xs text-zinc-400">
-      <div id="playerCount" class="mono">Loading...</div>
-      <div class="flex items-center gap-2">
-        <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span id="statusText">Fetching data</span>
+
+    <div class="grid md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/10">
+      <div>
+        <div class="flex justify-between mb-1">
+          <label class="text-xs text-slate-400">Age Range</label>
+          <span class="text-xs text-slate-300"><span id="ageMinLabel">18</span> – <span id="ageMaxLabel">40</span></span>
+        </div>
+        <div class="flex items-center gap-3">
+          <input id="ageMin" type="range" min="18" max="40" value="18" class="w-full">
+          <input id="ageMax" type="range" min="18" max="40" value="40" class="w-full">
+        </div>
+      <div>
+        <div class="flex justify-between mb-1">
+          <label class="text-xs text-slate-400">Min Value</label>
+          <span class="text-xs text-slate-300" id="minValLabel">0</span>
+        </div>
+        <input id="minVal" type="range" min="0" max="10000" value="0" class="w-full">
       </div>
     </div>
   </section>
 
   <!-- Table -->
   <section class="glass rounded-3xl overflow-hidden">
-    <div class="overflow-x-auto scroll-thin">
-      <table class="w-full text-sm">
-        <thead class="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
-          <tr class="text-zinc-400 text-xs uppercase tracking-wider">
-            <th class="text-left px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="rank">Rank <span class="sort-ind"></span></th>
-            <th class="text-left px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="name">Player <span class="sort-ind"></span></th>
-            <th class="text-left px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="pos">Pos <span class="sort-ind"></span></th>
-            <th class="text-right px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="value">Value <span class="sort-ind"></span></th>
-            <th class="text-right px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="ppg">PPG <span class="sort-ind"></span></th>
-            <th class="text-right px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="change_7d">7D <span class="sort-ind"></span></th>
-            <th class="text-right px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="change_30d">30D <span class="sort-ind"></span></th>
-            <th class="text-center px-4 py-3 font-medium">Tier</th>
+    <div class="overflow-x-auto scrollbar-thin">
+      <table class="min-w-full text-sm">
+        <thead class="bg-white/[0.04] border-b border-white/10 sticky top-0 backdrop-blur-xl z-10">
+          <tr class="text-xs uppercase tracking-wider text-slate-400">
+            <th class="text-left px-4 py-3 font-medium cursor-pointer select-none" data-sort="rank">Rank</th>
+            <th class="text-left px-4 py-3 font-medium cursor-pointer select-none" data-sort="name">Player</th>
+            <th class="text-left px-4 py-3 font-medium cursor-pointer select-none" data-sort="position">Pos</th>
+            <th class="text-right px-4 py-3 font-medium cursor-pointer select-none" data-sort="value">Value</th>
+            <th class="text-right px-4 py-3 font-medium cursor-pointer select-none" data-sort="ppg">PPG</th>
+            <th class="text-right px-4 py-3 font-medium cursor-pointer select-none" data-sort="trend_7d">7D</th>
+            <th class="text-right px-4 py-3 font-medium cursor-pointer select-none" data-sort="trend_30d">30D</th>
           </tr>
         </thead>
-        <tbody id="tbody" class="divide-y divide-zinc-900/80">
-          <!-- Skeleton -->
-          <tr class="animate-pulse"><td colspan="8" class="p-0">
-            <div class="space-y-2 p-4">
-              <div class="shimmer h-12 rounded-xl"></div>
-              <div class="shimmer h-12 rounded-xl"></div>
-              <div class="shimmer h-12 rounded-xl"></div>
-              <div class="shimmer h-12 rounded-xl"></div>
-              <div class="shimmer h-12 rounded-xl"></div>
+        <tbody id="tbody" class="divide-y divide-white/5">
+          <!-- skeleton -->
+          <tr class="animate-pulse"><td colspan="7" class="p-4">
+            <div class="space-y-3">
+              <div class="h-10 skeleton rounded-xl"></div>
+              <div class="h-10 skeleton rounded-xl"></div>
+              <div class="h-10 skeleton rounded-xl"></div>
+              <div class="h-10 skeleton rounded-xl"></div>
+              <div class="h-10 skeleton rounded-xl"></div>
             </div>
           </td></tr>
         </tbody>
       </table>
     </div>
+    <div id="countBar" class="px-4 py-3 border-t border-white/10 text-xs text-slate-400 bg-white/[0.02]">Loading…</div>
   </section>
 
-  <!-- Footer -->
-  <footer class="mt-8 text-center text-xs text-zinc-500">
-    Data via <a href="https://rosteraudit.com" target="_blank" class="text-amber-400 hover:underline">RosterAudit.com</a> • Sleeper API • Built for dynasty grinders
+  <footer class="mt-8 text-center text-xs text-slate-500">
+    Data via <a href="https://api.sleeper.app" class="text-amber-400 hover:underline" target="_blank" rel="noreferrer">Sleeper</a> & <a href="https://rosteraudit.com" class="text-amber-400 hover:underline" target="_blank" rel="noreferrer">Roster Audit</a>. 
+    Rankings, values and trends © Roster Audit. Built for dynasty managers.
   </footer>
 </div>
 
 <script>
 (() => {
-  const STATE = {
-    format: 'sf',
-    scoring: 'ppr',
-    tep: false,
+  const state = {
+    raw: [],
+    filtered: [],
+    sortKey: 'rank',
+    sortDir: 'asc',
     pos: 'ALL',
+    tep: false,
     search: '',
     ageMin: 18,
     ageMax: 40,
     minVal: 0,
-    sortKey: 'value',
-    sortDir: 'desc',
-    players: [],
-    filtered: [],
-    maxValue: 10000,
-    loaded: false
+    maxVal: 10000,
+    expanded: new Set(),
+    settings: { format: 'sf', scoring: 'ppr', tePremium: false }
   };
 
-  const $ = s => document.querySelector(s);
-  const $$ = s => [...document.querySelectorAll(s)];
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
 
   const presetBadge = $('#presetBadge');
   const tbody = $('#tbody');
-  const playerCount = $('#playerCount');
-  const statusText = $('#statusText');
-  const settingsPopover = $('#settingsPopover');
-  const formatSelect = $('#formatSelect');
-  const scoringSelect = $('#scoringSelect');
+  const countBar = $('#countBar');
+  const settingsPop = $('#settingsPop');
+  const formatSel = $('#formatSel');
+  const scoringSel = $('#scoringSel');
   const tepToggle = $('#tepToggle');
-  const tepDot = $('#tepDot');
-  const tepQuickToggle = $('#tepQuickToggle');
 
-  // Settings popover
-  $('#settingsBtn').addEventListener('click', e => {
-    e.stopPropagation();
-    settingsPopover.classList.toggle('hidden');
-  });
-  $('#closeSettings').addEventListener('click', ()=>settingsPopover.classList.add('hidden'));
-  document.addEventListener('click', e => {
-    if (!settingsPopover.contains(e.target) && e.target.id !== 'settingsBtn') settingsPopover.classList.add('hidden');
-  });
-
-  function updateTepUI(){
-    const on = STATE.tep;
-    tepToggle.classList.toggle('bg-amber-500', on);
-    tepToggle.classList.toggle('bg-zinc-700', !on);
-    tepToggle.querySelector('span').style.transform = on ? 'translateX(1.5rem)' : 'translateX(0.25rem)';
-    tepDot.classList.toggle('bg-amber-500', on);
-    tepDot.classList.toggle('bg-zinc-600', !on);
+  // UI helpers
+  function formatKey() {
+    const k = `${state.settings.format}_${state.settings.scoring}${state.settings.tePremium ? '_tep' : ''}`;
+    presetBadge.textContent = k;
+    return k;
   }
 
-  tepToggle.addEventListener('click', ()=>{ STATE.tep=!STATE.tep; updateTepUI(); });
-  tepQuickToggle.addEventListener('click', ()=>{ STATE.tep=!STATE.tep; updateTepUI(); applySettings(); loadAll(true); });
+  function toggleSettings() {
+    settingsPop.classList.toggle('hidden');
+  }
+  $('#settingsBtn').addEventListener('click', (e)=>{ e.stopPropagation(); toggleSettings(); });
+  document.addEventListener('click', (e)=>{ if(!settingsPop.contains(e.target) && e.target.id!=='settingsBtn') settingsPop.classList.add('hidden'); });
 
-  $('#saveSettings').addEventListener('click', ()=>{
-    STATE.format = formatSelect.value;
-    STATE.scoring = scoringSelect.value;
-    localStorage.setItem('ra_rankings_override', JSON.stringify({format:STATE.format, scoring:STATE.scoring, tep:STATE.tep}));
-    settingsPopover.classList.add('hidden');
-    applySettings();
-    loadAll(true);
-  });
-
-  function applySettings(){
-    formatSelect.value = STATE.format;
-    scoringSelect.value = STATE.scoring;
+  // TE Premium switch UI
+  function updateTepUI() {
+    const dot = tepToggle.nextElementSibling.querySelector('.dot');
+    if (state.settings.tePremium) {
+      tepToggle.nextElementSibling.classList.add('bg-amber-500/30','border-amber-500/40');
+      dot.classList.add('translate-x-4','bg-amber-400');
+    } else {
+      tepToggle.nextElementSibling.classList.remove('bg-amber-500/30','border-amber-500/40');
+      dot.classList.remove('translate-x-4','bg-amber-400');
+    }
+  }
+  tepToggle.addEventListener('change', ()=>{});
+  tepToggle.parentElement.addEventListener('click', (e)=>{
+    e.preventDefault();
+    state.settings.tePremium = !state.settings.tePremium;
     updateTepUI();
-    const sc = STATE.scoring.toUpperCase().replace('_','+');
-    presetBadge.textContent = `${STATE.format.toUpperCase()} • ${sc}${STATE.tep?' • TEP':''}`;
-  }
+    persistSettings();
+    formatKey();
+    applyFilters();
+  });
 
   // Position chips
-  $$('.pos-chip').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      $$('.pos-chip').forEach(b=>b.classList.remove('bg-amber-500','text-black'));
-      btn.classList.add('bg-amber-500','text-black');
-      STATE.pos = btn.dataset.pos;
-      filterAndRender();
-    });
+  $('#posChips').addEventListener('click', e=>{
+    const btn = e.target.closest('.chip');
+    if(!btn) return;
+    state.pos = btn.dataset.pos;
+    $$('#posChips .chip').forEach(c=>c.classList.remove('chip-active','chip-active'));
+    $$('#posChips .chip').forEach(c=>c.classList.remove('chip-active'));
+    btn.classList.add('chip-active');
+    applyFilters();
   });
 
-  // Search debounce
+  // Search
   let searchTO;
-  $('#searchInput').addEventListener('input', e=>{
+  $('#searchInp').addEventListener('input', e=>{
     clearTimeout(searchTO);
-    searchTO = setTimeout(()=>{
-      STATE.search = e.target.value.trim().toLowerCase();
-      filterAndRender();
-    }, 250);
+    searchTO = setTimeout(()=>{ state.search = e.target.value.trim().toLowerCase(); applyFilters(); }, 200);
   });
 
   // Age sliders
-  const ageMin = $('#ageMin'), ageMax = $('#ageMax'), ageLabel = $('#ageLabel');
+  const ageMin = $('#ageMin'), ageMax = $('#ageMax');
+  const ageMinLabel = $('#ageMinLabel'), ageMaxLabel = $('#ageMaxLabel');
   function syncAge(){
     let min = +ageMin.value, max = +ageMax.value;
-    if(min>max){ [min,max]=[max,min]; }
-    STATE.ageMin=min; STATE.ageMax=max;
-    ageLabel.textContent = `${min}-${max}`;
-    filterAndRender();
+    if(min>max) [min,max]=[max,min];
+    state.ageMin=min; state.ageMax=max;
+    ageMinLabel.textContent=min; ageMaxLabel.textContent=max;
+    applyFilters();
   }
   ageMin.addEventListener('input', syncAge);
   ageMax.addEventListener('input', syncAge);
@@ -284,303 +270,290 @@ details>summary::-webkit-details-marker{display:none}
   // Min value
   const minVal = $('#minVal'), minValLabel = $('#minValLabel');
   minVal.addEventListener('input', ()=>{
-    STATE.minVal = +minVal.value;
-    minValLabel.textContent = STATE.minVal.toLocaleString();
-    filterAndRender();
+    state.minVal = +minVal.value;
+    minValLabel.textContent = state.minVal.toLocaleString();
+    applyFilters();
   });
 
   // Sorting
   $$('th[data-sort]').forEach(th=>{
     th.addEventListener('click', ()=>{
       const key = th.dataset.sort;
-      if(STATE.sortKey===key){
-        STATE.sortDir = STATE.sortDir==='asc'?'desc':'asc';
-      }else{
-        STATE.sortKey=key; STATE.sortDir = key==='name'?'asc':'desc';
-      }
-      updateSortIndicators();
-      filterAndRender();
+      if(state.sortKey===key) state.sortDir = state.sortDir==='asc'?'desc':'asc';
+      else { state.sortKey=key; state.sortDir='asc'; }
+      $$('th[data-sort]').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
+      th.classList.add(state.sortDir==='asc'?'sort-asc':'sort-desc');
+      applyFilters();
     });
   });
-  function updateSortIndicators(){
-    $$('th[data-sort] .sort-ind').forEach(el=>el.textContent='');
-    const th = $(`th[data-sort="${STATE.sortKey}"] .sort-ind`);
-    if(th) th.textContent = STATE.sortDir==='asc'?'▲':'▼';
-  }
-  updateSortIndicators();
 
   // Export CSV
   $('#exportBtn').addEventListener('click', ()=>{
-    const rows = [['Rank','Name','Team','Pos','Age','Value','PPG','7D','30D','Tier']];
-    STATE.filtered.forEach(p=>{
-      rows.push([p.rank,p.name,p.team,p.pos,p.age??'',p.value,p.ppg??'',p.change_7d??'',p.change_30d??'',p.tier]);
+    const rows = [['Rank','Player','Team','Age','Number','Pos','Value','PPG','7D','30D']];
+    state.filtered.forEach(p=>{
+      rows.push([p.rank,p.name,p.team||'',p.age??'',p.number??'',p.position,p.value,p.ppg??'',p.trend_7d??'',p.trend_30d??'']);
     });
     const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob([csv],{type:'text/csv'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `dynasty_rankings_${STATE.format}_${STATE.scoring}${STATE.tep?'_tep':''}.csv`;
+    a.download = `dynasty-rankings-${formatKey()}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   });
 
-  // Fetch helpers
-  const PROXIES = url => [
-    url,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    `https://corsproxy.io/?${encodeURIComponent(url)}`
-  ];
-
-  async function fetchJson(url){
-    let lastErr;
-    for(const u of PROXIES(url)){
-      try{
-        const res = await fetch(u,{cache:'no-store'});
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        return await res.json();
-      }catch(e){ lastErr=e; }
-    }
-    throw lastErr || new Error('Fetch failed');
-  }
-
-  async function fetchWithCache(key, url, ttlMs){
-    const now = Date.now();
+  // Fetch helpers with proxy fallback + cache
+  const TTL = 1000*60*30; //30m
+  async function fetchJSON(url, ttl=TTL){
+    const key='ra_cache_'+btoa(url);
     try{
-      const raw = localStorage.getItem(key);
-      if(raw){
-        const {ts,data} = JSON.parse(raw);
-        if(now-ts < ttlMs) return data;
+      const cached = localStorage.getItem(key);
+      if(cached){
+        const {ts,data}=JSON.parse(cached);
+        if(Date.now()-ts < ttl) return data;
       }
     }catch{}
-    const data = await fetchJson(url);
-    try{ localStorage.setItem(key, JSON.stringify({ts:now,data})); }catch{}
+    const data = await fetchWithProxy(url);
+    try{ localStorage.setItem(key, JSON.stringify({ts:Date.now(),data})); }catch{}
     return data;
   }
-
-  function calcAge(birth){
-    if(!birth) return null;
-    const d = new Date(birth);
-    if(isNaN(d)) return null;
-    const diff = Date.now() - d.getTime();
-    return Math.floor(diff / (365.25*24*3600*1000));
+  async function fetchWithProxy(url){
+    const attempts = [
+      url,
+      'https://api.allorigins.win/raw?url='+encodeURIComponent(url),
+      'https://corsproxy.io/?'+encodeURIComponent(url)
+    ];
+    let lastErr;
+    for(const u of attempts){
+      try{
+        const res = await fetch(u, {cache:'no-store'});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const txt = await res.text();
+        return JSON.parse(txt);
+      }catch(e){ lastErr=e; continue; }
+    }
+    throw lastErr;
   }
 
-  function buildFormatKey(){
-    return `${STATE.format}_${STATE.scoring}${STATE.tep?'_tep':''}`;
+  // Settings persist
+  function persistSettings(){
+    localStorage.setItem('ra_rankings_override', JSON.stringify(state.settings));
   }
+  function loadSettings(){
+    const over = localStorage.getItem('ra_rankings_override');
+    if(over){
+      try{ state.settings = {...state.settings, ...JSON.parse(over)} }catch{}
+    }
+    formatSel.value = state.settings.format;
+    scoringSel.value = state.settings.scoring;
+    updateTepUI();
+    formatKey();
+  }
+  formatSel.addEventListener('change', ()=>{ state.settings.format = formatSel.value; persistSettings(); formatKey(); init(); });
+  scoringSel.addEventListener('change', ()=>{ state.settings.scoring = scoringSel.value; persistSettings(); formatKey(); init(); });
 
-  async function autoDetect(){
+  // Auto-detect league
+  async function autoDetectLeague(){
+    const leagueId = localStorage.getItem('vault_league_id');
+    if(!leagueId) return;
     try{
-      const override = JSON.parse(localStorage.getItem('ra_rankings_override')||'null');
-      if(override){
-        STATE.format = override.format||STATE.format;
-        STATE.scoring = override.scoring||STATE.scoring;
-        STATE.tep = !!override.tep;
-        applySettings();
-        return;
-      }
-      const leagueId = localStorage.getItem('vault_league_id');
-      if(!leagueId) return;
-      const league = await fetchJson(`https://api.sleeper.app/v1/league/${leagueId}`);
-      const hasSF = (league.roster_positions||[]).includes('SUPER_FLEX') || (league.roster_positions||[]).filter(p=>p==='QB').length>1;
-      STATE.format = hasSF?'sf':'1qb';
-      const rec = league.scoring_settings?.rec||0;
-      STATE.scoring = rec>=1?'ppr':rec>=0.5?'half':'standard';
-      STATE.tep = (league.scoring_settings?.bonus_rec_te||0)>0;
-      applySettings();
-    }catch{}
+      const league = await fetchJSON(`https://api.sleeper.app/v1/league/${leagueId}`, 1000*60*60);
+      const rp = league.roster_positions||[];
+      const isSF = rp.includes('SUPER_FLEX') || rp.filter(p=>p==='QB').length>1;
+      const rec = league.scoring_settings?.rec ?? 1;
+      const rec_te = league.scoring_settings?.rec_te ?? rec;
+      const bonus_rec_te = league.scoring_settings?.bonus_rec_te ?? 0;
+      const scoring = rec>=1 ? 'ppr' : rec>=0.5 ? 'half' : 'standard';
+      const tePrem = rec_te>rec || bonus_rec_te>0;
+      state.settings.format = isSF ? 'sf' : '1qb';
+      state.settings.scoring = scoring;
+      state.settings.tePremium = tePrem;
+      formatSel.value = state.settings.format;
+      scoringSel.value = state.settings.scoring;
+      updateTepUI();
+      formatKey();
+      persistSettings();
+    }catch(e){ console.warn('League detect failed', e); }
+  }
+  $('#detectBtn').addEventListener('click', autoDetectLeague);
+
+  // Core data load
+  async function loadSleeperMap(){
+    const players = await fetchJSON('https://api.sleeper.app/v1/players/nfl', 1000*60*60*6);
+    const map = {};
+    Object.entries(players).forEach(([id,p])=>{
+      if(!p) return;
+      const pos = p.position;
+      if(!['QB','RB','WR','TE'].includes(pos)) return;
+      map[id] = p;
+    });
+    return map;
   }
 
-  async function loadAll(force=false){
-    statusText.textContent='Fetching data';
+  async function loadRankings(format){
+    const all=[];
+    for(let page=1; page<=8; page++){
+      const url = `https://rosteraudit.com/wp-json/ra/v1/rankings?format=${format}&position=all&per_page=100&page=${page}`;
+      try{
+        const data = await fetchJSON(url, 1000*60*15);
+        if(!Array.isArray(data) || data.length===0) break;
+        all.push(...data);
+        if(data.length<100) break;
+      }catch(e){ console.warn('Rankings page fail', page, e); break; }
+    }
+    return all;
+  }
+
+  async function loadPPG(){
     try{
-      if(!STATE.loaded || force){
-        await autoDetect();
-      }
-      const formatKey = buildFormatKey();
-
-      // Sleeper players
-      statusText.textContent='Loading players...';
-      const sleeper = await fetchWithCache('sleeper_players_v1','https://api.sleeper.app/v1/players/nfl',24*3600*1000);
-      
-      const playerMap = {};
-      for(const id in sleeper){
-        const p = sleeper[id];
-        if(!['QB','RB','WR','TE'].includes(p.position)) continue;
-        if(p.status && p.status!=='Active' && p.status!==null) continue;
-        playerMap[id] = {
-          sleeper_id:id,
-          name: p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim(),
-          team: p.team||'FA',
-          pos: p.position,
-          age: calcAge(p.birth_date),
-          number: p.number||null
-        };
-      }
-
-      // Values
-      statusText.textContent='Loading values...';
-      const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${formatKey}`;
-      const values = await fetchWithCache(`ra_values_${formatKey}`, valuesUrl, 3600*1000).catch(()=>({}));
-
-      // PPG
-      statusText.textContent='Loading projections...';
-      const ppgData = await fetchWithCache('ra_ppg','https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings',3600*1000).catch(()=>({}));
-      const ppgMap = new Map();
-      if(Array.isArray(ppgData)){
-        ppgData.forEach(r=>ppgMap.set(String(r.player_id||r.sleeper_id), +r.ppg||0));
-      }else{
-        for(const k in ppgData) ppgMap.set(k, +ppgData[k]?.ppg || +ppgData[k] || 0);
-      }
-
-      // Movers
-      statusText.textContent='Loading movers...';
-      const moversData = await fetchWithCache('ra_movers','https://rosteraudit.com/wp-json/ra/v1/movers?limit=200',3600*1000).catch(()=>[]);
-      const moversMap = new Map();
-      (Array.isArray(moversData)?moversData:[]).forEach(m=>{
-        const id = String(m.player_id||m.sleeper_id);
-        moversMap.set(id,{change_7d:+m.change_7d||0, change_30d:+m.change_30d||0});
-      });
-
-      // Merge
-      const merged = [];
-      for(const id in values){
-        const vobj = values[id];
-        const val = STATE.format==='sf' ? (+vobj.sf||0) : (+vobj['1qb']||0);
-        if(val<=0) continue;
-        const base = playerMap[id];
-        if(!base) continue;
-        const mv = moversMap.get(id)||{};
-        merged.push({
-          ...base,
-          value: Math.round(val),
-          ppg: ppgMap.get(id)||null,
-          change_7d: mv.change_7d||0,
-          change_30d: mv.change_30d||0
+      const data = await fetchJSON('https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings', 1000*60*30);
+      const map={};
+      if(Array.isArray(data)){
+        data.forEach(d=>{
+          const sid = d.sleeper_id || d.player_id || d.id;
+          const ppg = d.ppg ?? d.fantasy_points_per_game ?? d.points_per_game ?? d.avg ?? null;
+          if(sid && ppg!=null) map[sid]=Number(ppg);
         });
       }
-
-      merged.sort((a,b)=>b.value-a.value);
-      const top = merged.slice(0,800);
-      // Tier by >500 drop
-      let tier=1, prev=null;
-      top.forEach((p,i)=>{
-        p.rank=i+1;
-        if(prev!==null && prev - p.value > 500) tier++;
-        p.tier = tier;
-        prev = p.value;
-      });
-
-      STATE.players = top;
-      STATE.maxValue = top[0]?.value || 10000;
-      minVal.max = STATE.maxValue;
-      minVal.value = 0;
-      STATE.minVal = 0;
-      minValLabel.textContent='0';
-      STATE.loaded = true;
-      statusText.textContent=`Updated ${new Date().toLocaleTimeString()}`;
-      filterAndRender();
-    }catch(e){
-      console.error(e);
-      statusText.textContent='Error loading data';
-      tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-rose-400">Failed to load data. Retrying...<br><button class="mt-3 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700" onclick="location.reload()">Reload</button></td></tr>`;
-    }
+      return map;
+    }catch(e){ console.warn('PPG load fail', e); return {}; }
   }
 
-  function filterAndRender(){
-    let list = STATE.players;
-    if(STATE.pos!=='ALL') list = list.filter(p=>p.pos===STATE.pos);
-    if(STATE.search){
-      const q = STATE.search;
-      list = list.filter(p=>p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
-    }
-    list = list.filter(p=> (p.age===null || (p.age>=STATE.ageMin && p.age<=STATE.ageMax)) && p.value>=STATE.minVal);
-
-    // sort
-    const key = STATE.sortKey;
-    const dir = STATE.sortDir==='asc'?1:-1;
-    list = list.slice().sort((a,b)=>{
-      let av = a[key], bv = b[key];
-      if(key==='name') return av.localeCompare(bv)*dir;
-      av = av??-Infinity; bv = bv??-Infinity;
-      return (av-bv)*dir;
+  function merge(sleeperMap, rankings, ppgMap){
+    const out=[];
+    rankings.forEach(r=>{
+      const sid = String(r.sleeper_id||r.player_id||r.id||'');
+      const sp = sleeperMap[sid]||{};
+      const name = r.player_name || sp.full_name || `${sp.first_name||''} ${sp.last_name||''}`.trim() || 'Unknown';
+      const pos = r.position || sp.position || '';
+      if(!['QB','RB','WR','TE'].includes(pos)) return;
+      const team = r.team || sp.team || '';
+      const age = r.age ?? sp.age ?? null;
+      const number = sp.number ?? null;
+      const value = Number(r.value)||0;
+      const ppg = ppgMap[sid] ?? null;
+      const trend_7d = r.trend_7d ?? r.trend7 ?? r.trend_7 ?? null;
+      const trend_30d = r.trend_30d ?? r.trend30 ?? r.trend_30 ?? null;
+      out.push({ sleeper_id:sid, name, position:pos, team, age, number, value, ppg, trend_7d, trend_30d });
     });
-
-    STATE.filtered = list;
-    playerCount.textContent = `${list.length.toLocaleString()} players • top ${Math.min(800,STATE.players.length)}`;
-    renderTable(list);
+    // TE Premium boost for display only
+    out.forEach(p=>{
+      if(state.settings.tePremium && p.position==='TE'){
+        p.value = Math.round(p.value*1.08);
+      }
+    });
+    out.sort((a,b)=>b.value-a.value);
+    out.forEach((p,i)=>p.rank=i+1);
+    return out;
   }
 
-  function sparklineSVG(values){
-    const w=100,h=28,pad=2;
-    const min=Math.min(...values),max=Math.max(...values);
-    const range=max-min||1;
-    const pts=values.map((v,i)=>{
-      const x=pad + i*(w-pad*2)/(values.length-1);
-      const y=h-pad - ((v-min)/range)*(h-pad*2);
-      return `${x},${y}`;
-    }).join(' ');
-    const up = values[values.length-1]>=values[0];
-    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="${up?'#10b981':'#f87171'}" stroke-width="2" stroke-linecap="round" points="${pts}"/></svg>`;
+  function applyFilters(){
+    let list = [...state.raw];
+    if(state.pos!=='ALL') list = list.filter(p=>p.position===state.pos);
+    if(state.search) list = list.filter(p=>p.name.toLowerCase().includes(state.search));
+    list = list.filter(p=>{
+      const age = p.age??0;
+      return age>=state.ageMin && age<=state.ageMax && p.value>=state.minVal;
+    });
+    // sort
+    const key = state.sortKey;
+    list.sort((a,b)=>{
+      let av = a[key], bv = b[key];
+      if(key==='name') return state.sortDir==='asc'? av.localeCompare(bv): bv.localeCompare(av);
+      av = av??-Infinity; bv = bv??-Infinity;
+      return state.sortDir==='asc'? av-bv : bv-av;
+    });
+    state.filtered = list;
+    render();
   }
 
-  function renderTable(list){
-    if(!list.length){
-      tbody.innerHTML = `<tr><td colspan="8" class="p-10 text-center text-zinc-500">No players match filters</td></tr>`;
+  function posBadge(pos){
+    const map={ QB:'bg-sky-500/20 text-sky-300 border-sky-500/30', RB:'bg-emerald-500/20 text-emerald-300 border-emerald-500/30', WR:'bg-violet-500/20 text-violet-300 border-violet-500/30', TE:'bg-amber-500/20 text-amber-300 border-amber-500/30' };
+    return `<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold border ${map[pos]||'bg-white/10'}">${pos}</span>`;
+  }
+  function trendCell(v){
+    if(v==null || isNaN(v)) return `<span class="text-slate-500">—</span>`;
+    const num = Number(v);
+    const cls = num>0?'text-emerald-400':num<0?'text-rose-400':'text-slate-400';
+    const arrow = num>0?'▲':num<0?'▼':'•';
+    return `<span class="${cls} font-medium">${arrow} ${Math.abs(num).toFixed(1)}</span>`;
+  }
+
+  function render(){
+    if(state.filtered.length===0){
+      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-12 text-center text-slate-500">No players match filters.</td></tr>`;
+      countBar.textContent = `0 players`;
       return;
     }
-    const frag = document.createDocumentFragment();
-    list.forEach(p=>{
-      const tr = document.createElement('tr');
-      tr.className = 'hover:bg-white/[.03] cursor-pointer transition';
-      tr.innerHTML = `
-        <td class="px-4 py-3 mono text-zinc-400">${p.rank}</td>
+    const rows = state.filtered.map(p=>{
+      const isOpen = state.expanded.has(p.sleeper_id);
+      return `
+      <tr class="hover:bg-white/[0.03] cursor-pointer" data-id="${p.sleeper_id}">
+        <td class="px-4 py-3 text-slate-400 font-medium">${p.rank}</td>
         <td class="px-4 py-3">
           <div class="flex items-center gap-3">
-            <div class="size-9 rounded-xl bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300">${p.team}</div>
+            <img src="https://sleepercdn.com/images/team_logos/nfl/${(p.team||'').toLowerCase()}.png" onerror="this.style.display='none'" class="w-7 h-7 rounded-lg bg-white/5 border border-white/10" alt="">
             <div>
-              <div class="font-medium leading-tight">${p.name}</div>
-              <div class="text-xs text-zinc-500">${p.team} • ${p.age? p.age+' y/o' : '—'} ${p.number?' • #'+p.number:''}</div>
+              <div class="font-semibold leading-tight">${p.name}</div>
+              <div class="text-xs text-slate-500">${p.team||'FA'} • ${p.age??'—'}${p.number? ' • #'+p.number:''}</div>
             </div>
           </div>
         </td>
-        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700">${p.pos}</span></td>
-        <td class="px-4 py-3 text-right mono font-medium">${p.value.toLocaleString()}</td>
-        <td class="px-4 py-3 text-right mono text-zinc-300">${p.ppg? p.ppg.toFixed(1): '—'}</td>
-        <td class="px-4 py-3 text-right mono ${p.change_7d>0?'text-emerald-400':p.change_7d<0?'text-rose-400':'text-zinc-500'}">${p.change_7d? (p.change_7d>0?'+':'')+p.change_7d: '—'}</td>
-        <td class="px-4 py-3 text-right mono ${p.change_30d>0?'text-emerald-400':p.change_30d<0?'text-rose-400':'text-zinc-500'}">${p.change_30d? (p.change_30d>0?'+':'')+p.change_30d: '—'}</td>
-        <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs bg-amber-500/15 text-amber-300 border border-amber-500/30">T${p.tier}</span></td>
-      `;
-      // expandable
-      const detailsTr = document.createElement('tr');
-      detailsTr.className='hidden bg-zinc-950/60';
-      detailsTr.innerHTML = `<td colspan="8" class="px-4 py-4 border-t border-zinc-900">
-        <div class="flex flex-wrap items-center gap-6">
-          <div>
-            <div class="text-xs text-zinc-500 mb-1">7-day trend</div>
-            ${sparklineSVG(Array.from({length:12},(_,i)=>p.value + Math.sin(i/2)*120 + (Math.random()-0.5)*80))}
-          </div>
-          <div class="text-sm">
-            <div><span class="text-zinc-500">Value:</span> <span class="mono">${p.value.toLocaleString()}</span></div>
-            <div><span class="text-zinc-500">PPG:</span> <span class="mono">${p.ppg? p.ppg.toFixed(2):'—'}</span></div>
-            <div><span class="text-zinc-500">Age/Pos:</span> ${p.age||'—'} / ${p.pos}</div>
-          </div>
-          <div class="text-xs text-zinc-500 ml-auto">ID: ${p.sleeper_id}</div>
+        <td class="px-4 py-3">${posBadge(p.position)}</td>
+        <td class="px-4 py-3 text-right font-semibold tabular-nums">${p.value.toLocaleString()}</td>
+        <td class="px-4 py-3 text-right tabular-nums">${p.ppg!=null? p.ppg.toFixed(1): '<span class="text-slate-600">—</span>'}</td>
+        <td class="px-4 py-3 text-right">${trendCell(p.trend_7d)}</td>
+        <td class="px-4 py-3 text-right">${trendCell(p.trend_30d)}</td>
+      </tr>
+      ${isOpen? `<tr class="bg-white/[0.02]"><td colspan="7" class="px-4 py-3">
+        <div class="grid md:grid-cols-4 gap-3 text-xs text-slate-400">
+          <div><span class="text-slate-500">Sleeper ID:</span> ${p.sleeper_id}</div>
+          <div><span class="text-slate-500">Team:</span> ${p.team||'FA'}</div>
+          <div><span class="text-slate-500">Age:</span> ${p.age??'—'}</div>
+          <div><span class="text-slate-500">Number:</span> ${p.number??'—'}</div>
         </div>
-      </td>`;
+      </td></tr>`:''}
+      `;
+    }).join('');
+    tbody.innerHTML = rows;
+    countBar.textContent = `${state.filtered.length.toLocaleString()} players • Updated live • ${formatKey()}`;
+    // row click expand
+    tbody.querySelectorAll('tr[data-id]').forEach(tr=>{
       tr.addEventListener('click', ()=>{
-        detailsTr.classList.toggle('hidden');
+        const id = tr.dataset.id;
+        if(state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id);
+        render();
       });
-      frag.appendChild(tr);
-      frag.appendChild(detailsTr);
     });
-    tbody.innerHTML='';
-    tbody.appendChild(frag);
   }
 
-  // Init
-  applySettings();
-  loadAll();
+  async function init(){
+    try{
+      loadSettings();
+      await autoDetectLeague();
+      formatKey();
+      tbody.innerHTML = `<tr><td colspan="7" class="p-4"><div class="space-y-3">${Array(6).fill(0).map(()=>'<div class="h-12 skeleton rounded-xl"></div>').join('')}</div></td></tr>`;
+      const [sleeperMap, rankings, ppgMap] = await Promise.all([
+        loadSleeperMap(),
+        loadRankings(state.settings.format),
+        loadPPG()
+      ]);
+      state.raw = merge(sleeperMap, rankings, ppgMap);
+      // set minVal max
+      const maxVal = Math.max(...state.raw.map(p=>p.value), 0);
+      state.maxVal = maxVal;
+      minVal.max = maxVal;
+      minVal.value = 0;
+      minValLabel.textContent = '0';
+      applyFilters();
+    }catch(e){
+      console.error(e);
+      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-12 text-center text-rose-400">Failed to load rankings. ${e.message}</td></tr>`;
+      countBar.textContent = `Error`;
+    }
+  }
+
+  init();
 })();
 </script>
 </body>
