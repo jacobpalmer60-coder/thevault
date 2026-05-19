@@ -2,519 +2,569 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dynasty Rankings • RosterAudit Pro</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rookie Alchemy • Dynasty Rankings</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
-:root { color-scheme: dark; }
-html { font-family: 'Inter', system-ui, sans-serif; }
-.font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; }
-body {
-  background: #030308;
-  min-height: 100vh;
-}
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(245,158,11,0.18), transparent 60%),
-    radial-gradient(900px 500px at -10% 20%, rgba(245,158,11,0.12), transparent 60%),
-    radial-gradient(700px 400px at 50% 120%, rgba(245,158,11,0.08), transparent 60%),
-    #030308;
-  z-index: -2;
-}
-.noise::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-  mix-blend-mode: soft-light;
-  pointer-events: none;
-  z-index: -1;
-}
-.glass {
-  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgba(255,255,255,0.10);
-}
-.glass-strong {
-  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.12);
-}
-.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
-.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
-.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.20); }
-.pos-qb { background: rgba(239,68,68,0.15); color: #fca5a5; border-color: rgba(239,68,68,0.35); }
-.pos-rb { background: rgba(34,197,94,0.15); color: #86efac; border-color: rgba(34,197,94,0.35); }
-.pos-wr { background: rgba(59,130,246,0.15); color: #93c5fd; border-color: rgba(59,130,246,0.35); }
-.pos-te { background: rgba(168,85,247,0.15); color: #d8b4fe; border-color: rgba(168,85,247,0.35); }
-.pos-other { background: rgba(245,158,11,0.15); color: #fcd34d; border-color: rgba(245,158,11,0.35); }
-.toggle-track { transition: all .2s ease; }
-.toggle-thumb { transition: all .2s ease; }
-input:checked + .toggle-track { background: rgb(245 158 11); }
-input:checked + .toggle-track .toggle-thumb { transform: translateX(100%); }
+  :root {
+    color-scheme: dark;
+  }
+  html {
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+  .display {
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+  }
+  body {
+    background: #04060a;
+  }
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  .glass-strong {
+    background: linear-gradient(180deg, rgba(15,17,22,.85), rgba(10,12,16,.85));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+  /* custom scroll */
+  .scroller::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  .scroller::-webkit-scrollbar-track {
+    background: rgba(255,255,255,.02);
+  }
+  .scroller::-webkit-scrollbar-thumb {
+    background: rgba(255,193,7,.25);
+    border-radius: 999px;
+    border: 2px solid rgba(0,0,0,0);
+    background-clip: padding-box;
+  }
+  .scroller::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,193,7,.4);
+    background-clip: padding-box;
+  }
+  .pos-badge {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Shimmer */
+  @keyframes shimmer {
+    0% { background-position: -200% 0 }
+    100% { background-position: 200% 0 }
+  }
+  .shimmer {
+    background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.10) 50%, rgba(255,255,255,.04) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s linear infinite;
+  }
+  /* Toggle */
+  .toggle-dot {
+    transition: transform .2s cubic-bezier(.4,0,.2,1);
+  }
+  input:checked + div .toggle-dot {
+    transform: translateX(1.25rem);
+  }
 </style>
 </head>
-<body class="noise text-zinc-200 antialiased">
-<div class="max-w-[1200px] mx-auto px-4 md:px-6 py-8 md:py-12">
+<body class="min-h-screen text-zinc-100 antialiased selection:bg-amber-500/30 selection:text-amber-200">
+  <!-- BG -->
+  <div class="fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(251,191,36,0.15),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(59,130,246,0.12),transparent_50%),radial-gradient(40%_40%_at_0%_0%,rgba(168,85,247,0.10),transparent_50%),#04060a]"></div>
+    <div class="absolute inset-0 opacity-[0.04] mix-blend-soft-light" style="background-image:repeating-linear-gradient(0deg, #fff 0px, #fff 1px, transparent 1px, transparent 24px),repeating-linear-gradient(90deg, #fff 0px, #fff 1px, transparent 1px, transparent 24px)"></div>
+  </div>
 
-  <!-- Header -->
-  <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
-    <div class="flex items-center gap-4">
-      <div class="size-12 rounded-2xl glass-strong flex items-center justify-center shadow-[0_0_40px_rgba(245,158,11,0.35)]">
-        <span class="font-display font-bold text-amber-300 text-xl tracking-tight">RA</span>
-      </div>
-      <div>
-        <h1 class="font-display text-[28px] md:text-[32px] leading-tight font-semibold text-white">Dynasty Rankings</h1>
-        <p class="text-sm text-zinc-400 -mt-0.5">Live from Google Sheet • <span class="text-amber-400 font-medium">RosterAudit Pro</span></p>
-      </div>
-    <div class="flex items-center gap-3">
-      <button id="exportBtn" class="glass hover:bg-white/10 transition px-4 h-10 rounded-xl text-sm font-medium flex items-center gap-2">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export CSV
-      </button>
-      <button id="settingsBtn" class="glass hover:bg-white/10 transition size-10 rounded-xl flex items-center justify-center">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 1-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 1-1-1.51 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 0 0 0 .33-1.82 1.65 0 0 1-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 1 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 1 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 1 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 1 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 1-1.51 1z"/></svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- Stats -->
-  <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="glass rounded-2xl p-4">
-      <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium mb-1">Players</div>
-      <div id="statPlayers" class="font-display text-3xl font-semibold text-white">—</div>
-      <div class="text-xs text-zinc-500 mt-1">in current view</div>
-    </div>
-    <div class="glass rounded-2xl p-4">
-      <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium mb-1">Avg Value</div>
-      <div id="statValue" class="font-display text-3xl font-semibold text-white">—</div>
-      <div class="text-xs text-zinc-500 mt-1">dynasty value</div>
-    </div>
-    <div class="glass rounded-2xl p-4">
-      <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium mb-1">Avg PPG</div>
-      <div id="statPPG" class="font-display text-3xl font-semibold text-white">—</div>
-      <div class="text-xs text-zinc-500 mt-1">fantasy points</div>
-    </div>
-    <div class="glass rounded-2xl p-4">
-      <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium mb-1">Last Updated</div>
-      <div id="statUpdated" class="font-display text-2xl font-semibold text-white">—</div>
-      <div class="text-xs text-zinc-500 mt-1">auto-synced</div>
-    </div>
-  </section>
-
-  <!-- Controls -->
-  <section class="glass-strong rounded-[20px] p-4 md:p-5 mb-6">
-    <div class="flex flex-wrap items-center gap-3">
-      <!-- Position Chips -->
-      <div class="flex items-center gap-1.5 p-1 rounded-xl bg-black/30 border border-white/10">
-        <button data-pos="All" class="pos-chip px-3 h-8 rounded-lg text-sm font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">All</button>
-        <button data-pos="QB" class="pos-chip px-3 h-8 rounded-lg text-sm font-medium hover:bg-white/5 text-zinc-300">QB</button>
-        <button data-pos="RB" class="pos-chip px-3 h-8 rounded-lg text-sm font-medium hover:bg-white/5 text-zinc-300">RB</button>
-        <button data-pos="WR" class="pos-chip px-3 h-8 rounded-lg text-sm font-medium hover:bg-white/5 text-zinc-300">WR</button>
-        <button data-pos="TE" class="pos-chip px-3 h-8 rounded-lg text-sm font-medium hover:bg-white/5 text-zinc-300">TE</button>
-      </div>
-
-      <!-- Team -->
-      <div class="relative">
-        <select id="teamSelect" class="appearance-none pl-3 pr-9 h-10 rounded-xl bg-black/30 border border-white/10 text-sm font-medium text-zinc-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50">
-          <option value="All">All Teams</option>
-        </select>
-        <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-60" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-
-      <!-- Search -->
-      <div class="relative flex-1 min-w-[200px]">
-        <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="searchInput" type="text" placeholder="Search player or team…" class="w-full pl-10 pr-3 h-10 rounded-xl bg-black/30 border border-white/10 text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
-      </div>
-
-      <!-- Toggles -->
-      <div class="flex items-center gap-4 pl-1">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input id="ppgOnly" type="checkbox" class="sr-only">
-          <div class="toggle-track w-10 h-6 rounded-full bg-white/10 border border-white/10 relative">
-            <div class="toggle-thumb absolute top-0.5 left-0.5 size-5 rounded-full bg-zinc-300"></div>
-          </div>
-          <span class="text-sm text-zinc-300">PPG only</span>
-        </label>
-
-        <div class="flex items-center gap-2">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input id="autoRefresh" type="checkbox" class="sr-only">
-            <div class="toggle-track w-10 h-6 rounded-full bg-white/10 border border-white/10 relative">
-              <div class="toggle-thumb absolute top-0.5 left-0.5 size-5 rounded-full bg-zinc-300"></div>
-            </div>
-            <span class="text-sm text-zinc-300">Auto-refresh</span>
-          </label>
-          <select id="refreshInterval" class="h-8 pl-2 pr-6 rounded-lg bg-black/30 border border-white/10 text-xs text-zinc-300 focus:outline-none">
-            <option value="15">15s</option>
-            <option value="30" selected>30s</option>
-            <option value="60">60s</option>
-          </select>
-          <span id="countdown" class="text-xs font-mono text-amber-400 w-10 text-right">—</span>
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10">
+    <!-- HEADER -->
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div class="flex items-center gap-4">
+        <div class="size-12 grid place-items-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 shadow-[0_0_40px_rgba(245,158,11,.35)]">
+          <span class="display font-bold text-xl text-black">RA</span>
         </div>
-      </div>
-
-      <!-- Refresh -->
-      <button id="refreshBtn" class="ml-auto md:ml-0 h-10 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm flex items-center gap-2 transition shadow-[0_0_30px_rgba(245,158,11,0.25)]">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        Refresh
-      </button>
-    </div>
-  </section>
-
-  <!-- Table -->
-  <section class="glass-strong rounded-[20px] overflow-hidden">
-    <div class="overflow-x-auto scrollbar-thin max-h-[70vh]">
-      <table class="w-full text-sm">
-        <thead class="sticky top-0 z-10 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/10">
-          <tr class="text-[11px] uppercase tracking-wider text-zinc-500">
-            <th class="text-left font-medium px-5 py-3 w-14">#</th>
-            <th class="text-left font-medium px-5 py-3 min-w-[260px]">Player</th>
-            <th class="text-left font-medium px-5 py-3">Team</th>
-            <th class="text-left font-medium px-5 py-3">Pos</th>
-            <th class="text-left font-medium px-5 py-3">Age</th>
-            <th class="text-left font-medium px-5 py-3 min-w-[180px]">Value</th>
-            <th class="text-left font-medium px-5 py-3">PPG</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody" class="divide-y divide-white/[0.06]">
-          <!-- rows -->
-        </tbody>
-      </table>
-      <div id="emptyState" class="hidden py-20 text-center">
-        <div class="text-5xl mb-3">🔍</div>
-        <p class="text-zinc-400">No players match your filters</p>
-      </div>
-      <div id="loadingState" class="py-20 text-center">
-        <div class="inline-flex items-center gap-3 text-zinc-400">
-          <svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-          Loading dynasty rankings...
-        </div>
-      </div>
-    </div>
-
-    <!-- Pagination -->
-    <div class="flex items-center justify-between px-5 py-3 border-t border-white/10 bg-black/20">
-      <div id="pageInfo" class="text-xs text-zinc-500">—</div>
-      <div class="flex items-center gap-2">
-        <button id="prevPage" class="h-8 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm disabled:opacity-40 disabled:cursor-not-allowed">Prev</button>
-        <button id="nextPage" class="h-8 px-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
-      </div>
-    </div>
-  </section>
-
-  <footer class="text-center text-xs text-zinc-600 mt-8 pb-4">
-    RosterAudit Pro • Dynasty Rankings Dashboard • Data syncs live from Google Sheets
-  </footer>
-</div>
-
-<!-- Settings Modal -->
-<div id="settingsModal" class="fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md">
-    <div class="glass-strong rounded-2xl p-6 shadow-2xl">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="font-display text-xl font-semibold text-white">Settings</h3>
-        <button id="closeSettings" class="size-8 rounded-lg hover:bg-white/10 flex items-center justify-center">✕</button>
-      </div>
-      <div class="space-y-4 text-sm">
         <div>
-          <label class="block text-zinc-400 mb-1">CSV Source</label>
-          <input id="csvUrlInput" type="text" class="w-full h-10 px-3 rounded-xl bg-black/40 border border-white/10 text-xs font-mono" />
+          <h1 class="display text-[28px] md:text-[34px] leading-tight font-bold tracking-tight">Dynasty Rankings</h1>
+          <p class="text-sm text-zinc-400 -mt-0.5">Top-down • Live sync • Rookie Alchemy</p>
         </div>
-        <div class="flex items-center justify-between pt-2">
-          <span class="text-zinc-300">Highlight top 10 values</span>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input id="highlightTop" type="checkbox" class="sr-only" checked>
-            <div class="toggle-track w-10 h-6 rounded-full bg-white/10 border border-white/10 relative">
-              <div class="toggle-thumb absolute top-0.5 left-0.5 size-5 rounded-full bg-zinc-300"></div>
+        <span class="hidden md:inline-flex items-center gap-1.5 ml-2 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-xs font-medium border border-emerald-500/20">
+          <span class="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span> LIVE
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="exportBtn" class="group inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl glass hover:bg-white/10 transition text-sm font-medium">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M5 21h14"/></svg>
+          Export CSV
+        </button>
+        <button id="settingsBtn" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm transition shadow-[0_0_30px_rgba(245,158,11,.35)]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a7.5 7.5 0 00.1-6l2-1.2-2.8-4.8-2.3.8a7.5 7.5 0 00-5.2-3l-.4-2.4h-5.6l-.4 2.4a7.5 7.5 0 00-5.2 3L2 4.6 4.8 9.4a7.5 0 000 6l-2 1.2 2.8 4.8 2.3-.8a7.5 0 005.2 3l.4 2.4h5.6l.4-2.4a7.5 7.5 0 005.2-3l2.3.8 2.8-4.8-2-1.2z"/></svg>
+          Settings
+        </button>
+      </div>
+    </header>
+
+    <!-- STATS -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+      <div class="glass rounded-2xl p-4">
+        <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium">Total Players</div>
+        <div id="statTotal" class="display text-3xl font-semibold mt-1">—</div>
+        <div class="text-xs text-zinc-500 mt-1">Loaded from sheet</div>
+      </div>
+      <div class="glass rounded-2xl p-4">
+        <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium">Avg Value</div>
+        <div id="statAvgVal" class="display text-3xl font-semibold mt-1">—</div>
+        <div class="text-xs text-zinc-500 mt-1">Across filtered set</div>
+      </div>
+      <div class="glass rounded-2xl p-4">
+        <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium">Avg Age</div>
+        <div id="statAvgAge" class="display text-3xl font-semibold mt-1">—</div>
+        <div class="text-xs text-zinc-500 mt-1">Weighted</div>
+      </div>
+      <div class="glass rounded-2xl p-4">
+        <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium">Top Position</div>
+        <div id="statTopPos" class="display text-3xl font-semibold mt-1">—</div>
+        <div class="text-xs text-zinc-500 mt-1">By count</div>
+      </div>
+    </section>
+
+    <!-- CONTROLS -->
+    <section class="glass-strong rounded-2xl p-4 md:p-5 mb-6">
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Position Chips -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs font-medium text-zinc-500 uppercase tracking-wide mr-1">Pos</span>
+          <div id="posChips" class="flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <div class="h-6 w-px bg-white/10 hidden md:block"></div>
+
+        <!-- Team -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Team</span>
+          <select id="teamFilter" class="bg-zinc-900/70 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 min-w-[140px]">
+            <option value="">All Teams</option>
+          </select>
+        </div>
+
+        <!-- Search -->
+        <div class="flex-1 min-w-[200px] relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="searchInput" type="search" placeholder="Search player..." class="w-full pl-10 pr-3 py-2.5 rounded-xl bg-zinc-900/70 border border-white/10 text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+        </div>
+
+        <!-- Toggles -->
+        <div class="flex items-center gap-4 ml-auto">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <span class="text-sm text-zinc-300">PPG Only</span>
+            <input id="ppgToggle" type="checkbox" class="sr-only peer">
+            <div class="w-11 h-6 rounded-full bg-zinc-800 border border-white/10 peer-checked:bg-amber-500/30 relative">
+              <div class="toggle-dot absolute top-0.5 left-0.5 size-5 rounded-full bg-zinc-300 peer-checked:bg-amber-400 shadow"></div>
             </div>
           </label>
+
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <span class="text-sm text-zinc-300">Auto-refresh</span>
+            <input id="autoRefreshToggle" type="checkbox" class="sr-only peer" checked>
+            <div class="w-11 h-6 rounded-full bg-zinc-800 border border-white/10 peer-checked:bg-amber-500/30 relative">
+              <div class="toggle-dot absolute top-0.5 left-0.5 size-5 rounded-full bg-zinc-300 peer-checked:bg-amber-400 shadow"></div>
+            </div>
+          </label>
+          <div id="countdown" class="text-xs font-mono text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-1 rounded-lg min-w-[56px] text-center">
+            60s
+          </div>
+          <button id="refreshBtn" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-white/10 text-sm font-medium transition">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+            Refresh
+          </button>
         </div>
-        <p class="text-xs text-zinc-500 pt-2">Changes are saved locally.</p>
+      </div>
+    </section>
+
+    <!-- TABLE -->
+    <section class="glass-strong rounded-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-4 md:px-5 py-3 border-b border-white/10 bg-white/[0.02]">
+        <h2 class="display font-semibold text-lg">Players</h2>
+        <div class="text-xs text-zinc-500">Sort: <span class="text-zinc-300">Value ↓</span></div>
+      </div>
+      <div class="scroller overflow-y-auto max-h-[70vh]" id="tableScroller">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 z-10 backdrop-blur-xl bg-zinc-950/90 border-b border-white/10">
+            <tr class="text-[11px] uppercase tracking-wider text-zinc-500">
+              <th class="text-left font-medium px-4 md:px-5 py-3 w-[60px]">#</th>
+              <th class="text-left font-medium px-2 py-3">PLAYER</th>
+              <th class="text-left font-medium px-2 py-3 hidden sm:table-cell">TEAM</th>
+              <th class="text-left font-medium px-2 py-3">POS</th>
+              <th class="text-left font-medium px-2 py-3 hidden md:table-cell">AGE</th>
+              <th class="text-left font-medium px-2 py-3 w-[220px]">VALUE</th>
+              <th class="text-left font-medium px-4 md:px-5 py-3 w-[100px]">PPG</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-white/[0.04]">
+            <!-- rows injected -->
+          </tbody>
+        </table>
+        <div id="loadingState" class="p-8">
+          <div class="space-y-3">
+            <div class="h-12 rounded-xl shimmer"></div>
+            <div class="h-12 rounded-xl shimmer"></div>
+            <div class="h-12 rounded-xl shimmer"></div>
+            <div class="h-12 rounded-xl shimmer"></div>
+          </div>
+        <div id="emptyState" class="hidden py-24 text-center">
+          <div class="text-zinc-500">No players match your filters.</div>
+        </div>
+      </div>
+      <div class="flex items-center justify-between px-4 md:px-5 py-3 border-t border-white/10 bg-white/[0.02] text-xs text-zinc-500">
+        <div id="showingCount">Showing 0 players</div>
+        <div class="flex items-center gap-2">
+          <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          Last updated <span id="lastUpdated" class="text-zinc-300 ml-1">—</span>
+        </div>
+      </div>
+    </section>
+
+    <footer class="mt-8 text-center text-[11px] text-zinc-600">
+      Rookie Alchemy © • Built for dynasty degenerates • Data auto-synced from Google Sheets
+    </footer>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-close></div>
+    <div class="absolute right-0 top-0 h-full w-full max-w-md glass-strong shadow-2xl p-6 overflow-y-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="display text-2xl font-semibold">Settings</h3>
+        <button data-close class="size-9 grid place-items-center rounded-xl bg-white/5 hover:bg-white/10">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="space-y-6">
+        <div>
+          <label class="text-sm font-medium text-zinc-300">Refresh Interval (seconds)</label>
+          <input id="intervalInput" type="number" min="15" max="300" value="60" class="mt-2 w-full px-3 py-2.5 rounded-xl bg-zinc-900 border border-white/10 focus:outline-none focus:ring-2 focus:ring-amber-500/50">
+        </div>
+        <div>
+          <label class="text-sm font-medium text-zinc-300">Accent</label>
+          <div class="mt-2 grid grid-cols-4 gap-2">
+            <button data-accent="amber" class="h-10 rounded-xl bg-amber-500 ring-2 ring-amber-400"></button>
+            <button data-accent="violet" class="h-10 rounded-xl bg-violet-500"></button>
+            <button data-accent="emerald" class="h-10 rounded-xl bg-emerald-500"></button>
+            <button data-accent="sky" class="h-10 rounded-xl bg-sky-500"></button>
+          </div>
+        </div>
+        <div class="pt-4 border-t border-white/10 text-xs text-zinc-500">
+          CSV Source:<br>
+          <code class="text-[10px] break-all text-zinc-400">https://docs.google.com/.../pub?output=csv</code>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
 <script>
 (() => {
-  const CSV_URL_DEFAULT = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
+  const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
+
   const state = {
     raw: [],
     filtered: [],
-    pos: 'All',
-    team: 'All',
+    positions: new Set(),
+    teams: new Set(),
+    activePos: new Set(),
+    team: '',
     search: '',
     ppgOnly: false,
-    page: 1,
-    pageSize: 50,
-    autoRefresh: false,
-    intervalSec: 30,
-    countdown: 30,
+    autoRefresh: true,
+    intervalSec: 60,
+    countdown: 60,
     timer: null,
-    countdownTimer: null,
-    maxValue: 0,
-    highlightTop: true,
-    csvUrl: CSV_URL_DEFAULT,
+    maxValue: 1,
+    sortKey: 'value',
+    sortDir: 'desc',
   };
 
-  const $ = s => document.querySelector(s);
-  const $$ = s => [...document.querySelectorAll(s)];
+  const els = {
+    body: document.getElementById('tableBody'),
+    loading: document.getElementById('loadingState'),
+    empty: document.getElementById('emptyState'),
+    posChips: document.getElementById('posChips'),
+    teamFilter: document.getElementById('teamFilter'),
+    search: document.getElementById('searchInput'),
+    ppgToggle: document.getElementById('ppgToggle'),
+    autoToggle: document.getElementById('autoRefreshToggle'),
+    countdown: document.getElementById('countdown'),
+    refreshBtn: document.getElementById('refreshBtn'),
+    exportBtn: document.getElementById('exportBtn'),
+    settingsBtn: document.getElementById('settingsBtn'),
+    settingsModal: document.getElementById('settingsModal'),
+    intervalInput: document.getElementById('intervalInput'),
+    showingCount: document.getElementById('showingCount'),
+    lastUpdated: document.getElementById('lastUpdated'),
+    statTotal: document.getElementById('statTotal'),
+    statAvgVal: document.getElementById('statAvgVal'),
+    statAvgAge: document.getElementById('statAvgAge'),
+    statTopPos: document.getElementById('statTopPos'),
+  };
 
-  const statPlayers = $('#statPlayers');
-  const statValue = $('#statValue');
-  const statPPG = $('#statPPG');
-  const statUpdated = $('#statUpdated');
-  const tableBody = $('#tableBody');
-  const emptyState = $('#emptyState');
-  const loadingState = $('#loadingState');
-  const teamSelect = $('#teamSelect');
-  const searchInput = $('#searchInput');
-  const ppgOnly = $('#ppgOnly');
-  const autoRefresh = $('#autoRefresh');
-  const refreshInterval = $('#refreshInterval');
-  const countdownEl = $('#countdown');
-  const refreshBtn = $('#refreshBtn');
-  const exportBtn = $('#exportBtn');
-  const prevPage = $('#prevPage');
-  const nextPage = $('#nextPage');
-  const pageInfo = $('#pageInfo');
-  const settingsBtn = $('#settingsBtn');
-  const settingsModal = $('#settingsModal');
-  const closeSettings = $('#closeSettings');
-  const csvUrlInput = $('#csvUrlInput');
-  const highlightTop = $('#highlightTop');
+  // Utils
+  const fmt = (n, d=1) => isFinite(n) ? Number(n).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d}) : '—';
+  const initials = (name='') => name.split(/[\s.-]+/).filter(Boolean).slice(0,2).map(s=>s[0].toUpperCase()).join('');
+  const posColor = pos => {
+    const p = (pos||'').toUpperCase();
+    if(p.includes('QB')) return 'bg-rose-500/15 text-rose-300 border-rose-500/30';
+    if(p.includes('RB')) return 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+    if(p.includes('WR')) return 'bg-sky-500/15 text-sky-300 border-sky-500/30';
+    if(p.includes('TE')) return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+    return 'bg-zinc-500/15 text-zinc-300 border-zinc-500/30';
+  };
 
-  // Init from localStorage
-  try {
-    const saved = JSON.parse(localStorage.getItem('ra_dynasty_settings') || '{}');
-    if (saved.csvUrl) state.csvUrl = saved.csvUrl;
-    if (saved.highlightTop !== undefined) state.highlightTop = saved.highlightTop;
-  } catch {}
-
-  csvUrlInput.value = state.csvUrl;
-  highlightTop.checked = state.highlightTop;
-
-  function saveSettings() {
-    localStorage.setItem('ra_dynasty_settings', JSON.stringify({
-      csvUrl: state.csvUrl,
-      highlightTop: state.highlightTop,
-    }));
+  // CSV Parser (handles quoted commas)
+  function parseCSV(text){
+    const rows = [];
+    let cur = '', row = [], inQ = false;
+    for(let i=0;i<text.length;i++){
+      const c = text[i], n = text[i+1];
+      if(c === '"'){
+        if(inQ && n === '"'){ cur+='"'; i++; }
+        else inQ = !inQ;
+      } else if(c === ',' && !inQ){ row.push(cur); cur=''; }
+      else if((c === '\n' || c === '\r') && !inQ){
+        if(cur !== '' || row.length){ row.push(cur); rows.push(row); cur=''; row=[]; }
+      } else { cur+=c; }
+    }
+    if(cur!==''||row.length){ row.push(cur); rows.push(row); }
+    return rows.filter(r=>r.some(c=>c.trim()!==''));
   }
 
-  function initials(name) {
-    if (!name) return '?';
-    const parts = name.trim().split(/\s+/);
-    return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+  function normalizeHeaders(h){
+    return h.map(x=>x.trim().toLowerCase().replace(/[^a-z0-9]+/g,''));
   }
 
-  function posClass(pos) {
-    const p = (pos || '').toUpperCase();
-    if (p === 'QB') return 'pos-qb';
-    if (p === 'RB') return 'pos-rb';
-    if (p === 'WR') return 'pos-wr';
-    if (p === 'TE') return 'pos-te';
-    return 'pos-other';
+  function mapRows(rows){
+    if(!rows.length) return [];
+    const headers = normalizeHeaders(rows[0]);
+    const idx = (keys)=>{ for(const k of keys){ const i=headers.indexOf(k); if(i>-1) return i; } return -1; };
+    const iRank = idx(['rank','#','overall','ovr']);
+    const iPlayer = idx(['player','name','playername']);
+    const iTeam = idx(['team','tm']);
+    const iPos = idx(['pos','position']);
+    const iAge = idx(['age']);
+    const iValue = idx(['value','dynastyvalue','val']);
+    const iPPG = idx(['ppg','pointspergame','fantasypointspergame','pts','fppg']);
+
+    return rows.slice(1).map(r=>{
+      const get = i => i>=0 ? (r[i]||'').trim() : '';
+      const playerRaw = get(iPlayer);
+      // sometimes player cell contains "Name Team POS"
+      // try to keep as is
+      const player = playerRaw.replace(/\s+/g,' ').trim();
+      const team = get(iTeam) || '';
+      const pos = get(iPos) || '';
+      const age = parseFloat(get(iAge)) || null;
+      const value = parseFloat(get(iValue).replace(/[^0-9.]/g,'')) || 0;
+      const ppg = parseFloat(get(iPPG)) || 0;
+      const rank = parseInt(get(iRank)) || null;
+      return { rank, player, team, pos, age, value, ppg };
+    }).filter(r=>r.player);
   }
 
-  function normalizeRow(row) {
-    // Flexible column mapping
-    const get = (...keys) => {
-      for (const k of keys) {
-        for (const rk in row) {
-          if (rk.toLowerCase().replace(/\s|_/g, '') === k.toLowerCase().replace(/\s|_/g, '')) {
-            return row[rk];
-          }
-        }
-      }
-      return '';
-    };
-    const player = get('player','name');
-    const team = get('team','tm');
-    const pos = get('pos','position');
-    const age = parseFloat(get('age')) || 0;
-    const value = parseFloat(get('value','dynastyvalue','val')) || 0;
-    const ppg = parseFloat(get('ppg','fantasypointspergame','pts')) || 0;
-    const rank = parseInt(get('rank','#','rk')) || 0;
-    const number = get('number','num','jersey') || rank;
-    return { rank, player, team, pos, age, value, ppg, number };
-  }
-
-  async function loadCSV() {
-    loadingState.classList.remove('hidden');
-    tableBody.innerHTML = '';
-    emptyState.classList.add('hidden');
-    try {
-      const url = state.csvUrl + (state.csvUrl.includes('?') ? '&' : '?') + '_ts=' + Date.now();
-      const res = await fetch(url);
+  async function loadData(){
+    els.loading.classList.remove('hidden');
+    els.empty.classList.add('hidden');
+    try{
+      const res = await fetch(CSV_URL,{cache:'no-store'});
+      if(!res.ok) throw new Error('Fetch failed');
       const text = await res.text();
-      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true, dynamicTyping: false });
-      const rows = parsed.data.map(normalizeRow).filter(r => r.player);
-      state.raw = rows;
-      state.maxValue = Math.max(1, ...rows.map(r => r.value));
-      // Populate teams
-      const teams = [...new Set(rows.map(r => r.team).filter(Boolean))].sort();
-      teamSelect.innerHTML = '<option value="All">All Teams</option>' + teams.map(t => `<option value="${t}">${t}</option>`).join('');
+      const rows = parseCSV(text);
+      const data = mapRows(rows);
+      
+      // sort by value desc
+      data.sort((a,b)=>b.value - a.value);
+      // assign rank if missing
+      data.forEach((r,i)=>{ if(!r.rank) r.rank = i+1; });
+
+      state.raw = data;
+      state.maxValue = Math.max(1, ...data.map(d=>d.value));
+      
+      // derive sets
+      state.positions = new Set(data.map(d=>d.pos.split(/[\/,]/)[0].trim().toUpperCase()).filter(Boolean));
+      state.teams = new Set(data.map(d=>d.team.toUpperCase()).filter(Boolean));
+      
+      buildControls();
       applyFilters();
-      statUpdated.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch (e) {
+      updateStats();
+      els.lastUpdated.textContent = new Date().toLocaleTimeString();
+    }catch(e){
       console.error(e);
-      tableBody.innerHTML = `<tr><td colspan="7" class="px-5 py-10 text-center text-red-400">Failed to load CSV. Check console.</td></tr>`;
-    } finally {
-      loadingState.classList.add('hidden');
+      els.loading.innerHTML = `<div class="text-center py-12 text-rose-400">Failed to load CSV. ${e.message}</div>`;
+    }finally{
+      els.loading.classList.add('hidden');
     }
   }
 
-  function applyFilters() {
-    const s = state.search.toLowerCase();
-    let data = state.raw.filter(r => {
-      if (state.pos !== 'All' && r.pos.toUpperCase() !== state.pos) return false;
-      if (state.team !== 'All' && r.team !== state.team) return false;
-      if (state.ppgOnly && !(r.ppg > 0)) return false;
-      if (s && !(`${r.player} ${r.team}`.toLowerCase().includes(s))) return false;
-      return true;
+  function buildControls(){
+    // Pos chips
+    const posList = Array.from(state.positions).sort();
+    els.posChips.innerHTML = posList.map(p=>`
+      <button data-pos="${p}" class="pos-chip px-2.5 py-1.5 rounded-full border text-xs font-medium transition ${state.activePos.has(p) ? 'bg-amber-500/20 border-amber-500/40 text-amber-200' : 'bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10'}">
+        ${p}
+      </button>
+    `).join('');
+    els.posChips.querySelectorAll('[data-pos]').forEach(btn=>{
+      btn.onclick = ()=>{
+        const p = btn.dataset.pos;
+        if(state.activePos.has(p)) state.activePos.delete(p);
+        else state.activePos.add(p);
+        buildControls();
+        applyFilters();
+      };
     });
-    // Sort by Value desc
-    data.sort((a,b) => b.value - a.value || b.ppg - a.ppg);
+
+    // Teams
+    if(els.teamFilter.options.length <=1){
+      const teams = Array.from(state.teams).sort();
+      els.teamFilter.innerHTML = '<option value="">All Teams</option>' + teams.map(t=>`<option>${t}</option>`).join('');
+    }
+  }
+
+  function applyFilters(){
+    let data = state.raw.slice();
+
+    if(state.activePos.size){
+      data = data.filter(d=>{
+        const p = d.pos.split(/[\/,]/)[0].trim().toUpperCase();
+        return state.activePos.has(p);
+      });
+    }
+    if(state.team){
+      data = data.filter(d=>d.team.toUpperCase()===state.team);
+    }
+    if(state.search){
+      const q = state.search.toLowerCase();
+      data = data.filter(d=>d.player.toLowerCase().includes(q) || d.team.toLowerCase().includes(q) || d.pos.toLowerCase().includes(q));
+    }
+    if(state.ppgOnly){
+      data = data.filter(d=>d.ppg>0);
+    }
+    // sort
+    data.sort((a,b)=> state.sortDir==='desc' ? b[state.sortKey]-a[state.sortKey] : a[state.sortKey]-b[state.sortKey]);
+
     state.filtered = data;
-    state.page = 1;
-    render();
+    renderTable();
+    els.showingCount.textContent = `Showing ${data.length.toLocaleString()} players`;
+    els.empty.classList.toggle('hidden', data.length>0);
+    updateStats();
   }
 
-  function render() {
-    const start = (state.page - 1) * state.pageSize;
-    const pageRows = state.filtered.slice(start, start + state.pageSize);
-    
-    // Stats
-    statPlayers.textContent = state.filtered.length.toLocaleString();
-    const avgVal = state.filtered.length ? (state.filtered.reduce((a,b)=>a+b.value,0)/state.filtered.length) : 0;
-    const avgPPG = state.filtered.length ? (state.filtered.reduce((a,b)=>a+b.ppg,0)/state.filtered.length) : 0;
-    statValue.textContent = avgVal ? avgVal.toFixed(0) : '—';
-    statPPG.textContent = avgPPG ? avgPPG.toFixed(1) : '—';
-
-    // Table
-    if (pageRows.length === 0) {
-      tableBody.innerHTML = '';
-      emptyState.classList.remove('hidden');
-    } else {
-      emptyState.classList.add('hidden');
-      tableBody.innerHTML = pageRows.map((r, i) => {
-        const idx = start + i + 1;
-        const pct = Math.min(100, (r.value / state.maxValue) * 100);
-        const topGlow = state.highlightTop && idx <= 10 ? 'shadow-[inset_0_0_0_1px_rgba(245,158,11,0.25)] bg-amber-500/[0.03]' : '';
-        return `
-        <tr class="group hover:bg-white/[0.04] transition ${topGlow}">
-          <td class="px-5 py-3 text-zinc-500 font-medium">${idx}</td>
-          <td class="px-5 py-3">
-            <div class="flex items-center gap-3">
-              <div class="size-9 rounded-full bg-gradient-to-br from-amber-500/30 to-amber-600/20 border border-amber-500/20 flex items-center justify-center font-display font-semibold text-amber-200 text-[13px]">${initials(r.player)}</div>
-              <div>
-                <div class="font-medium text-white leading-tight">${r.player}</div>
-                <div class="text-xs text-zinc-500">#${r.number || r.rank || '—'} • ${r.age ? r.age + ' yo' : '—'}</div>
-              </div>
+  function renderTable(){
+    const rows = state.filtered.map((r,i)=>{
+      const color = posColor(r.pos);
+      const valPct = Math.max(2, (r.value/state.maxValue)*100);
+      return `
+      <tr class="hover:bg-white/[0.03] transition">
+        <td class="px-4 md:px-5 py-3 text-zinc-500 font-mono text-xs">${r.rank ?? i+1}</td>
+        <td class="px-2 py-3">
+          <div class="flex items-center gap-3">
+            <div class="size-9 rounded-xl bg-gradient-to-br from-zinc-700 to-zinc-800 grid place-items-center text-[11px] font-bold text-zinc-200 border border-white/10">${initials(r.player)}</div>
+            <div>
+              <div class="font-medium leading-tight text-zinc-100">${r.player}</div>
+              <div class="text-xs text-zinc-500">${r.team || 'FA'} • ${r.pos || '-'}</div>
             </div>
-          </td>
-          <td class="px-5 py-3 text-zinc-300">${r.team || '—'}</td>
-          <td class="px-5 py-3">
-            <span class="inline-flex items-center px-2 h-6 rounded-md text-xs font-semibold border ${posClass(r.pos)}">${r.pos || '—'}</span>
-          </td>
-          <td class="px-5 py-3 text-zinc-400">${r.age ? r.age.toFixed(1).replace('.0','') : '—'}</td>
-          <td class="px-5 py-3">
-            <div class="flex items-center gap-3">
-              <div class="w-28 h-2 rounded-full bg-white/10 overflow-hidden">
-                <div class="h-full bg-gradient-to-r from-amber-500 to-amber-300 rounded-full" style="width:${pct}%"></div>
-              </div>
-              <span class="font-mono text-zinc-200 w-12 text-right">${r.value ? r.value.toFixed(0) : '—'}</span>
+          </div>
+        </td>
+        <td class="px-2 py-3 hidden sm:table-cell text-zinc-300">${r.team || '—'}</td>
+        <td class="px-2 py-3">
+          <span class="pos-badge inline-flex items-center px-2 py-0.5 rounded-lg border text-[11px] font-semibold ${color}">${r.pos || '-'}</span>
+        </td>
+        <td class="px-2 py-3 hidden md:table-cell text-zinc-400 font-mono">${r.age ? r.age.toFixed(1) : '—'}</td>
+        <td class="px-2 py-3">
+          <div class="flex items-center gap-3">
+            <div class="flex-1 h-2 rounded-full bg-zinc-800 overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-amber-400 to-orange-500" style="width:${valPct}%"></div>
             </div>
-          </td>
-          <td class="px-5 py-3 font-mono text-zinc-300">${r.ppg ? r.ppg.toFixed(1) : '—'}</td>
-        </tr>`;
-      }).join('');
-    }
-
-    // Pagination
-    const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
-    pageInfo.textContent = `${state.filtered.length === 0 ? 0 : start+1}–${Math.min(start+state.pageSize, state.filtered.length)} of ${state.filtered.length}`;
-    prevPage.disabled = state.page <= 1;
-    nextPage.disabled = state.page >= totalPages;
+            <span class="font-mono text-xs text-zinc-300 w-[48px] text-right">${fmt(r.value,0)}</span>
+          </div>
+        </td>
+        <td class="px-4 md:px-5 py-3 font-mono text-amber-300">${r.ppg ? r.ppg.toFixed(1) : '—'}</td>
+      </tr>`;
+    }).join('');
+    els.body.innerHTML = rows;
   }
 
-  // Event Listeners
-  $$('.pos-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-      state.pos = btn.dataset.pos;
-      $$('.pos-chip').forEach(b => b.classList.remove('bg-amber-500/20','text-amber-300','border','border-amber-500/30'));
-      btn.classList.add('bg-amber-500/20','text-amber-300','border','border-amber-500/30');
-      applyFilters();
+  function updateStats(){
+    const data = state.filtered;
+    els.statTotal.textContent = state.raw.length.toLocaleString();
+    els.statAvgVal.textContent = data.length ? fmt(data.reduce((s,d)=>s+d.value,0)/data.length,0) : '—';
+    const ages = data.filter(d=>d.age).map(d=>d.age);
+    els.statAvgAge.textContent = ages.length ? fmt(ages.reduce((a,b)=>a+b,0)/ages.length,1) : '—';
+    // top pos
+    const counts = {};
+    data.forEach(d=>{ const p = (d.pos.split(/[\/,]/)[0]||'UNK').toUpperCase(); counts[p]=(counts[p]||0)+1; });
+    const top = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+    els.statTopPos.textContent = top ? top[0] : '—';
+  }
+
+  // Events
+  els.teamFilter.onchange = e=>{ state.team = e.target.value; applyFilters(); };
+  els.search.oninput = e=>{ state.search = e.target.value.trim(); applyFilters(); };
+  els.ppgToggle.onchange = e=>{ state.ppgOnly = e.target.checked; applyFilters(); };
+  els.autoToggle.onchange = e=>{ state.autoRefresh = e.target.checked; resetTimer(); };
+  els.refreshBtn.onclick = ()=>{ loadData(); resetTimer(); };
+  els.exportBtn.onclick = ()=>{
+    const headers = ['Rank','Player','Team','Pos','Age','Value','PPG'];
+    const lines = [headers.join(',')];
+    state.filtered.forEach(r=>{
+      const row = [r.rank, `"${r.player.replace(/"/g,'""')}"`, r.team, r.pos, r.age??'', r.value, r.ppg];
+      lines.push(row.join(','));
     });
-  });
-
-  teamSelect.addEventListener('change', e => { state.team = e.target.value; applyFilters(); });
-  searchInput.addEventListener('input', e => { state.search = e.target.value; applyFilters(); });
-  ppgOnly.addEventListener('change', e => { state.ppgOnly = e.target.checked; applyFilters(); });
-
-  prevPage.addEventListener('click', () => { if (state.page > 1) { state.page--; render(); } });
-  nextPage.addEventListener('click', () => { state.page++; render(); });
-
-  refreshBtn.addEventListener('click', () => { loadCSV(); resetCountdown(); });
-
-  exportBtn.addEventListener('click', () => {
-    const csv = Papa.unparse(state.filtered);
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob([lines.join('\n')],{type:'text/csv'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `dynasty-rankings-${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = 'dynasty-rankings.csv';
     a.click();
-  });
-
-  function startAutoRefresh() {
-    stopAutoRefresh();
-    state.intervalSec = parseInt(refreshInterval.value, 10);
-    state.countdown = state.intervalSec;
-    countdownEl.textContent = state.countdown + 's';
-    state.timer = setInterval(() => { loadCSV(); }, state.intervalSec * 1000);
-    state.countdownTimer = setInterval(() => {
-      state.countdown--;
-      if (state.countdown <= 0) state.countdown = state.intervalSec;
-      countdownEl.textContent = state.countdown + 's';
-    }, 1000);
-  }
-  function stopAutoRefresh() {
-    clearInterval(state.timer);
-    clearInterval(state.countdownTimer);
-    countdownEl.textContent = '—';
-  }
-  function resetCountdown() {
-    if (state.autoRefresh) { state.countdown = state.intervalSec; }
-  }
-
-  autoRefresh.addEventListener('change', e => {
-    state.autoRefresh = e.target.checked;
-    if (state.autoRefresh) startAutoRefresh(); else stopAutoRefresh();
-  });
-  refreshInterval.addEventListener('change', () => { if (state.autoRefresh) startAutoRefresh(); });
+    URL.revokeObjectURL(a.href);
+  };
 
   // Settings modal
-  settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
-  closeSettings.addEventListener('click', () => settingsModal.classList.add('hidden'));
-  settingsModal.addEventListener('click', e => { if (e.target === settingsModal.firstElementChild) settingsModal.classList.add('hidden'); });
-  csvUrlInput.addEventListener('change', e => { state.csvUrl = e.target.value.trim() || CSV_URL_DEFAULT; saveSettings(); });
-  highlightTop.addEventListener('change', e => { state.highlightTop = e.target.checked; saveSettings(); render(); });
+  function openSettings(){ els.settingsModal.classList.remove('hidden'); }
+  function closeSettings(){ els.settingsModal.classList.add('hidden'); }
+  els.settingsBtn.onclick = openSettings;
+  els.settingsModal.addEventListener('click', e=>{ if(e.target.hasAttribute('data-close')) closeSettings(); });
+  els.intervalInput.onchange = e=>{
+    state.intervalSec = Math.max(15, parseInt(e.target.value)||60);
+    resetTimer();
+  };
 
-  // Initial load
-  loadCSV();
+  // Auto refresh timer
+  function tick(){
+    if(!state.autoRefresh) return;
+    state.countdown--;
+    if(state.countdown<=0){
+      loadData();
+      state.countdown = state.intervalSec;
+    }
+    els.countdown.textContent = `${state.countdown}s`;
+  }
+  function resetTimer(){
+    state.countdown = state.intervalSec;
+    els.countdown.textContent = `${state.countdown}s`;
+  }
+  setInterval(tick,1000);
+
+  // Init
+  loadData();
+  resetTimer();
+
+  // Keyboard
+  window.addEventListener('keydown', e=>{
+    if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k'){
+      e.preventDefault();
+      els.search.focus();
+    }
+  });
 })();
 </script>
 </body>
