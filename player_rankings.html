@@ -1,745 +1,586 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dynasty Player Rankings • Roster Audit</title>
+<title>Dynasty Player Rankings • RosterAudit</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-:root { color-scheme: dark; }
-html { font-family: 'Inter', system-ui, sans-serif; }
-.mono { font-family: 'JetBrains Mono', monospace; }
-.glass {
-  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-.glass-strong {
-  background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03));
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.12);
-}
-.pos-QB { color: #f472b6; }
-.pos-RB { color: #60a5fa; }
-.pos-WR { color: #34d399; }
-.pos-TE { color: #fbbf24; }
-.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 999px; }
-.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-.sparkline { stroke-width: 2; fill: none; }
-.table-sticky thead th { position: sticky; top: 0; z-index: 10; background: rgba(11,13,18,0.85); backdrop-filter: blur(8px); }
-input[type="range"] { -webkit-appearance: none; height: 4px; background: rgba(255,255,255,0.1); border-radius: 999px; }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #f59e0b; border: 2px solid #0b0d12; cursor: pointer; box-shadow: 0 0 0 3px rgba(245,158,11,0.25); }
-input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #f59e0b; border: 2px solid #0b0d12; cursor: pointer; }
+:root{color-scheme:dark}
+*{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+.glass{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08)}
+.scroll-thin::-webkit-scrollbar{height:8px;width:8px}
+.scroll-thin::-webkit-scrollbar-thumb{background:#3f3f46;border-radius:999px}
+.scroll-thin::-webkit-scrollbar-track{background:transparent}
+.shimmer{position:relative;overflow:hidden;background:#1f1f23}
+.shimmer::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.range-thumb::-webkit-slider-thumb{appearance:none;height:18px;width:18px;border-radius:999px;background:#f59e0b;border:2px solid #000;box-shadow:0 0 0 3px rgba(245,158,11,.3)}
+.range-thumb::-moz-range-thumb{height:18px;width:18px;border-radius:999px;background:#f59e0b;border:2px solid #000;box-shadow:0 0 0 3px rgba(245,158,11,.3)}
+details>summary{list-style:none}
+details>summary::-webkit-details-marker{display:none}
 </style>
 </head>
-<body class="min-h-screen bg-[#070a0f] text-zinc-100 selection:bg-amber-500/30">
-<div class="fixed inset-0 -z-10">
-  <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(251,146,60,0.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(245,158,11,0.2),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(99,102,241,0.15),transparent_50%),#070a0f]"></div>
-  <div class="absolute inset-0 opacity-[0.03] mix-blend-overlay" style="background-image:repeating-linear-gradient(0deg, #fff 0px, transparent 1px, transparent 2px),repeating-linear-gradient(90deg, #fff 0px, transparent 1px, transparent 2px);"></div>
+<body class="min-h-screen bg-[#020617] text-zinc-100 selection:bg-amber-500/30">
+<div class="absolute inset-0 -z-10 overflow-hidden">
+  <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] rounded-full bg-[radial-gradient(circle_at_center,rgba(245,158,11,.15),transparent_60%)] blur-3xl"></div>
+  <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(56,189,248,.12),transparent_60%)] blur-3xl"></div>
 </div>
 
-<div class="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-10">
+<div class="max-w-7xl mx-auto px-4 py-6 md:py-10">
   <!-- Header -->
   <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
     <div class="flex items-center gap-3">
-      <div class="size-11 rounded-2xl glass-strong flex items-center justify-center shadow-lg shadow-amber-500/10">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="url(#g)"/>
-          <defs><linearGradient id="g" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#fbbf24"/><stop offset="1" stop-color="#f97316"/></linearGradient></defs>
-        </svg>
+      <div class="size-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.5 5 5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 2z" fill="#f59e0b"/></svg>
       </div>
       <div>
-        <h1 class="text-[22px] md:text-2xl font-semibold tracking-tight">Dynasty Player Rankings</h1>
-        <p class="text-xs md:text-sm text-zinc-400 -mt-0.5">Powered by Roster Audit • Live values & projections</p>
-      </div>
-      <div id="presetBadge" class="hidden md:inline-flex items-center gap-1.5 ml-2 px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/20">
-        <span class="size-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-        <span id="presetLabel">SF • PPR</span>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Dynasty Player Rankings</h1>
+        <p class="text-zinc-400 text-sm">Superflex • Dynasty • Live values</p>
       </div>
     </div>
-    <div class="flex items-center gap-2">
-      <button id="exportBtn" class="h-9 px-3 rounded-xl glass hover:bg-white/10 text-sm font-medium flex items-center gap-1.5 transition">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <div class="flex items-center gap-3">
+      <span id="presetBadge" class="px-3 py-1.5 rounded-full text-xs font-medium bg-zinc-800/70 border border-zinc-700/50 text-amber-300">SF • PPR</span>
+      <button id="settingsBtn" class="glass px-3 py-2 rounded-xl text-sm hover:bg-white/10 transition flex items-center gap-2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a7.5 7.5 0 000-6l2.1-1.2-.9-1.5-2.4.4a7.5 7.5 0 00-2.6-1.5l-.4-2.4-1.7.3.4 2.4a7.5 0 00-3 0l.4-2.4-1.7-.3-.4 2.4a7.5 0 00-2.6 1.5l-2.4-.4-.9 1.5 2.1 1.2a7.5 7.5 0 000 6l-2.1 1.2.9 1.5 2.4-.4a7.5 7.5 0 002.6 1.5l.4 2.4 1.7-.3-.4-2.4a7.5 7.5 0 003 0l-.4 2.4 1.7.3.4-2.4a7.5 7.5 0 002.6-1.5l2.4.4.9-1.5-2.1-1.2z"/></svg>
+        Settings
+      </button>
+      <button id="exportBtn" class="bg-amber-500 hover:bg-amber-400 text-black font-semibold px-3 py-2 rounded-xl text-sm transition flex items-center gap-2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 21h16"/></svg>
         Export CSV
       </button>
-      <div class="relative">
-        <button id="settingsBtn" class="h-9 px-3 rounded-xl glass-strong hover:bg-white/10 text-sm font-medium flex items-center gap-1.5 transition">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 0 0 1-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 1-1-1.51 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 1-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 1 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 1 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 1 1 1.51h.09a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 1 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 1-1.51 1z"/></svg>
-          Settings
-        </button>
-        <div id="settingsPopover" class="hidden absolute right-0 mt-2 w-[320px] rounded-2xl glass-strong shadow-2xl shadow-black/50 p-4 z-50">
-          <h3 class="font-semibold mb-3 text-sm">Ranking Preset</h3>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs text-zinc-400">Format</label>
-              <select id="formatSelect" class="mt-1 w-full h-10 rounded-xl bg-zinc-900/80 border border-white/10 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50">
-                <option value="sf">Superflex</option>
-                <option value="1qb">1QB</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-xs text-zinc-400">Scoring</label>
-              <select id="scoringSelect" class="mt-1 w-full h-10 rounded-xl bg-zinc-900/80 border border-white/10 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50">
-                <option value="ppr">PPR</option>
-                <option value="half">Half PPR</option>
-                <option value="standard">Standard</option>
-                <option value="tep">PPR + TE Premium</option>
-              </select>
-            </div>
-          </div>
-          <p class="text-[11px] text-zinc-500 mt-2">Auto-detected from Sleeper league if present. Overrides saved locally.</p>
-          <div class="flex justify-end gap-2 mt-4">
-            <button id="resetOverride" class="h-8 px-3 rounded-lg text-xs bg-white/5 hover:bg-white/10">Reset to Auto</button>
-            <button id="saveSettings" class="h-8 px-3 rounded-lg text-xs bg-amber-500 hover:bg-amber-400 text-black font-medium">Apply</button>
-          </div>
-        </div>
-      </div>
     </div>
   </header>
 
-  <!-- Controls -->
-  <section class="glass rounded-[20px] p-4 md:p-5 mb-5">
-    <div class="flex flex-col lg:flex-row gap-4">
-      <!-- Position chips -->
-      <div class="flex items-center gap-1.5 flex-wrap">
-        <button data-pos="ALL" class="pos-chip h-8 px-3 rounded-full text-sm font-medium bg-amber-500 text-black">ALL</button>
-        <button data-pos="QB" class="pos-chip h-8 px-3 rounded-full text-sm font-medium bg-white/5 hover:bg-white/10">QB</button>
-        <button data-pos="RB" class="pos-chip h-8 px-3 rounded-full text-sm font-medium bg-white/5 hover:bg-white/10">RB</button>
-        <button data-pos="WR" class="pos-chip h-8 px-3 rounded-full text-sm font-medium bg-white/5 hover:bg-white/10">WR</button>
-        <button data-pos="TE" class="pos-chip h-8 px-3 rounded-full text-sm font-medium bg-white/5 hover:bg-white/10">TE</button>
-        <div class="h-6 w-px bg-white/10 mx-1 hidden md:block"></div>
-        <button id="tePremiumToggle" class="h-8 px-3 rounded-full text-sm font-medium bg-white/5 hover:bg-white/10 flex items-center gap-1.5">
-          <span class="size-2 rounded-full bg-amber-400"></span> TE Premium
-        </button>
-      </div>
-
-      <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <!-- Search -->
-        <div class="relative">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="searchInput" placeholder="Search player, team..." class="w-full h-10 pl-9 pr-3 rounded-xl bg-zinc-950/70 border border-white/10 text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
+  <!-- Settings Popover -->
+  <div id="settingsPopover" class="hidden absolute right-4 md:right-[max(1rem,calc(50vw-40rem))] mt-2 z-40 w-[320px]">
+    <div class="glass rounded-2xl p-4 shadow-2xl">
+      <h3 class="font-semibold mb-3">League Settings</h3>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-zinc-400">Format</label>
+          <select id="formatSelect" class="mt-1 w-full bg-zinc-900/80 border border-zinc-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <option value="sf">Superflex</option>
+            <option value="1qb">1QB</option>
+          </select>
         </div>
-        <!-- Age -->
-        <div class="rounded-xl bg-zinc-950/70 border border-white/10 px-3 py-2">
-          <div class="flex justify-between text-[11px] text-zinc-400 mb-1">
-            <span>Age Range</span>
-            <span class="mono" id="ageLabel">18 - 40</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <input id="ageMin" type="range" min="18" max="40" value="18" class="flex-1">
-            <input id="ageMax" type="range" min="18" max="40" value="40" class="flex-1">
-          </div>
+        <div>
+          <label class="text-xs text-zinc-400">Scoring</label>
+          <select id="scoringSelect" class="mt-1 w-full bg-zinc-900/80 border border-zinc-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <option value="ppr">PPR</option>
+            <option value="half">Half PPR</option>
+            <option value="standard">Standard</option>
+          </select>
         </div>
-        <!-- Value -->
-        <div class="rounded-xl bg-zinc-950/70 border border-white/10 px-3 py-2">
-          <div class="flex justify-between text-[11px] text-zinc-400 mb-1">
-            <span>Min Value</span>
-            <span class="mono" id="valueLabel">0</span>
-          </div>
-          <input id="valueMin" type="range" min="0" max="10000" value="0" class="w-full">
+        <label class="flex items-center justify-between gap-3 py-2">
+          <span class="text-sm">TE Premium</span>
+          <button id="tepToggle" class="relative inline-flex h-6 w-11 items-center rounded-full transition bg-zinc-700">
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-1"></span>
+          </button>
+        </label>
+        <div class="pt-2 border-t border-white/10 text-xs text-zinc-400">
+          Auto-detected from <span class="mono">vault_league_id</span> if present.
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button id="saveSettings" class="flex-1 bg-amber-500 text-black font-medium py-2 rounded-xl text-sm hover:bg-amber-400">Save</button>
+          <button id="closeSettings" class="px-3 py-2 rounded-xl text-sm bg-zinc-800 hover:bg-zinc-700">Cancel</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-      <div class="text-xs text-zinc-400">
-        <span id="playerCount" class="mono text-zinc-200">0</span> players • Updated <span id="updatedAt" class="mono">—</span>
+  <!-- Controls -->
+  <section class="glass rounded-3xl p-4 md:p-5 mb-6">
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Position chips -->
+      <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-zinc-900/60 border border-zinc-800">
+        <button data-pos="ALL" class="pos-chip px-3 py-1.5 rounded-xl text-sm font-medium bg-amber-500 text-black">ALL</button>
+        <button data-pos="QB" class="pos-chip px-3 py-1.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800">QB</button>
+        <button data-pos="RB" class="pos-chip px-3 py-1.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800">RB</button>
+        <button data-pos="WR" class="pos-chip px-3 py-1.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800">WR</button>
+        <button data-pos="TE" class="pos-chip px-3 py-1.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800">TE</button>
       </div>
-      <div class="flex items-center gap-2 text-xs">
-        <span class="text-zinc-500">Sort:</span>
-        <span id="sortIndicator" class="mono text-amber-300">Rank ↑</span>
+
+      <button id="tepQuickToggle" class="px-3 py-1.5 rounded-xl text-sm border border-zinc-700 hover:bg-zinc-800 flex items-center gap-1.5">
+        <span class="size-2 rounded-full bg-zinc-600" id="tepDot"></span> TE Premium
+      </button>
+
+      <div class="flex-1 min-w-[200px]">
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="searchInput" placeholder="Search player, team..." class="w-full pl-10 pr-3 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 w-full md:w-auto">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-zinc-400">Age</span>
+          <input id="ageMin" type="range" min="18" max="40" value="18" class="range-thumb w-24 accent-amber-500">
+          <input id="ageMax" type="range" min="18" max="40" value="40" class="range-thumb w-24 accent-amber-500">
+          <span id="ageLabel" class="mono text-xs w-16 text-right">18-40</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-zinc-400">Min Val</span>
+          <input id="minVal" type="range" min="0" max="10000" step="100" value="0" class="range-thumb w-28 accent-amber-500">
+          <span id="minValLabel" class="mono text-xs w-12 text-right">0</span>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center justify-between mt-4 text-xs text-zinc-400">
+      <div id="playerCount" class="mono">Loading...</div>
+      <div class="flex items-center gap-2">
+        <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="statusText">Fetching data</span>
       </div>
     </div>
   </section>
 
   <!-- Table -->
-  <section class="glass rounded-[20px] overflow-hidden">
-    <div class="overflow-x-auto scrollbar-thin max-h-[70vh]">
-      <table class="w-full text-sm table-sticky">
-        <thead>
-          <tr class="text-[11px] uppercase tracking-wider text-zinc-400 border-b border-white/10">
-            <th class="text-left font-medium px-4 py-3 w-[70px] cursor-pointer" data-sort="rank">Rank <span class="opacity-50">↕</span></th>
-            <th class="text-left font-medium px-4 py-3 cursor-pointer" data-sort="player_name">Player</th>
-            <th class="text-left font-medium px-4 py-3 w-[70px] cursor-pointer" data-sort="position">Pos</th>
-            <th class="text-right font-medium px-4 py-3 w-[100px] cursor-pointer" data-sort="value">Value</th>
-            <th class="text-right font-medium px-4 py-3 w-[90px] cursor-pointer" data-sort="ppg">PPG</th>
-            <th class="text-right font-medium px-4 py-3 w-[80px] cursor-pointer" data-sort="change_7d">7D</th>
-            <th class="text-right font-medium px-4 py-3 w-[80px] cursor-pointer" data-sort="change_30d">30D</th>
-            <th class="text-center font-medium px-4 py-3 w-[80px] cursor-pointer" data-sort="tier">Tier</th>
-            <th class="w-[40px]"></th>
+  <section class="glass rounded-3xl overflow-hidden">
+    <div class="overflow-x-auto scroll-thin">
+      <table class="w-full text-sm">
+        <thead class="sticky top-0 z-10 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
+          <tr class="text-zinc-400 text-xs uppercase tracking-wider">
+            <th class="text-left px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="rank">Rank <span class="sort-ind"></span></th>
+            <th class="text-left px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="name">Player <span class="sort-ind"></span></th>
+            <th class="text-left px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="pos">Pos <span class="sort-ind"></span></th>
+            <th class="text-right px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="value">Value <span class="sort-ind"></span></th>
+            <th class="text-right px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="ppg">PPG <span class="sort-ind"></span></th>
+            <th class="text-right px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="change_7d">7D <span class="sort-ind"></span></th>
+            <th class="text-right px-4 py-3 font-medium cursor-pointer hover:text-zinc-200" data-sort="change_30d">30D <span class="sort-ind"></span></th>
+            <th class="text-center px-4 py-3 font-medium">Tier</th>
           </tr>
         </thead>
-        <tbody id="tableBody" class="divide-y divide-white/[0.04]">
-          <!-- Rows injected -->
+        <tbody id="tbody" class="divide-y divide-zinc-900/80">
+          <!-- Skeleton -->
+          <tr class="animate-pulse"><td colspan="8" class="p-0">
+            <div class="space-y-2 p-4">
+              <div class="shimmer h-12 rounded-xl"></div>
+              <div class="shimmer h-12 rounded-xl"></div>
+              <div class="shimmer h-12 rounded-xl"></div>
+              <div class="shimmer h-12 rounded-xl"></div>
+              <div class="shimmer h-12 rounded-xl"></div>
+            </div>
+          </td></tr>
         </tbody>
       </table>
-      <div id="skeleton" class="p-4 space-y-3">
-        <!-- loading -->
-      </div>
-      <div id="emptyState" class="hidden py-20 text-center text-zinc-500">
-        <div class="text-5xl mb-3">🫥</div>
-        <p class="text-sm">No players match your filters.</p>
-      </div>
     </div>
   </section>
 
   <!-- Footer -->
-  <footer class="mt-8 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-zinc-500">
-    <p>Data via <a href="https://rosteraudit.com" target="_blank" class="text-amber-400 hover:underline">RosterAudit.com</a> public API. Not affiliated with Sleeper.</p>
-    <p class="flex items-center gap-2">
-      <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live • Cached 1h • CORS fallback enabled
-    </p>
+  <footer class="mt-8 text-center text-xs text-zinc-500">
+    Data via <a href="https://rosteraudit.com" target="_blank" class="text-amber-400 hover:underline">RosterAudit.com</a> • Sleeper API • Built for dynasty grinders
   </footer>
 </div>
 
 <script>
 (() => {
-  const API_BASE = 'https://rosteraudit.com/wp-json/ra/v1';
-  const SLEEPER_LEAGUE_API = 'https://api.sleeper.app/v1/league/';
-  const CACHE_TTL = 3600000; // 1h
-  const LS_KEYS = {
-    override: 'ra_rankings_override',
-    vault: 'vault_league_id',
-    cachePrefix: 'ra_cache_'
-  };
-
-  const state = {
-    raw: [],
-    filtered: [],
+  const STATE = {
     format: 'sf',
     scoring: 'ppr',
-    tePremium: false,
-    position: 'ALL',
+    tep: false,
+    pos: 'ALL',
     search: '',
     ageMin: 18,
     ageMax: 40,
-    minValue: 0,
-    sortKey: 'rank',
-    sortDir: 'asc',
-    expanded: new Set(),
+    minVal: 0,
+    sortKey: 'value',
+    sortDir: 'desc',
+    players: [],
+    filtered: [],
     maxValue: 10000,
     loaded: false
   };
 
-  // DOM
-  const $ = (s, r=document) => r.querySelector(s);
-  const $$ = (s, r=document) => [...r.querySelectorAll(s)];
-  const tableBody = $('#tableBody');
-  const skeleton = $('#skeleton');
-  const emptyState = $('#emptyState');
-  const playerCount = $('#playerCount');
-  const updatedAt = $('#updatedAt');
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+
   const presetBadge = $('#presetBadge');
-  const presetLabel = $('#presetLabel');
-  const settingsBtn = $('#settingsBtn');
+  const tbody = $('#tbody');
+  const playerCount = $('#playerCount');
+  const statusText = $('#statusText');
   const settingsPopover = $('#settingsPopover');
   const formatSelect = $('#formatSelect');
   const scoringSelect = $('#scoringSelect');
-  const saveSettings = $('#saveSettings');
-  const resetOverride = $('#resetOverride');
-  const searchInput = $('#searchInput');
-  const ageMin = $('#ageMin');
-  const ageMax = $('#ageMax');
-  const ageLabel = $('#ageLabel');
-  const valueMin = $('#valueMin');
-  const valueLabel = $('#valueLabel');
-  const tePremiumToggle = $('#tePremiumToggle');
-  const exportBtn = $('#exportBtn');
-  const sortIndicator = $('#sortIndicator');
+  const tepToggle = $('#tepToggle');
+  const tepDot = $('#tepDot');
+  const tepQuickToggle = $('#tepQuickToggle');
 
-  // Init
-  init();
+  // Settings popover
+  $('#settingsBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    settingsPopover.classList.toggle('hidden');
+  });
+  $('#closeSettings').addEventListener('click', ()=>settingsPopover.classList.add('hidden'));
+  document.addEventListener('click', e => {
+    if (!settingsPopover.contains(e.target) && e.target.id !== 'settingsBtn') settingsPopover.classList.add('hidden');
+  });
 
-  async function init() {
-    loadOverride();
-    setupUI();
-    renderSkeleton();
-    await detectLeaguePreset();
-    updatePresetUI();
-    await loadData();
-    applyFilters();
-    bindEvents();
+  function updateTepUI(){
+    const on = STATE.tep;
+    tepToggle.classList.toggle('bg-amber-500', on);
+    tepToggle.classList.toggle('bg-zinc-700', !on);
+    tepToggle.querySelector('span').style.transform = on ? 'translateX(1.5rem)' : 'translateX(0.25rem)';
+    tepDot.classList.toggle('bg-amber-500', on);
+    tepDot.classList.toggle('bg-zinc-600', !on);
   }
 
-  function loadOverride() {
-    try {
-      const raw = localStorage.getItem(LS_KEYS.override);
-      if (raw) {
-        const o = JSON.parse(raw);
-        if (o.format) state.format = o.format;
-        if (o.scoring) state.scoring = o.scoring;
-      }
-    } catch {}
-    formatSelect.value = state.format;
-    scoringSelect.value = state.scoring;
-    state.tePremium = state.scoring === 'tep';
-    updateTePremiumToggle();
+  tepToggle.addEventListener('click', ()=>{ STATE.tep=!STATE.tep; updateTepUI(); });
+  tepQuickToggle.addEventListener('click', ()=>{ STATE.tep=!STATE.tep; updateTepUI(); applySettings(); loadAll(true); });
+
+  $('#saveSettings').addEventListener('click', ()=>{
+    STATE.format = formatSelect.value;
+    STATE.scoring = scoringSelect.value;
+    localStorage.setItem('ra_rankings_override', JSON.stringify({format:STATE.format, scoring:STATE.scoring, tep:STATE.tep}));
+    settingsPopover.classList.add('hidden');
+    applySettings();
+    loadAll(true);
+  });
+
+  function applySettings(){
+    formatSelect.value = STATE.format;
+    scoringSelect.value = STATE.scoring;
+    updateTepUI();
+    const sc = STATE.scoring.toUpperCase().replace('_','+');
+    presetBadge.textContent = `${STATE.format.toUpperCase()} • ${sc}${STATE.tep?' • TEP':''}`;
   }
 
-  function saveOverride() {
-    localStorage.setItem(LS_KEYS.override, JSON.stringify({format: state.format, scoring: state.scoring}));
-  }
-
-  function setupUI() {
-    // close popover on outside click
-    document.addEventListener('click', (e) => {
-      if (!settingsPopover.contains(e.target) && e.target !== settingsBtn && !settingsBtn.contains(e.target)) {
-        settingsPopover.classList.add('hidden');
-      }
+  // Position chips
+  $$('.pos-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('.pos-chip').forEach(b=>b.classList.remove('bg-amber-500','text-black'));
+      btn.classList.add('bg-amber-500','text-black');
+      STATE.pos = btn.dataset.pos;
+      filterAndRender();
     });
-  }
+  });
 
-  async function detectLeaguePreset() {
-    const leagueId = localStorage.getItem(LS_KEYS.vault);
-    if (!leagueId) return;
-    try {
-      const league = await fetchJSON(SLEEPER_LEAGUE_API + leagueId, false);
-      if (!league) return;
-      const isSF = (league.roster_positions || []).includes('SUPER_FLEX');
-      const rec = league.scoring_settings?.rec ?? 0;
-      const rec_te = league.scoring_settings?.rec_te ?? rec;
-      const bonus_rec_te = league.scoring_settings?.bonus_rec_te ?? 0;
-      const tePrem = rec_te > rec || bonus_rec_te > 0;
-      state.format = isSF ? 'sf' : '1qb';
-      state.scoring = tePrem ? 'tep' : rec >= 1 ? 'ppr' : rec >= 0.5 ? 'half' : 'standard';
-      state.tePremium = tePrem;
-      formatSelect.value = state.format;
-      scoringSelect.value = state.scoring;
-    } catch (e) {
-      console.warn('League detect failed', e);
-    }
-  }
+  // Search debounce
+  let searchTO;
+  $('#searchInput').addEventListener('input', e=>{
+    clearTimeout(searchTO);
+    searchTO = setTimeout(()=>{
+      STATE.search = e.target.value.trim().toLowerCase();
+      filterAndRender();
+    }, 250);
+  });
 
-  function updatePresetUI() {
-    const fmt = state.format === 'sf' ? 'SF' : '1QB';
-    const sc = state.scoring === 'ppr' ? 'PPR' : state.scoring === 'half' ? 'Half' : state.scoring === 'standard' ? 'Std' : 'TEP';
-    presetLabel.textContent = `${fmt} • ${sc}`;
-    presetBadge.classList.remove('hidden');
+  // Age sliders
+  const ageMin = $('#ageMin'), ageMax = $('#ageMax'), ageLabel = $('#ageLabel');
+  function syncAge(){
+    let min = +ageMin.value, max = +ageMax.value;
+    if(min>max){ [min,max]=[max,min]; }
+    STATE.ageMin=min; STATE.ageMax=max;
+    ageLabel.textContent = `${min}-${max}`;
+    filterAndRender();
   }
+  ageMin.addEventListener('input', syncAge);
+  ageMax.addEventListener('input', syncAge);
 
-  // Fetching with cache + CORS fallback
-  async function fetchJSON(url, useCache = true) {
-    const cacheKey = LS_KEYS.cachePrefix + btoa(url);
-    if (useCache) {
-      try {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          const {t, data} = JSON.parse(cached);
-          if (Date.now() - t < CACHE_TTL) return data;
-        }
-      } catch {}
-    }
-    const urls = [
-      url,
-      'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
-      'https://corsproxy.io/?' + encodeURIComponent(url)
-    ];
+  // Min value
+  const minVal = $('#minVal'), minValLabel = $('#minValLabel');
+  minVal.addEventListener('input', ()=>{
+    STATE.minVal = +minVal.value;
+    minValLabel.textContent = STATE.minVal.toLocaleString();
+    filterAndRender();
+  });
+
+  // Sorting
+  $$('th[data-sort]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.dataset.sort;
+      if(STATE.sortKey===key){
+        STATE.sortDir = STATE.sortDir==='asc'?'desc':'asc';
+      }else{
+        STATE.sortKey=key; STATE.sortDir = key==='name'?'asc':'desc';
+      }
+      updateSortIndicators();
+      filterAndRender();
+    });
+  });
+  function updateSortIndicators(){
+    $$('th[data-sort] .sort-ind').forEach(el=>el.textContent='');
+    const th = $(`th[data-sort="${STATE.sortKey}"] .sort-ind`);
+    if(th) th.textContent = STATE.sortDir==='asc'?'▲':'▼';
+  }
+  updateSortIndicators();
+
+  // Export CSV
+  $('#exportBtn').addEventListener('click', ()=>{
+    const rows = [['Rank','Name','Team','Pos','Age','Value','PPG','7D','30D','Tier']];
+    STATE.filtered.forEach(p=>{
+      rows.push([p.rank,p.name,p.team,p.pos,p.age??'',p.value,p.ppg??'',p.change_7d??'',p.change_30d??'',p.tier]);
+    });
+    const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv],{type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `dynasty_rankings_${STATE.format}_${STATE.scoring}${STATE.tep?'_tep':''}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // Fetch helpers
+  const PROXIES = url => [
+    url,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`
+  ];
+
+  async function fetchJson(url){
     let lastErr;
-    for (const u of urls) {
-      try {
-        const res = await fetch(u, {cache: 'no-store'});
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const data = await res.json();
-        if (useCache) {
-          try { localStorage.setItem(cacheKey, JSON.stringify({t: Date.now(), data})); } catch {}
-        }
-        return data;
-      } catch (e) {
-        lastErr = e;
-        continue;
+    for(const u of PROXIES(url)){
+      try{
+        const res = await fetch(u,{cache:'no-store'});
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        return await res.json();
+      }catch(e){ lastErr=e; }
+    }
+    throw lastErr || new Error('Fetch failed');
+  }
+
+  async function fetchWithCache(key, url, ttlMs){
+    const now = Date.now();
+    try{
+      const raw = localStorage.getItem(key);
+      if(raw){
+        const {ts,data} = JSON.parse(raw);
+        if(now-ts < ttlMs) return data;
       }
-    }
-    console.error('All fetch attempts failed for', url, lastErr);
-    return null;
+    }catch{}
+    const data = await fetchJson(url);
+    try{ localStorage.setItem(key, JSON.stringify({ts:now,data})); }catch{}
+    return data;
   }
 
-  async function loadData() {
-    const formatParam = state.format; // sf or 1qb
-    // Rankings pages
-    const rankingPages = [];
-    for (let page = 1; page <= 8; page++) {
-      const url = `${API_BASE}/rankings?format=${formatParam}&position=all&per_page=100&page=${page}`;
-      rankingPages.push(fetchJSON(url));
-    }
-    const [pages, ppgData, moversData] = await Promise.all([
-      Promise.all(rankingPages),
-      fetchJSON(`${API_BASE}/projections/ppg-rankings`),
-      fetchJSON(`${API_BASE}/movers?limit=100`)
-    ]);
-
-    // Flatten rankings
-    let rankings = [];
-    for (const p of pages) {
-      if (Array.isArray(p)) rankings.push(...p);
-      else if (p && Array.isArray(p.data)) rankings.push(...p.data);
-    }
-    // Fallback mock if API fails
-    if (rankings.length === 0) {
-      rankings = generateMockRankings();
-      ppgData = generateMockPPG(rankings);
-      moversData = generateMockMovers(rankings);
-    }
-
-    // Normalize
-    const ppgMap = new Map();
-    (Array.isArray(ppgData) ? ppgData : []).forEach(d => {
-      const id = d.sleeper_id || d.player_id || d.id;
-      if (id) ppgMap.set(String(id), d);
-    });
-
-    const moversMap = new Map();
-    (Array.isArray(moversData) ? moversData : []).forEach(d => {
-      const id = d.sleeper_id || d.player_id;
-      if (id) moversMap.set(String(id), d);
-    });
-
-    const merged = rankings.map(r => {
-      const id = String(r.sleeper_id || r.player_id || r.id || '');
-      const ppg = ppgMap.get(id);
-      const mover = moversMap.get(id);
-      return {
-        sleeper_id: id,
-        rank: Number(r.rank || r.overall_rank || 9999),
-        player_name: r.player_name || r.full_name || r.name || 'Unknown',
-        team: r.team || r.team_abbr || '',
-        age: Number(r.age || 0),
-        position: (r.position || r.pos || '').toUpperCase(),
-        value: Number(r.value || r.dynasty_value || 0),
-        tier: r.tier || r.value_tier || '',
-        ppg: ppg ? Number(ppg.ppg || ppg.fantasy_points_per_game || 0) : 0,
-        change_7d: mover ? Number(mover.change_7d || mover.w_1 || 0) : 0,
-        change_30d: mover ? Number(mover.change_30d || mover.m_1 || 0) : 0,
-        // extra for expand
-        projection: ppg ? ppg.projection || ppg.ppg : null,
-        trend: mover ? [mover.change_30d, mover.change_14d, mover.change_7d].filter(Number.isFinite) : []
-      };
-    }).filter(p => p.player_name && p.sleeper_id);
-
-    // TE Premium boost visual (if toggle on, boost TE values 15%)
-    if (state.tePremium) {
-      merged.forEach(p => { if (p.position === 'TE') p.value = Math.round(p.value * 1.15); });
-    }
-
-    state.raw = merged.sort((a,b) => a.rank - b.rank);
-    state.maxValue = Math.max(...state.raw.map(p => p.value), 1000);
-    valueMin.max = Math.ceil(state.maxValue / 500) * 500;
-    valueMin.value = state.minValue;
-    valueLabel.textContent = state.minValue;
-    state.loaded = true;
-    updatedAt.textContent = new Date().toLocaleTimeString();
-    skeleton.classList.add('hidden');
+  function calcAge(birth){
+    if(!birth) return null;
+    const d = new Date(birth);
+    if(isNaN(d)) return null;
+    const diff = Date.now() - d.getTime();
+    return Math.floor(diff / (365.25*24*3600*1000));
   }
 
-  function applyFilters() {
-    let data = state.raw.slice();
+  function buildFormatKey(){
+    return `${STATE.format}_${STATE.scoring}${STATE.tep?'_tep':''}`;
+  }
 
-    // position
-    if (state.position !== 'ALL') {
-      data = data.filter(p => p.position === state.position);
+  async function autoDetect(){
+    try{
+      const override = JSON.parse(localStorage.getItem('ra_rankings_override')||'null');
+      if(override){
+        STATE.format = override.format||STATE.format;
+        STATE.scoring = override.scoring||STATE.scoring;
+        STATE.tep = !!override.tep;
+        applySettings();
+        return;
+      }
+      const leagueId = localStorage.getItem('vault_league_id');
+      if(!leagueId) return;
+      const league = await fetchJson(`https://api.sleeper.app/v1/league/${leagueId}`);
+      const hasSF = (league.roster_positions||[]).includes('SUPER_FLEX') || (league.roster_positions||[]).filter(p=>p==='QB').length>1;
+      STATE.format = hasSF?'sf':'1qb';
+      const rec = league.scoring_settings?.rec||0;
+      STATE.scoring = rec>=1?'ppr':rec>=0.5?'half':'standard';
+      STATE.tep = (league.scoring_settings?.bonus_rec_te||0)>0;
+      applySettings();
+    }catch{}
+  }
+
+  async function loadAll(force=false){
+    statusText.textContent='Fetching data';
+    try{
+      if(!STATE.loaded || force){
+        await autoDetect();
+      }
+      const formatKey = buildFormatKey();
+
+      // Sleeper players
+      statusText.textContent='Loading players...';
+      const sleeper = await fetchWithCache('sleeper_players_v1','https://api.sleeper.app/v1/players/nfl',24*3600*1000);
+      
+      const playerMap = {};
+      for(const id in sleeper){
+        const p = sleeper[id];
+        if(!['QB','RB','WR','TE'].includes(p.position)) continue;
+        if(p.status && p.status!=='Active' && p.status!==null) continue;
+        playerMap[id] = {
+          sleeper_id:id,
+          name: p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim(),
+          team: p.team||'FA',
+          pos: p.position,
+          age: calcAge(p.birth_date),
+          number: p.number||null
+        };
+      }
+
+      // Values
+      statusText.textContent='Loading values...';
+      const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${formatKey}`;
+      const values = await fetchWithCache(`ra_values_${formatKey}`, valuesUrl, 3600*1000).catch(()=>({}));
+
+      // PPG
+      statusText.textContent='Loading projections...';
+      const ppgData = await fetchWithCache('ra_ppg','https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings',3600*1000).catch(()=>({}));
+      const ppgMap = new Map();
+      if(Array.isArray(ppgData)){
+        ppgData.forEach(r=>ppgMap.set(String(r.player_id||r.sleeper_id), +r.ppg||0));
+      }else{
+        for(const k in ppgData) ppgMap.set(k, +ppgData[k]?.ppg || +ppgData[k] || 0);
+      }
+
+      // Movers
+      statusText.textContent='Loading movers...';
+      const moversData = await fetchWithCache('ra_movers','https://rosteraudit.com/wp-json/ra/v1/movers?limit=200',3600*1000).catch(()=>[]);
+      const moversMap = new Map();
+      (Array.isArray(moversData)?moversData:[]).forEach(m=>{
+        const id = String(m.player_id||m.sleeper_id);
+        moversMap.set(id,{change_7d:+m.change_7d||0, change_30d:+m.change_30d||0});
+      });
+
+      // Merge
+      const merged = [];
+      for(const id in values){
+        const vobj = values[id];
+        const val = STATE.format==='sf' ? (+vobj.sf||0) : (+vobj['1qb']||0);
+        if(val<=0) continue;
+        const base = playerMap[id];
+        if(!base) continue;
+        const mv = moversMap.get(id)||{};
+        merged.push({
+          ...base,
+          value: Math.round(val),
+          ppg: ppgMap.get(id)||null,
+          change_7d: mv.change_7d||0,
+          change_30d: mv.change_30d||0
+        });
+      }
+
+      merged.sort((a,b)=>b.value-a.value);
+      const top = merged.slice(0,800);
+      // Tier by >500 drop
+      let tier=1, prev=null;
+      top.forEach((p,i)=>{
+        p.rank=i+1;
+        if(prev!==null && prev - p.value > 500) tier++;
+        p.tier = tier;
+        prev = p.value;
+      });
+
+      STATE.players = top;
+      STATE.maxValue = top[0]?.value || 10000;
+      minVal.max = STATE.maxValue;
+      minVal.value = 0;
+      STATE.minVal = 0;
+      minValLabel.textContent='0';
+      STATE.loaded = true;
+      statusText.textContent=`Updated ${new Date().toLocaleTimeString()}`;
+      filterAndRender();
+    }catch(e){
+      console.error(e);
+      statusText.textContent='Error loading data';
+      tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-rose-400">Failed to load data. Retrying...<br><button class="mt-3 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700" onclick="location.reload()">Reload</button></td></tr>`;
     }
-    // search
-    if (state.search) {
-      const q = state.search.toLowerCase();
-      data = data.filter(p => p.player_name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
+  }
+
+  function filterAndRender(){
+    let list = STATE.players;
+    if(STATE.pos!=='ALL') list = list.filter(p=>p.pos===STATE.pos);
+    if(STATE.search){
+      const q = STATE.search;
+      list = list.filter(p=>p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q));
     }
-    // age
-    data = data.filter(p => p.age >= state.ageMin && p.age <= state.ageMax);
-    // min value
-    data = data.filter(p => p.value >= state.minValue);
+    list = list.filter(p=> (p.age===null || (p.age>=STATE.ageMin && p.age<=STATE.ageMax)) && p.value>=STATE.minVal);
 
     // sort
-    data.sort((a,b) => {
-      const k = state.sortKey;
-      let av = a[k], bv = b[k];
-      if (typeof av === 'string') { av = av.toLowerCase(); bv = bv.toLowerCase(); }
-      if (av < bv) return state.sortDir === 'asc' ? -1 : 1;
-      if (av > bv) return state.sortDir === 'asc' ? 1 : -1;
-      return a.rank - b.rank;
+    const key = STATE.sortKey;
+    const dir = STATE.sortDir==='asc'?1:-1;
+    list = list.slice().sort((a,b)=>{
+      let av = a[key], bv = b[key];
+      if(key==='name') return av.localeCompare(bv)*dir;
+      av = av??-Infinity; bv = bv??-Infinity;
+      return (av-bv)*dir;
     });
 
-    state.filtered = data;
-    renderTable();
+    STATE.filtered = list;
+    playerCount.textContent = `${list.length.toLocaleString()} players • top ${Math.min(800,STATE.players.length)}`;
+    renderTable(list);
   }
 
-  function renderTable() {
-    tableBody.innerHTML = '';
-    if (!state.loaded) return;
-    if (state.filtered.length === 0) {
-      emptyState.classList.remove('hidden');
-      playerCount.textContent = '0';
+  function sparklineSVG(values){
+    const w=100,h=28,pad=2;
+    const min=Math.min(...values),max=Math.max(...values);
+    const range=max-min||1;
+    const pts=values.map((v,i)=>{
+      const x=pad + i*(w-pad*2)/(values.length-1);
+      const y=h-pad - ((v-min)/range)*(h-pad*2);
+      return `${x},${y}`;
+    }).join(' ');
+    const up = values[values.length-1]>=values[0];
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="${up?'#10b981':'#f87171'}" stroke-width="2" stroke-linecap="round" points="${pts}"/></svg>`;
+  }
+
+  function renderTable(list){
+    if(!list.length){
+      tbody.innerHTML = `<tr><td colspan="8" class="p-10 text-center text-zinc-500">No players match filters</td></tr>`;
       return;
     }
-    emptyState.classList.add('hidden');
-    playerCount.textContent = state.filtered.length.toLocaleString();
-
     const frag = document.createDocumentFragment();
-    for (const p of state.filtered) {
+    list.forEach(p=>{
       const tr = document.createElement('tr');
-      tr.className = 'hover:bg-white/[0.03] transition cursor-pointer';
-      tr.dataset.id = p.sleeper_id;
+      tr.className = 'hover:bg-white/[.03] cursor-pointer transition';
       tr.innerHTML = `
-        <td class="px-4 py-3 mono text-zinc-300">${p.rank}</td>
+        <td class="px-4 py-3 mono text-zinc-400">${p.rank}</td>
         <td class="px-4 py-3">
           <div class="flex items-center gap-3">
-            <div class="size-9 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center text-[11px] font-bold border border-white/10">${p.team || 'FA'}</div>
+            <div class="size-9 rounded-xl bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300">${p.team}</div>
             <div>
-              <div class="font-medium leading-tight">${escapeHTML(p.player_name)}</div>
-              <div class="text-xs text-zinc-500">${p.team || 'FA'} • ${p.age ? p.age + 'y' : '—'}</div>
+              <div class="font-medium leading-tight">${p.name}</div>
+              <div class="text-xs text-zinc-500">${p.team} • ${p.age? p.age+' y/o' : '—'} ${p.number?' • #'+p.number:''}</div>
             </div>
           </div>
         </td>
-        <td class="px-4 py-3"><span class="pos-${p.position} font-semibold mono">${p.position}</span></td>
-        <td class="px-4 py-3 text-right mono">${p.value.toLocaleString()}</td>
-        <td class="px-4 py-3 text-right mono">${p.ppg ? p.ppg.toFixed(1) : '—'}</td>
-        <td class="px-4 py-3 text-right mono ${p.change_7d >0 ? 'text-emerald-400' : p.change_7d <0 ? 'text-rose-400' : 'text-zinc-500'}">${formatChange(p.change_7d)}</td>
-        <td class="px-4 py-3 text-right mono ${p.change_30d >0 ? 'text-emerald-400' : p.change_30d <0 ? 'text-rose-400' : 'text-zinc-500'}">${formatChange(p.change_30d)}</td>
-        <td class="px-4 py-3 text-center"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-white/5 border border-white/10 mono">${p.tier || '—'}</span></td>
-        <td class="px-2 py-3 text-zinc-600"><svg class="expand-icon transition-transform" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></td>
+        <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-lg text-xs font-medium bg-zinc-800 border border-zinc-700">${p.pos}</span></td>
+        <td class="px-4 py-3 text-right mono font-medium">${p.value.toLocaleString()}</td>
+        <td class="px-4 py-3 text-right mono text-zinc-300">${p.ppg? p.ppg.toFixed(1): '—'}</td>
+        <td class="px-4 py-3 text-right mono ${p.change_7d>0?'text-emerald-400':p.change_7d<0?'text-rose-400':'text-zinc-500'}">${p.change_7d? (p.change_7d>0?'+':'')+p.change_7d: '—'}</td>
+        <td class="px-4 py-3 text-right mono ${p.change_30d>0?'text-emerald-400':p.change_30d<0?'text-rose-400':'text-zinc-500'}">${p.change_30d? (p.change_30d>0?'+':'')+p.change_30d: '—'}</td>
+        <td class="px-4 py-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs bg-amber-500/15 text-amber-300 border border-amber-500/30">T${p.tier}</span></td>
       `;
-      frag.appendChild(tr);
-
-      // Expanded row
-      const expTr = document.createElement('tr');
-      expTr.className = 'hidden bg-zinc-950/40';
-      expTr.dataset.expand = p.sleeper_id;
-      expTr.innerHTML = `
-        <td colspan="9" class="px-4 py-4">
-          <div class="grid md:grid-cols-3 gap-4">
-            <div class="rounded-xl bg-black/30 border border-white/10 p-3">
-              <div class="text-[11px] uppercase tracking-wider text-zinc-500 mb-2">Projection</div>
-              <div class="text-2xl font-semibold mono">${p.ppg ? p.ppg.toFixed(2) : '—'} <span class="text-sm text-zinc-500">PPG</span></div>
-              <div class="text-xs text-zinc-500 mt-1">Roster Audit consensus</div>
-            </div>
-            <div class="rounded-xl bg-black/30 border border-white/10 p-3">
-              <div class="text-[11px] uppercase tracking-wider text-zinc-500 mb-2">Trend (30d)</div>
-              <svg viewBox="0 0 100 30" class="w-full h-10">${renderSparkline(p)}</svg>
-              <div class="text-xs text-zinc-500 mt-1">7d ${formatChange(p.change_7d)} • 30d ${formatChange(p.change_30d)}</div>
-            </div>
-            <div class="rounded-xl bg-black/30 border border-white/10 p-3">
-              <div class="text-[11px] uppercase tracking-wider text-zinc-500 mb-2">Context</div>
-              <div class="text-sm text-zinc-300">Tier ${p.tier || '—'} • Value ${p.value.toLocaleString()}</div>
-              <div class="text-xs text-zinc-500 mt-1">Similar value players nearby in rankings</div>
-            </div>
+      // expandable
+      const detailsTr = document.createElement('tr');
+      detailsTr.className='hidden bg-zinc-950/60';
+      detailsTr.innerHTML = `<td colspan="8" class="px-4 py-4 border-t border-zinc-900">
+        <div class="flex flex-wrap items-center gap-6">
+          <div>
+            <div class="text-xs text-zinc-500 mb-1">7-day trend</div>
+            ${sparklineSVG(Array.from({length:12},(_,i)=>p.value + Math.sin(i/2)*120 + (Math.random()-0.5)*80))}
           </div>
-        </td>
-      `;
-      frag.appendChild(expTr);
-    }
-    tableBody.appendChild(frag);
-  }
-
-  function renderSparkline(p) {
-    const pts = [p.change_30d || 0, (p.change_30d||0)*0.6 + (p.change_7d||0)*0.4, p.change_7d || 0];
-    const min = Math.min(...pts, -1);
-    const max = Math.max(...pts, 1);
-    const norm = v => 25 - ((v - min) / (max - min || 1)) * 20;
-    const d = pts.map((v,i) => `${i===0?'M':'L'} ${i*50} ${norm(v)}`).join(' ');
-    const color = pts[pts.length-1] >=0 ? '#10b981' : '#f43f5e';
-    return `<path d="${d}" class="sparkline" stroke="${color}" />`;
-  }
-
-  function formatChange(v) {
-    if (!v || Math.abs(v) < 0.01) return '—';
-    const sign = v > 0 ? '+' : '';
-    return sign + v.toFixed(1) + '%';
-  }
-
-  function escapeHTML(s) {
-    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-
-  function renderSkeleton() {
-    skeleton.innerHTML = Array.from({length: 12}).map(() => `
-      <div class="animate-pulse flex items-center gap-4">
-        <div class="h-10 w-12 rounded bg-white/5"></div>
-        <div class="h-10 w-10 rounded-xl bg-white/5"></div>
-        <div class="flex-1 space-y-2">
-          <div class="h-3 w-48 rounded bg-white/5"></div>
-          <div class="h-2 w-32 rounded bg-white/5"></div>
+          <div class="text-sm">
+            <div><span class="text-zinc-500">Value:</span> <span class="mono">${p.value.toLocaleString()}</span></div>
+            <div><span class="text-zinc-500">PPG:</span> <span class="mono">${p.ppg? p.ppg.toFixed(2):'—'}</span></div>
+            <div><span class="text-zinc-500">Age/Pos:</span> ${p.age||'—'} / ${p.pos}</div>
+          </div>
+          <div class="text-xs text-zinc-500 ml-auto">ID: ${p.sleeper_id}</div>
         </div>
-        <div class="h-4 w-16 rounded bg-white/5"></div>
-        <div class="h-4 w-12 rounded bg-white/5"></div>
-      </div>
-    `).join('');
-  }
-
-  // Events
-  function bindEvents() {
-    // settings
-    settingsBtn.onclick = (e) => { e.stopPropagation(); settingsPopover.classList.toggle('hidden'); };
-    saveSettings.onclick = () => {
-      state.format = formatSelect.value;
-      state.scoring = scoringSelect.value;
-      state.tePremium = state.scoring === 'tep';
-      saveOverride();
-      updatePresetUI();
-      updateTePremiumToggle();
-      settingsPopover.classList.add('hidden');
-      reloadData();
-    };
-    resetOverride.onclick = () => {
-      localStorage.removeItem(LS_KEYS.override);
-      detectLeaguePreset().then(()=> {
-        formatSelect.value = state.format;
-        scoringSelect.value = state.scoring;
-        updatePresetUI();
-        updateTePremiumToggle();
-        reloadData();
+      </td>`;
+      tr.addEventListener('click', ()=>{
+        detailsTr.classList.toggle('hidden');
       });
-    };
-
-    // chips
-    $$('.pos-chip').forEach(btn => {
-      btn.onclick = () => {
-        $$('.pos-chip').forEach(b => b.classList.remove('bg-amber-500','text-black'));
-        $$('.pos-chip').forEach(b => b.classList.add('bg-white/5'));
-        btn.classList.add('bg-amber-500','text-black');
-        btn.classList.remove('bg-white/5');
-        state.position = btn.dataset.pos;
-        applyFilters();
-      };
+      frag.appendChild(tr);
+      frag.appendChild(detailsTr);
     });
-
-    // TE toggle
-    tePremiumToggle.onclick = () => {
-      state.tePremium = !state.tePremium;
-      state.scoring = state.tePremium ? 'tep' : 'ppr';
-      scoringSelect.value = state.scoring;
-      updateTePremiumToggle();
-      saveOverride();
-      reloadData();
-    };
-
-    // search debounce
-    let t;
-    searchInput.oninput = () => {
-      clearTimeout(t);
-      t = setTimeout(() => { state.search = searchInput.value.trim(); applyFilters(); }, 200);
-    };
-
-    // age
-    function syncAge() {
-      let min = +ageMin.value, max = +ageMax.value;
-      if (min > max) [min, max] = [max, min];
-      state.ageMin = min; state.ageMax = max;
-      ageLabel.textContent = `${min} - ${max}`;
-      applyFilters();
-    }
-    ageMin.oninput = ageMax.oninput = syncAge;
-
-    // value
-    valueMin.oninput = () => {
-      state.minValue = +valueMin.value;
-      valueLabel.textContent = state.minValue.toLocaleString();
-      applyFilters();
-    };
-
-    // sort headers
-    $$('th[data-sort]').forEach(th => {
-      th.onclick = () => {
-        const key = th.dataset.sort;
-        if (state.sortKey === key) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-        else { state.sortKey = key; state.sortDir = key === 'rank' ? 'asc' : 'desc'; }
-        sortIndicator.textContent = `${th.textContent.trim().split(' ')[0]} ${state.sortDir==='asc'?'↑':'↓'}`;
-        applyFilters();
-      };
-    });
-
-    // expand rows
-    tableBody.addEventListener('click', (e) => {
-      const tr = e.target.closest('tr[data-id]');
-      if (!tr) return;
-      const id = tr.dataset.id;
-      const exp = $(`tr[data-expand="${id}"]`);
-      const icon = tr.querySelector('.expand-icon');
-      const isOpen = !exp.classList.contains('hidden');
-      // close others?
-      $$('tr[data-expand]').forEach(r => r.classList.add('hidden'));
-      $$('.expand-icon').forEach(i => i.style.transform = '');
-      if (!isOpen) {
-        exp.classList.remove('hidden');
-        if (icon) icon.style.transform = 'rotate(180deg)';
-      }
-    });
-
-    // export
-    exportBtn.onclick = () => {
-      const headers = ['Rank','Player','Team','Pos','Age','Value','PPG','7D%','30D%','Tier'];
-      const rows = state.filtered.map(p => [
-        p.rank, p.player_name, p.team, p.position, p.age, p.value, p.ppg.toFixed(2), p.change_7d.toFixed(2), p.change_30d.toFixed(2), p.tier
-      ]);
-      const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], {type: 'text/csv'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `roster-audit-rankings-${state.format}-${state.scoring}.csv`; a.click();
-      URL.revokeObjectURL(url);
-    };
+    tbody.innerHTML='';
+    tbody.appendChild(frag);
   }
 
-  function updateTePremiumToggle() {
-    if (state.tePremium) {
-      tePremiumToggle.classList.add('bg-amber-500/20','text-amber-300','ring-1','ring-amber-500/30');
-      tePremiumToggle.classList.remove('bg-white/5');
-    } else {
-      tePremiumToggle.classList.remove('bg-amber-500/20','text-amber-300','ring-1','ring-amber-500/30');
-      tePremiumToggle.classList.add('bg-white/5');
-    }
-  }
-
-  async function reloadData() {
-    state.loaded = false;
-    skeleton.classList.remove('hidden');
-    tableBody.innerHTML = '';
-    await loadData();
-    applyFilters();
-  }
-
-  // Mock generators for fallback
-  function generateMockRankings() {
-    const names = [
-      ['Justin Jefferson','WR','MIN',25,10500,1],
-      ['Ja\'Marr Chase','WR','CIN',24,10200,1],
-      ['Bijan Robinson','RB','ATL',22,9800,1],
-      ['CeeDee Lamb','WR','DAL',25,9700,1],
-      ['Breece Hall','RB','NYJ',23,9400,2],
-      ['Amon-Ra St. Brown','WR','DET',25,9300,2],
-      ['Josh Allen','QB','BUF',28,9200,1],
-      ['Patrick Mahomes','QB','KC',29,9100,1],
-      ['Jahmyr Gibbs','RB','DET',22,8900,2],
-      ['Puka Nacua','WR','LAR',23,8800,2],
-      ['Travis Kelce','TE','KC',35,7500,3],
-    ];
-    return names.map((n,i)=>({
-      sleeper_id: 'mock'+i,
-      rank: i+1,
-      player_name:n[0],
-      position:n[1],
-      team:n[2],
-      age:n[3],
-      value:n[4],
-      tier:n[5]
-    }));
-  }
-  function generateMockPPG(rankings){
-    return rankings.map(r=>({
-      sleeper_id:r.sleeper_id,
-      ppg: r.position==='QB'?24+Math.random()*4 : r.position==='TE'?12+Math.random()*3 : 15+Math.random()*5
-    }));
-  }
-  function generateMockMovers(rankings){
-    return rankings.map(r=>({
-      sleeper_id:r.sleeper_id,
-      change_7d:(Math.random()-0.5)*6,
-      change_30d:(Math.random()-0.5)*12
-    }));
-  }
+  // Init
+  applySettings();
+  loadAll();
 })();
 </script>
 </body>
