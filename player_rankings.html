@@ -130,7 +130,7 @@
               <th class="text-left font-semibold px-4 py-3 w-[80px]">Pos</th>
               <th class="text-right font-semibold px-4 py-3 w-[110px]">Value</th>
               <th class="text-right font-semibold px-4 py-3 w-[90px]">PPG</th>
-              </tr>
+            </tr>
           </thead>
           <tbody id="tableBody" class="divide-y divide-white/[0.04]">
             <!-- rows injected -->
@@ -171,7 +171,8 @@
 (() => {
   // Config
   const SLEEPER_PLAYERS_URL = 'https://api.sleeper.app/v1/players/nfl';
-  const RA_VALUES_URL = (key) => `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${key}`;
+  const RA_VALUES_URL = (key) => `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${key}&limit=1000`;
+  const DP_VALUES_URL = 'https://dynastyprocess.com/api/values';
   const RA_PPG_URL = 'https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings';
   const RA_MOVERS_URL = 'https://rosteraudit.com/wp-json/ra/v1/movers?limit=200';
   const SLEEPER_LEAGUE_URL = (id) => `https://api.sleeper.app/v1/league/${id}`;
@@ -355,8 +356,20 @@
           age: calcAge(pl.birth_date),
           number: pl.number || null,
           value,
-          ppg: ppgMap[id] ?? null
+          ppg: ppgMap[id] ?? ppgMap[`${pl.first_name}${pl.last_name}`.toLowerCase().replace(/[^a-z0-9]/g,"")] ?? null,
         });
+      
+      // Fallback PPG via player search for missing entries
+      const missingPpg = merged.filter(p => p.ppg == null).slice(0,150);
+      if(missingPpg.length){
+        await Promise.all(missingPpg.map(async p => {
+          try{
+            const data = await fetchWithProxy(`https://rosteraudit.com/wp-json/ra/v1/players/search?q=${encodeURIComponent(p.name)}&limit=1`);
+            const player = Array.isArray(data) ? data[0] : (data?.data?.[0] || data?.[0] || data);
+            const ppg = player?.ppg ?? player?.fantasy_points_per_game ?? player?.points_per_game ?? null;
+            if(ppg != null) p.ppg = +ppg;
+          }catch(e){}
+        }));
       }
       merged.sort((a,b) => b.value - a.value);
       merged.forEach((p,i)=> p.rank = i+1);
@@ -405,19 +418,27 @@
 
   function buildPpgMap(raw) {
     const map = {};
-    const arr = Array.isArray(raw) ? raw : (raw?.rankings || raw?.data || raw?.players || []);
-    if(Array.isArray(arr)) {
-      arr.forEach(r => {
+    const norm = s => (s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+    if(Array.isArray(raw)) {
+      raw.forEach(r => {
         const id = r.sleeper_id || r.player_id || r.id;
-        const v = r.ppg ?? r.fantasy_points_per_game ?? r.points_per_game ?? r.avg ?? r.ppg_ppr ?? r.ppg_half ?? r.ppg_std ?? null;
-        if(id && v!=null) map[id] = +v;
+        const name = r.full_name || r.player_name || r.name || ((r.first_name||'')+' '+(r.last_name||'')).trim();
+        const v = r.ppg ?? r.fantasy_points_per_game ?? r.points_per_game ?? r.avg ?? null;
+        if(v!=null) {
+          if(id) map[id] = +v;
+          if(name) map[norm(name)] = +v;
+        }
       });
     } else if(raw && typeof raw === 'object') {
       for(const [id, v] of Object.entries(raw)) {
         if(typeof v === 'number') map[id] = v;
         else if(v && typeof v === 'object') {
           const val = v.ppg ?? v.fantasy_points_per_game ?? v.points_per_game ?? v.avg;
-          if(val!=null) map[id] = +val;
+          const name = v.full_name || v.player_name || v.name;
+          if(val!=null) {
+            map[id] = +val;
+            if(name) map[norm(name)] = +val;
+          }
         }
       }
     }
@@ -523,7 +544,7 @@
       p.age ?? '',
       p.number ?? '',
       p.value,
-      p.ppg ?? ''
+      p.ppg ?? '',
     ].join(','))).join('\n');
     const blob = new Blob([csv], {type:'text/csv'});
     const url = URL.createObjectURL(blob);
