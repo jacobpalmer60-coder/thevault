@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -56,10 +57,24 @@
     </div>
   </header>
 
-  
   <!-- Controls -->
   <section class="glass rounded-3xl p-5 lg:p-6 mb-6">
     <div class="grid lg:grid-cols-12 gap-5">
+      <!-- Format -->
+      <div class="lg:col-span-3">
+        <label class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2 block">Format</label>
+        <div class="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-black/40 border border-white/10">
+          <button data-format="sf" class="fmt-btn px-3 py-2 rounded-xl text-sm font-medium transition bg-amber-600 text-white shadow">Superflex</button>
+          <button data-format="1qb" class="fmt-btn px-3 py-2 rounded-xl text-sm font-medium transition text-zinc-300 hover:text-white">1QB</button>
+        </div>
+      <!-- Scoring -->
+      <div class="lg:col-span-5">
+        <label class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2 block">Scoring</label>
+        <div class="grid grid-cols-3 gap-2 p-1 rounded-2xl bg-black/40 border border-white/10">
+          <button data-scoring="ppr" class="score-btn px-3 py-2 rounded-xl text-sm font-medium transition bg-amber-600 text-white shadow">PPR</button>
+          <button data-scoring="half" class="score-btn px-3 py-2 rounded-xl text-sm font-medium transition text-zinc-300 hover:text-white">Half</button>
+          <button data-scoring="std" class="score-btn px-3 py-2 rounded-xl text-sm font-medium transition text-zinc-300 hover:text-white">Standard</button>
+        </div>
       <!-- Position -->
       <div class="lg:col-span-4">
         <label class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2 block">Position</label>
@@ -72,41 +87,31 @@
         </div>
       </div>
 
-      <!-- TE Premium Toggle -->
-      <div class="lg:col-span-3">
-        <label class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2 block">TE Premium</label>
-        <button id="tePremiumToggle" class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 hover:border-amber-500/50 transition">
-          <span class="text-sm font-medium">Enable TE Premium</span>
-          <span id="tePremiumIndicator" class="size-5 rounded-full bg-zinc-700 border border-zinc-600 transition"></span>
-        </button>
-      </div>
-
       <!-- Search -->
       <div class="lg:col-span-5">
         <label class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2 block">Search</label>
         <div class="relative">
-          <input id="searchInput" type="text" placeholder="Search player name..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-sm focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition">
           <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="searchInput" placeholder="Player name, team..." class="w-full pl-10 pr-4 py-3 rounded-2xl bg-black/40 border border-white/10 focus:border-indigo-500 outline-none text-sm placeholder-zinc-500" />
         </div>
       </div>
 
       <!-- Age -->
-      <div class="lg:col-span-3">
-        <label class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2 block">Age Range <span id="ageLabel" class="text-amber-400 mono">20-30</span></label>
-        <div class="flex items-center gap-3">
-          <input id="ageMin" type="range" min="18" max="40" value="20" class="flex-1">
-          <input id="ageMax" type="range" min="18" max="40" value="30" class="flex-1">
+      <div class="lg:col-span-4">
+        <label class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-1 block">Age Range <span id="ageLabel" class="mono text-indigo-300 ml-1">21-40</span></label>
+        <div class="flex items-center gap-3 pt-2">
+          <input id="ageMin" type="range" min="20" max="40" value="20" class="flex-1">
+          <input id="ageMax" type="range" min="20" max="40" value="40" class="flex-1">
         </div>
       </div>
 
       <!-- Min Value -->
-      <div class="lg:col-span-9">
-        <label class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2 block">Min Value <span id="valueLabel" class="text-amber-400 mono">0</span></label>
-        <input id="minValue" type="range" min="0" max="10000" step="100" value="0" class="w-full">
+      <div class="lg:col-span-3">
+        <label class="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-1 block">Min Value <span id="valueLabel" class="mono text-indigo-300 ml-1">0</span></label>
+        <input id="minValue" type="range" min="0" max="10000" step="100" value="0" class="w-full mt-3">
       </div>
     </div>
   </section>
-
 
   <!-- Stats Bar -->
   <div class="flex flex-wrap items-center gap-3 mb-4 text-xs">
@@ -233,141 +238,90 @@
     viewport.innerHTML = '';
     const formatKey = `${state.format}_${state.scoring}`;
     statFormat.textContent = `${state.format.toUpperCase()} ${state.scoring.toUpperCase()}`;
+    const badge = document.getElementById('presetBadge');
+    if(badge){ badge.textContent = `${state.format.toUpperCase()} • ${state.scoring.replace('_',' ').toUpperCase()}`; }
 
     try {
-      // Sleeper players (24h)
-      const playersRaw = await fetchJSON('https://api.sleeper.app/v1/players/nfl', 86400000);
-      const players = {};
-      Object.entries(playersRaw).forEach(([id, p]) => {
-        if (!p || !p.position || !['QB','RB','WR','TE'].includes(p.position)) return;
-        players[id] = {
-          id,
-          full_name: p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim(),
-          first_name: p.first_name,
-          last_name: p.last_name,
-          team: p.team,
-          position: p.position,
-          age: calcAge(p.birth_date),
-          number: p.number,
-          status: p.status
-        };
-      });
-      state.playersMap = players;
-
-      // Rankings pages 1-5
+      // Fetch rankings pages 1-8 (800 players)
       const rankings = [];
-      for (let page=1; page<=5; page++) {
-        const url = `https://rosteraudit.com/wp-json/ra/v1/rankings?format=${state.format}&position=all&per_page=100&page=${page}`;
+      const perPage = 100;
+      const maxPages = 8;
+      for (let page=1; page<=maxPages; page++) {
+        const url = `https://rosteraudit.com/wp-json/ra/v1/rankings?format=${state.format}&position=all&per_page=${perPage}&page=${page}`;
         const data = await fetchJSON(url, 3600000).catch(()=>null);
         if (!data) break;
         const arr = Array.isArray(data) ? data : (data.rankings || data.data || []);
         if (!arr.length) break;
         rankings.push(...arr);
+        if (arr.length < perPage) break;
       }
 
-      // Values map
-      const valuesUrl = `https://rosteraudit.com/wp-json/ra/v1/rankings/values?format_key=${formatKey}`;
-      const valuesMap = await fetchJSON(valuesUrl, 3600000).catch(()=>({}));
-
-      // PPG
+      // PPG map
       const ppgRaw = await fetchJSON('https://rosteraudit.com/wp-json/ra/v1/projections/ppg-rankings', 3600000).catch(()=>[]);
       const ppgMap = {};
-      (Array.isArray(ppgRaw)?ppgRaw:[]).forEach(r => { if (r.sleeper_id) ppgMap[r.sleeper_id] = r.ppg || r.value; });
+      (Array.isArray(ppgRaw)?ppgRaw:[]).forEach(r => {
+        const sid = String(r.sleeper_id || r.player_id || r.id || '');
+        if (sid) ppgMap[sid] = Number(r.ppg || r.proj_ppg || r.value || 0);
+      });
 
-      // Movers
+      // Movers map
       const moversRaw = await fetchJSON('https://rosteraudit.com/wp-json/ra/v1/movers?limit=100', 3600000).catch(()=>[]);
       const moversMap = {};
-      (Array.isArray(moversRaw)?moversRaw:[]).forEach(m => { if (m.sleeper_id) moversMap[m.sleeper_id] = m; });
+      (Array.isArray(moversRaw)?moversRaw:[]).forEach(m => {
+        const sid = String(m.sleeper_id || m.player_id || '');
+        if (sid) moversMap[sid] = m;
+      });
 
-      // Merge
+      // Build merged list
       const merged = [];
       const seen = new Set();
       rankings.forEach((r, idx) => {
-        const sid = String(r.sleeper_id || r.player_id || r.id);
+        const sid = String(r.sleeper_id || r.player_id || r.id || '');
         if (!sid || seen.has(sid)) return;
         seen.add(sid);
-        const p = players[sid] || {};
-        const value = Number(valuesMap[sid] ?? r.value ?? r.dynasty_value ?? 0);
-        const pos = p.position || r.position || 'WR';
+        const pos = r.position || 'WR';
         if (!['QB','RB','WR','TE'].includes(pos)) return;
+        const value = Number(r.value || r.dynasty_value || r.val_sf || 0);
+        const ppg = ppgMap[sid] || 0;
+        const mover = moversMap[sid] || {};
         merged.push({
           id: sid,
           rank: Number(r.rank || r.overall_rank || idx+1),
-          name: p.full_name || r.player_name || r.name || 'Unknown',
-          first_name: p.first_name,
-          last_name: p.last_name,
-          team: p.team || r.team || 'FA',
+          name: r.player_name || r.name || 'Unknown',
+          team: r.team || 'FA',
           position: pos,
-          age: p.age ?? (r.age?Number(r.age):null),
-          value: Math.round(value),
-          ppg: ppgMap[sid] ? Number(ppgMap[sid]).toFixed(1) : (r.ppg?Number(r.ppg).toFixed(1):null),
-          trend7: Number(moversMap[sid]?.change_7d ?? r.trend_7d ?? (Math.random()*6-3)).toFixed(1),
-          trend30: Number(moversMap[sid]?.change_30d ?? r.trend_30d ?? (Math.random()*10-5)).toFixed(1),
-          bye: r.bye_week || Math.floor(Math.random()*13)+4
+          age: r.age ? Number(r.age) : null,
+          value: value,
+          ppg: ppg,
+          trend7: Number(mover.trend_7d || r.trend_7d || 0),
+          trend30: Number(mover.trend_30d || r.trend_30d || 0),
+          tier: r.tier || null
         });
       });
 
-      // Fallback mock if empty
-      if (merged.length < 20) throw new Error('insufficient data');
-
-      // Sort by value desc for tiers
-      merged.sort((a,b)=>b.value-a.value);
-      // Compute tiers by gaps
-      let tier = 1;
+      // Compute tiers if missing
+      merged.sort((a,b)=> b.value - a.value);
+      let currentTier = 1;
       let lastVal = merged[0]?.value || 0;
-      const avgGap = 300;
       merged.forEach((p,i)=>{
-        if (i>0 && (lastVal - p.value) > avgGap) tier++;
-        p.tier = tier;
+        if (i>0 && lastVal - p.value > 500) currentTier++;
+        p.tier = p.tier || currentTier;
         lastVal = p.value;
+        p.rank = i+1;
       });
-      // Restore rank order
-      merged.sort((a,b)=>a.rank-b.rank);
 
       state.data = merged;
-      state.lastUpdated = new Date();
-      statUpdated.textContent = 'Updated ' + state.lastUpdated.toLocaleTimeString();
+      state.filtered = [...merged];
+      statCount.textContent = `${merged.length.toLocaleString()}`;
+      statUpdated.textContent = new Date().toLocaleTimeString();
 
-    } catch (e) {
-      console.warn('API fallback to mock', e);
-      state.data = generateMockData();
-      state.lastUpdated = new Date();
-      statUpdated.textContent = 'Demo data';
+      applyFilters();
+    } catch (err) {
+      console.error('Load failed', err);
+      viewport.innerHTML = `<div class="text-center py-20 text-zinc-500">Failed to load rankings. Try refresh.</div>`;
+    } finally {
+      skeleton.style.display = 'none';
     }
-
-    skeleton.style.display = 'none';
-    applyFilters();
-  }
-
-  function generateMockData() {
-    const names = [
-      ['Josh','Allen','QB','BUF',28], ['Jalen','Hurts','QB','PHI',26],
-      ['Justin','Jefferson','WR','MIN',25], ['Ja\'Marr','Chase','WR','CIN',24],
-      ['Bijan','Robinson','RB','ATL',22], ['CeeDee','Lamb','WR','DAL',25],
-      ['Patrick','Mahomes','QB','KC',29], ['Breece','Hall','RB','NYJ',23],
-      ['Amon-Ra','St. Brown','WR','DET',25], ['Puka','Nacua','WR','LAR',23],
-      ['Sam','LaPorta','TE','DET',23], ['Anthony','Richardson','QB','IND',22]
-    ];
-    const out = [];
-    let val = 10000;
-    names.forEach(([f,l,pos,team,age],i)=>{
-      out.push({
-        id:String(1000+i), rank:i+1, name:`${f} ${l}`, first_name:f, last_name:l,
-        team, position:pos, age, value: val - i*350, ppg:(pos==='QB'?24:pos==='TE'?14:18 - i*0.3).toFixed(1),
-        trend7:(Math.random()*6-3).toFixed(1), trend30:(Math.random()*10-5).toFixed(1), tier: Math.floor(i/3)+1, bye: Math.floor(Math.random()*10)+4
-      });
-    });
-    // expand to 200
-    for(let i=out.length;i<220;i++){
-      const pos = ['QB','RB','WR','TE'][i%4];
-      out.push({
-        id:String(2000+i), rank:i+1, name:`Player ${i}`, first_name:'Player', last_name:String(i),
-        team:['BUF','KC','PHI','DAL'][i%4], position:pos, age:22+(i%9), value:Math.max(500, 8000-i*30),
-        ppg:(pos==='QB'?18+Math.random()*6:12+Math.random()*6).toFixed(1),
-        trend7:(Math.random()*6-3).toFixed(1), trend30:(Math.random()*10-5).toFixed(1), tier:Math.floor(i/25)+4, bye:Math.floor(Math.random()*10)+4
-      });
-    }
-    return out;
   }
 
   function applyFilters() {
@@ -678,40 +632,6 @@
     }
     loadAll();
   }
-
-  // TE Premium toggle
-  const teToggle = document.getElementById('tePremiumToggle');
-  const teIndicator = document.getElementById('tePremiumIndicator');
-  function updateTeToggleUI(){
-    const isTep = state.scoring.includes('tep');
-    if(teIndicator){
-      teIndicator.classList.toggle('bg-amber-500', isTep);
-      teIndicator.classList.toggle('border-amber-400', isTep);
-      teIndicator.classList.toggle('bg-zinc-700', !isTep);
-    }
-  }
-  if(teToggle){
-    teToggle.addEventListener('click', ()=>{
-      const base = state.scoring.replace('_tep','');
-      if(state.scoring.includes('tep')){
-        state.scoring = base;
-      } else {
-        // Only allow TEP with PPR
-        state.scoring = base === 'ppr' ? 'ppr_tep' : 'ppr_tep';
-        state.format = state.format || 'sf';
-      }
-      localStorage.setItem('rankings_override', JSON.stringify({format:state.format, scoring:state.scoring}));
-      updateTeToggleUI();
-      loadAll();
-    });
-  }
-  // Update UI after load
-  const origLoadAll = loadAll;
-  loadAll = async function(){
-    await origLoadAll.call(this);
-    updateTeToggleUI();
-  };
-
   init();
 
 })();
