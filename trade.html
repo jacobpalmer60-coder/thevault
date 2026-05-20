@@ -3,623 +3,782 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dynasty Trade Calculator • Gold Elite</title>
+<title>Dynasty Trade Calculator • Rebuild</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
-    :root { color-scheme: dark; }
-    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-    .display { font-family: 'Space Grotesk', sans-serif; }
-    .gold-gradient { background: linear-gradient(135deg,#fde047 0%,#facc15 25%,#eab308 60%,#ca8a04 100%); }
-    .gold-text { background: linear-gradient(135deg,#fde047 0%,#facc15 30%,#eab308 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
-    .glass { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-    .scroll-thin::-webkit-scrollbar { width:6px; }
-    .scroll-thin::-webkit-scrollbar-track { background: rgba(255,255,255,.03); }
-    .scroll-thin::-webkit-scrollbar-thumb { background: rgba(234,179,8,.4); border-radius:999px; }
-    .scroll-thin::-webkit-scrollbar-thumb:hover { background: rgba(234,179,8,.65); }
-    .shine { position:relative; overflow:hidden; }
-    .shine::after { content:''; position:absolute; top:-100%; left:-100%; width:300%; height:300%; background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.15) 50%,transparent 60%); transform:rotate(25deg); animation:shine 6s infinite; }
-    @keyframes shine { 0% { transform:translateX(-100%) rotate(25deg);} 100% { transform:translateX(100%) rotate(25deg);} }
-    .pos-QB { color:#60a5fa; }
-    .pos-RB { color:#4ade80; }
-    .pos-WR { color:#f472b6; }
-    .pos-TE { color:#fbbf24; }
+:root { color-scheme: dark; }
+html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+.display { font-family: 'Space Grotesk', sans-serif; }
+.scroll-thin { scrollbar-width: thin; scrollbar-color: #3f3f46 #18181b; }
+.scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scroll-thin::-webkit-scrollbar-track { background: #18181b; }
+.scroll-thin::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+.scroll-thin::-webkit-scrollbar-thumb:hover { background: #52525b; }
+.glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 </style>
 </head>
-<body class="min-h-screen bg-[#050505] text-zinc-100 antialiased selection:bg-amber-500/30">
-<div class="fixed inset-0 -z-10">
-    <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(234,179,8,0.18),transparent_60%)]"></div>
-    <div class="absolute inset-0 bg-[radial-gradient(40%_40%_at_100%_0%,rgba(234,179,8,0.08),transparent_50%)]"></div>
-    <div class="absolute inset-0 bg-[linear-gradient(to_bottom,#050505, #000)]"></div>
-</div>
-
-<header class="sticky top-0 z-40 border-b border-amber-500/10 bg-black/70 glass">
-    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16 gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl gold-gradient shadow-lg shadow-amber-500/20 flex items-center justify-center">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="text-black">
-                        <path d="M12 2l2.5 7.5H22l-6 4.5 2.5 7.5-7-5-7 5 2.5-7.5-6-4.5h7.5z" fill="currentColor"/>
-                    </svg>
-                </div>
-                <div>
-                    <div class="display font-bold leading-none text-[18px] tracking-tight">Dynasty Trade Calculator</div>
-                    <div class="text-[11px] uppercase tracking-widest text-amber-400/80 font-medium">Gold Elite • 3-Column</div>
-                </div>
-            <nav class="hidden md:flex items-center gap-6 text-sm text-zinc-400">
-                <a class="hover:text-amber-300 transition" href="#">Roster</a>
-                <a class="hover:text-amber-300 transition" href="#">Values</a>
-                <a class="hover:text-amber-300 transition" href="#">League</a>
-            </nav>
-            <div class="flex items-center gap-2">
-                <button id="resetBtn" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-amber-500/40 transition">Reset Trade</button>
-                <button class="px-3 py-1.5 rounded-lg text-xs font-semibold gold-gradient text-black shadow shadow-amber-500/20 hover:brightness-110 transition">Upgrade</button>
-            </div>
+<body class="min-h-screen bg-[#070708] text-zinc-100 antialiased selection:bg-amber-500/20">
+  <!-- Top Nav -->
+  <nav class="sticky top-0 z-40 border-b border-zinc-800/80 bg-[#070708]/80 glass">
+    <div class="max-w-[1600px] mx-auto px-4 lg:px-6 h-14 flex items-center gap-6">
+      <div class="flex items-center gap-3">
+        <div class="size-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,.35)]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.9 6.1 6.7.9-4.9 4.7 1.2 6.7-6-3.2-6 3.2 1.2-6.7-4.9-4.7 6.7-.9L12 2z" fill="black" fill-opacity=".85"/></svg>
         </div>
+        <span class="display font-bold tracking-tight text-[15px]">REBUILD</span>
+      </div>
+      <div class="hidden md:flex items-center gap-5 text-[13px] text-zinc-400">
+        <a class="hover:text-zinc-100 transition" href="#">Roster Values</a>
+        <a class="hover:text-zinc-100 transition" href="#">League</a>
+        <a class="hover:text-zinc-100 transition" href="#">Reset Trade</a>
+        <a class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 ring-1 ring-amber-500/20 text-xs font-medium" href="#">Upgrade</a>
+      </div>
+      <div class="ml-auto flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-2 text-xs">
+          <span class="text-zinc-500">League</span>
+          <div class="px-2.5 py-1 rounded-lg bg-zinc-900 border-zinc-800 text-zinc-300 font-medium" id="leagueName">Loading…</div>
+        </div>
+        <button id="reloadBtn" class="size-8 grid place-items-center rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 transition" title="Reload league">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6M3 22v-6h6M21 8a9 9 0 0 0-15-3M3 16a9 9 0 0 0 15 3"/></svg>
+        </button>
+      </div>
     </div>
-</header>
+  </nav>
 
-<main class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
-    <div class="grid grid-cols-1 xl:grid-cols-[1fr_460px_1fr] gap-6 items-start">
-        <!-- TEAM A -->
-        <section class="order-1">
-            <div class="rounded-[20px] border border-amber-500/15 bg-zinc-900/60 glass shadow-2xl shadow-black/50 overflow-hidden">
-                <div class="px-4 sm:px-5 py-4 border-b border-zinc-800 bg-gradient-to-r from-zinc-900/80 to-zinc-900/40 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-300 font-bold text-sm">A</div>
-                        <div class="min-w-0">
-                            <div class="text-[11px] uppercase tracking-wider text-zinc-500 font-medium">Team A • Giving</div>
-                            <select id="teamASelect" class="bg-transparent text-[18px] font-semibold display truncate max-w-[200px] focus:outline-none cursor-pointer hover:text-amber-300 transition"></select>
-                        </div>
-                    <div class="text-right">
-                        <div class="text-[10px] uppercase tracking-wider text-zinc-500">Value Out</div>
-                        <div id="teamAValueOut" class="text-lg font-semibold text-amber-300">—</div>
-                    </div>
-                </div>
-
-                <div class="p-4 sm:p-5 space-y-4">
-                    <!-- Selected Assets -->
-                    <div>
-                        <div class="text-[11px] uppercase tracking-wider text-zinc-500 mb-2 font-medium">Trade Assets</div>
-                        <div id="teamASelected" class="min-h-[56px] rounded-xl border border-dashed border-zinc-700 bg-zinc-950/60 p-2 flex flex-wrap gap-2"></div>
-                    </div>
-
-                    <!-- Roster -->
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="text-[11px] uppercase tracking-wider text-zinc-500 font-medium">Roster • Click to add</div>
-                            <div class="text-[10px] text-zinc-600" id="teamACount">0 players</div>
-                        </div>
-                        <div id="teamARoster" class="max-h-[60vh] overflow-y-auto scroll-thin pr-1 space-y-2"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TRADE SUMMARY -->
-        <section class="order-3 xl:order-2">
-            <div class="rounded-[24px] border border-amber-500/25 bg-gradient-to-b from-zinc-900/90 to-black/90 glass shadow-2xl shadow-amber-900/10 overflow-hidden shine">
-                <div class="px-6 pt-6 pb-4 text-center">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-semibold uppercase tracking-wider">
-                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                        Trade Summary
-                    </div>
-                    <h2 class="display text-[28px] font-bold mt-3 leading-tight">Fairness Verdict</h2>
-                    <div id="verdictBadge" class="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800 border border-zinc-700 text-sm font-semibold">
-                        <span class="w-2 h-2 rounded-full bg-zinc-500"></span>
-                        <span id="verdictText">Add players to evaluate</span>
-                    </div>
-                    <div id="verdictNote" class="mt-2 text-xs text-amber-300/80 min-h-[18px]"></div>
-                </div>
-
-                <div class="px-5 pb-6 space-y-5">
-                    <!-- Value & PPG -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <!-- Team A Card -->
-                        <div class="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                            <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium mb-2">Team A</div>
-                            <div class="space-y-3">
-                                <div>
-                                    <div class="text-[10px] text-zinc-500">Value Δ %</div>
-                                    <div id="teamAValuePct" class="text-xl font-bold text-zinc-300">—</div>
-                                </div>
-                                <div class="h-px bg-zinc-800"></div>
-                                <div>
-                                    <div class="text-[10px] text-zinc-500">PPG Δ</div>
-                                    <div id="teamAPpgDelta" class="text-lg font-semibold text-zinc-300">—</div>
-                                </div>
-                                <div class="h-px bg-zinc-800"></div>
-                                <div>
-                                    <div class="text-[10px] text-zinc-500">Opt PPG Δ</div>
-                                    <div id="teamAOptDelta" class="text-lg font-semibold text-zinc-300">—</div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Team B Card -->
-                        <div class="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-4">
-                            <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium mb-2">Team B</div>
-                            <div class="space-y-3">
-                                <div>
-                                    <div class="text-[10px] text-zinc-500">Value Δ %</div>
-                                    <div id="teamBValuePct" class="text-xl font-bold text-zinc-300">—</div>
-                                </div>
-                                <div class="h-px bg-zinc-800"></div>
-                                <div>
-                                    <div class="text-[10px] text-zinc-500">PPG Δ</div>
-                                    <div id="teamBPpgDelta" class="text-lg font-semibold text-zinc-300">—</div>
-                                </div>
-                                <div class="h-px bg-zinc-800"></div>
-                                <div>
-                                    <div class="text-[10px] text-zinc-500">Opt PPG Δ</div>
-                                    <div id="teamBOptDelta" class="text-lg font-semibold text-zinc-300">—</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Totals -->
-                    <div class="rounded-2xl border border-amber-500/20 bg-amber-500/[0.03] p-4">
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <div class="text-[10px] uppercase tracking-wider text-amber-400/80">Team A In / Out</div>
-                                <div id="teamAInOut" class="font-mono text-zinc-300 mt-1">— / —</div>
-                                <div class="text-[10px] uppercase tracking-wider text-amber-400/80 mt-3">PPG In / Out</div>
-                                <div id="teamAPpgInOut" class="font-mono text-zinc-300 mt-1">— / —</div>
-                            </div>
-                            <div>
-                                <div class="text-[10px] uppercase tracking-wider text-amber-400/80">Team B In / Out</div>
-                                <div id="teamBInOut" class="font-mono text-zinc-300 mt-1">— / —</div>
-                                <div class="text-[10px] uppercase tracking-wider text-amber-400/80 mt-3">PPG In / Out</div>
-                                <div id="teamBPpgInOut" class="font-mono text-zinc-300 mt-1">— / —</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Optimal Starters -->
-                    <div class="rounded-2xl border border-zinc-800 bg-zinc-950/60 p-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="text-xs uppercase tracking-wider text-zinc-500 font-medium">Optimal Starters Impact</div>
-                            <div class="text-[10px] text-zinc-600">1QB • 2RB • 3WR • 1TE • 1FLEX</div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
-                                <div class="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Team A Before / After</div>
-                                <div id="teamAOptBeforeAfter" class="font-mono text-sm text-zinc-300">— → —</div>
-                            </div>
-                            <div class="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
-                                <div class="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Team B Before / After</div>
-                                <div id="teamBOptBeforeAfter" class="font-mono text-sm text-zinc-300">— → —</div>
-                            </div>
-                        </div>
-
-                        <div class="space-y-3">
-                            <div>
-                                <div class="text-[11px] font-medium text-amber-300 mb-1.5">Team A Starter Changes</div>
-                                <div id="teamAStarterChanges" class="text-xs text-zinc-400 leading-relaxed min-h-[20px]">—</div>
-                            </div>
-                            <div class="h-px bg-zinc-800"></div>
-                            <div>
-                                <div class="text-[11px] font-medium text-amber-300 mb-1.5">Team B Starter Changes</div>
-                                <div id="teamBStarterChanges" class="text-xs text-zinc-400 leading-relaxed min-h-[20px]">—</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="text-[10px] text-zinc-600 text-center leading-relaxed px-2">
-                        Fairness based on value % delta. PPG modifier applies to Slight Edge / Win tiers. Fair tier never overridden.
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- TEAM B -->
-        <section class="order-2 xl:order-3">
-            <div class="rounded-[20px] border border-amber-500/15 bg-zinc-900/60 glass shadow-2xl shadow-black/50 overflow-hidden">
-                <div class="px-4 sm:px-5 py-4 border-b border-zinc-800 bg-gradient-to-r from-zinc-900/40 to-zinc-900/80 flex items-center justify-between gap-3">
-                    <div class="text-right order-2">
-                        <div class="text-[10px] uppercase tracking-wider text-zinc-500">Value Out</div>
-                        <div id="teamBValueOut" class="text-lg font-semibold text-amber-300">—</div>
-                    </div>
-                    <div class="flex items-center gap-3 min-w-0 order-1 justify-end">
-                        <div class="min-w-0 text-right">
-                            <div class="text-[11px] uppercase tracking-wider text-zinc-500 font-medium">Team B • Giving</div>
-                            <select id="teamBSelect" class="bg-transparent text-[18px] font-semibold display truncate max-w-[200px] focus:outline-none cursor-pointer hover:text-amber-300 transition text-right"></select>
-                        </div>
-                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-300 font-bold text-sm">B</div>
-                    </div>
-                </div>
-
-                <div class="p-4 sm:p-5 space-y-4">
-                    <div>
-                        <div class="text-[11px] uppercase tracking-wider text-zinc-500 mb-2 font-medium">Trade Assets</div>
-                        <div id="teamBSelected" class="min-h-[56px] rounded-xl border border-dashed border-zinc-700 bg-zinc-950/60 p-2 flex flex-wrap gap-2 justify-end"></div>
-                    </div>
-
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="text-[11px] uppercase tracking-wider text-zinc-500 font-medium">Roster • Click to add</div>
-                            <div class="text-[10px] text-zinc-600" id="teamBCount">0 players</div>
-                        </div>
-                        <div id="teamBRoster" class="max-h-[60vh] overflow-y-auto scroll-thin pr-1 space-y-2"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
+  <!-- Error Banner -->
+  <div id="errorBanner" class="hidden max-w-[1600px] mx-auto mt-4 px-4 lg:px-6">
+    <div class="rounded-2xl border border-red-900/50 bg-red-950/40 px-4 py-3 flex items-start gap-3">
+      <svg class="mt-0.5 shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div class="flex-1">
+        <p class="text-sm font-semibold text-red-200">Failed to load league data</p>
+        <p id="errorMsg" class="text-xs text-red-300/80 mt-0.5"></p>
+      </div>
+      <button id="retryBtn" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white transition">Retry</button>
     </div>
-</main>
+  </div>
+
+  <!-- Main -->
+  <main class="max-w-[1600px] mx-auto px-4 lg:px-6 py-6">
+    <div class="grid lg:grid-cols-[1fr_460px_1fr] gap-6 items-start">
+
+      <!-- TEAM A PANEL -->
+      <section id="panel-A" class="bg-[#0c0c0f] border border-zinc-800 rounded-[20px] overflow-hidden shadow-2xl shadow-black/40">
+        <!-- Header -->
+        <div class="flex items-stretch border-b border-zinc-800">
+          <div class="w-[52px] bg-amber-500 flex items-center justify-center">
+            <span class="display font-bold text-black text-xl">A</span>
+          </div>
+          <div class="flex-1 p-3 pr-4">
+            <div class="text-[10px] uppercase tracking-widest font-semibold text-zinc-500">Team A • Giving</div>
+            <select data-team="A" class="team-select mt-1 w-full bg-[#0a0a0d] border border-zinc-800 rounded-xl px-3 py-2.5 text-[14px] font-medium outline-none focus:border-amber-500/60 focus:ring-4 focus:ring-amber-500/10 transition"></select>
+          </div>
+          <div class="w-[110px] border-l border-zinc-800 p-3 text-right">
+            <div class="text-[10px] uppercase tracking-widest font-semibold text-zinc-500">Value Out</div>
+            <div data-out="A" class="text-[22px] font-bold tracking-tight mt-1">—</div>
+          </div>
+        </div>
+
+        <!-- Trade Assets -->
+        <div class="p-4 pb-3">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-[11px] uppercase tracking-widest font-semibold text-zinc-500">Trade Assets</h3>
+            <span data-count="A" class="text-[11px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 font-medium">0 assets</span>
+          </div>
+          <div data-assets="A" class="min-h-[84px] rounded-2xl border-2 border-dashed border-zinc-800 bg-[#08080a] p-2.5 flex flex-wrap gap-2 content-start">
+            <div class="w-full h-[60px] grid place-items-center text-zinc-600 text-sm">No assets selected</div>
+          </div>
+        </div>
+
+        <!-- Roster -->
+        <div class="px-4 pb-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-[11px] uppercase tracking-widest font-semibold text-zinc-500">Roster • Click To Add</h3>
+            <span data-roster-count="A" class="text-[11px] text-zinc-500">0 players</span>
+          </div>
+          <div class="rounded-2xl border border-zinc-800 bg-[#08080a] overflow-hidden">
+            <!-- position accordions inserted here -->
+            <div data-accordions="A" class="divide-y divide-zinc-800/80"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CENTER SUMMARY -->
+      <section class="bg-[#0c0c0f] border border-zinc-800 rounded-[20px] overflow-hidden shadow-2xl shadow-black/40">
+        <div class="p-5 pb-4 border-b border-zinc-800">
+          <div class="flex items-center justify-center">
+            <span class="px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 text-[11px] font-semibold tracking-widest uppercase ring-1 ring-amber-500/20">Trade Summary</span>
+          </div>
+          <h2 class="display text-center text-[28px] font-bold mt-3 leading-tight">Fairness Verdict</h2>
+          <p id="verdictSubtitle" class="text-center text-sm text-zinc-500 mt-1">Add players to evaluate</p>
+          <div id="verdictPill" class="mt-4 mx-auto w-fit px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-sm font-semibold text-zinc-300">
+            — Neutral —
+          </div>
+        </div>
+
+        <div class="p-5 space-y-5">
+          <!-- Team delta cards -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-2xl bg-[#08080a] border border-zinc-800 p-4">
+              <div class="text-[11px] uppercase tracking-widest font-semibold text-amber-400 mb-2">Team A</div>
+              <div class="space-y-2.5 text-[13px]">
+                <div class="flex justify-between"><span class="text-zinc-500">Value Δ %</span><span data-delta="A-value" class="font-semibold tabular-nums">—</span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">PPG Δ</span><span data-delta="A-ppg" class="font-semibold tabular-nums">—</span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">Opt PPG Δ</span><span data-delta="A-opt" class="font-semibold tabular-nums">—</span></div>
+              </div>
+            </div>
+            <div class="rounded-2xl bg-[#08080a] border border-zinc-800 p-4">
+              <div class="text-[11px] uppercase tracking-widest font-semibold text-amber-400 mb-2">Team B</div>
+              <div class="space-y-2.5 text-[13px]">
+                <div class="flex justify-between"><span class="text-zinc-500">Value Δ %</span><span data-delta="B-value" class="font-semibold tabular-nums">—</span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">PPG Δ</span><span data-delta="B-ppg" class="font-semibold tabular-nums">—</span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">Opt PPG Δ</span><span data-delta="B-opt" class="font-semibold tabular-nums">—</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- In/Out -->
+          <div class="grid grid-cols-2 gap-6 pt-2">
+            <div>
+              <h4 class="text-[11px] uppercase tracking-widest font-semibold text-zinc-500 mb-3">Team A In / Out</h4>
+              <div class="space-y-2 text-[13px]">
+                <div class="flex justify-between"><span class="text-zinc-500">Value In</span><span data-io="A-vin" class="tabular-nums font-medium">—</span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">Value Out</span><span data-io="A-vout" class="tabular-nums font-medium">—</span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">PPG In</span><span data-io="A-pin" class="tabular-nums font-medium">—</span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">PPG Out</span><span data-io="A-pout" class="tabular-nums font-medium">—</span></div>
+              </div>
+            </div>
+            <div>
+              <h4 class="text-[11px] uppercase tracking-widest font-semibold text-zinc-500 mb-3">Team B In / Out</h4>
+              <div class="space-y-2 text-[13px]">
+                <div class="flex justify-between"><span class="text-zinc-500">Value In</span><span data-io="B-vin" class="tabular-nums font-medium">—</span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">Value Out</span><span data-io="B-vout" class="tabular-nums font-medium">—</span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">PPG In</span><span data-io="B-pin" class="tabular-nums font-medium">—</span></div>
+                <div class="flex justify-between"><span class="text-zinc-500">PPG Out</span><span data-io="B-pout" class="tabular-nums font-medium">—</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Optimal Starters Impact -->
+          <div class="pt-2">
+            <h4 class="text-[11px] uppercase tracking-widest font-semibold text-zinc-500 mb-3">Optimal Starters Impact</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="rounded-xl border border-zinc-800 bg-[#08080a] p-3">
+                <div class="text-xs font-semibold text-zinc-300 mb-2">Team A</div>
+                <div class="grid grid-cols-2 gap-2 text-[12px]">
+                  <div class="rounded-lg bg-zinc-900/70 border border-zinc-800 p-2.5 text-center">
+                    <div class="text-[10px] uppercase tracking-wide text-zinc-500">Before</div>
+                    <div data-opt="A-before" class="text-lg font-bold tabular-nums mt-0.5">—</div>
+                  </div>
+                  <div class="rounded-lg bg-zinc-900/70 border border-zinc-800 p-2.5 text-center">
+                    <div class="text-[10px] uppercase tracking-wide text-zinc-500">After</div>
+                    <div data-opt="A-after" class="text-lg font-bold tabular-nums mt-0.5">—</div>
+                  </div>
+                <div class="mt-2.5">
+                  <div class="text-[10px] uppercase tracking-wide text-zinc-600 mb-1">Starter Changes</div>
+                  <div data-changes="A" class="text-xs text-zinc-400 min-h-[32px]">—</div>
+                </div>
+              </div>
+              <div class="rounded-xl border border-zinc-800 bg-[#08080a] p-3">
+                <div class="text-xs font-semibold text-zinc-300 mb-2">Team B</div>
+                <div class="grid grid-cols-2 gap-2 text-[12px]">
+                  <div class="rounded-lg bg-zinc-900/70 border border-zinc-800 p-2.5 text-center">
+                    <div class="text-[10px] uppercase tracking-wide text-zinc-500">Before</div>
+                    <div data-opt="B-before" class="text-lg font-bold tabular-nums mt-0.5">—</div>
+                  </div>
+                  <div class="rounded-lg bg-zinc-900/70 border border-zinc-800 p-2.5 text-center">
+                    <div class="text-[10px] uppercase tracking-wide text-zinc-500">After</div>
+                    <div data-opt="B-after" class="text-lg font-bold tabular-nums mt-0.5">—</div>
+                  </div>
+                </div>
+                <div class="mt-2.5">
+                  <div class="text-[10px] uppercase tracking-wide text-zinc-600 mb-1">Starter Changes</div>
+                  <div data-changes="B" class="text-xs text-zinc-400 min-h-[32px]">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-zinc-800/80 mt-2">
+            <p class="text-[11px] leading-relaxed text-zinc-600">
+              Fairness logic: Fair &lt;5%, Slight 5–10%, Win 10–20%, Smash ≥20%. PPG modifier upgrades/downgrades one tier if PPG Δ ≥+2 or ≤-1.5.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- TEAM B PANEL -->
+      <section id="panel-B" class="bg-[#0c0c0f] border border-zinc-800 rounded-[20px] overflow-hidden shadow-2xl shadow-black/40">
+        <!-- Header -->
+        <div class="flex items-stretch border-b border-zinc-800">
+          <div class="w-[52px] bg-amber-500 flex items-center justify-center">
+            <span class="display font-bold text-black text-xl">B</span>
+          </div>
+          <div class="flex-1 p-3 pr-4">
+            <div class="text-[10px] uppercase tracking-widest font-semibold text-zinc-500">Team B • Giving</div>
+            <select data-team="B" class="team-select mt-1 w-full bg-[#0a0a0d] border border-zinc-800 rounded-xl px-3 py-2.5 text-[14px] font-medium outline-none focus:border-amber-500/60 focus:ring-4 focus:ring-amber-500/10 transition"></select>
+          </div>
+          <div class="w-[110px] border-l border-zinc-800 p-3 text-right">
+            <div class="text-[10px] uppercase tracking-widest font-semibold text-zinc-500">Value Out</div>
+            <div data-out="B" class="text-[22px] font-bold tracking-tight mt-1">—</div>
+          </div>
+        </div>
+
+        <!-- Trade Assets -->
+        <div class="p-4 pb-3">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-[11px] uppercase tracking-widest font-semibold text-zinc-500">Trade Assets</h3>
+            <span data-count="B" class="text-[11px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 font-medium">0 assets</span>
+          </div>
+          <div data-assets="B" class="min-h-[84px] rounded-2xl border-2 border-dashed border-zinc-800 bg-[#08080a] p-2.5 flex flex-wrap gap-2 content-start">
+            <div class="w-full h-[60px] grid place-items-center text-zinc-600 text-sm">No assets selected</div>
+          </div>
+        </div>
+
+        <!-- Roster -->
+        <div class="px-4 pb-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-[11px] uppercase tracking-widest font-semibold text-zinc-500">Roster • Click To Add</h3>
+            <span data-roster-count="B" class="text-[11px] text-zinc-500">0 players</span>
+          </div>
+          <div class="rounded-2xl border border-zinc-800 bg-[#08080a] overflow-hidden">
+            <div data-accordions="B" class="divide-y divide-zinc-800/80"></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
 
 <script>
-// ----------------- CSV DATA LOADING -----------------
-const csvData = `id,name,pos,nfl,value,ppg
-p1,Patrick Mahomes,QB,KC,9500,24.5
-p2,Josh Allen,QB,BUF,9400,25.1
-p3,Jalen Hurts,QB,PHI,9200,23.8
-p4,Lamar Jackson,QB,BAL,9100,24.0
-p5,Joe Burrow,QB,CIN,8500,21.5
-p6,C.J. Stroud,QB,HOU,8200,20.8
-p7,Anthony Richardson,QB,IND,7800,19.2
-p8,Kyler Murray,QB,ARI,7000,18.9
-p10,Christian McCaffrey,RB,SF,9800,22.3
-p11,Breece Hall,RB,NYJ,9000,18.7
-p12,Jahmyr Gibbs,RB,DET,8800,17.9
-p13,Bijan Robinson,RB,ATL,9700,19.5
-p14,Saquon Barkley,RB,PHI,8600,17.2
-p15,Jonathan Taylor,RB,IND,8400,16.8
-p16,Kyren Williams,RB,LAR,8300,18.1
-p17,De'Von Achane,RB,MIA,8500,17.5
-p18,Isiah Pacheco,RB,KC,7200,14.9
-p19,Kenneth Walker,RB,SEA,7400,15.2
-p20,James Cook,RB,BUF,7600,15.8
-p30,Justin Jefferson,WR,MIN,9900,20.4
-p31,Ja'Marr Chase,WR,CIN,9850,20.1
-p32,CeeDee Lamb,WR,DAL,9800,21.0
-p33,Amon-Ra St Brown,WR,DET,9300,19.8
-p34,Puka Nacua,WR,LAR,9200,18.9
-p35,Garrett Wilson,WR,NYJ,9000,16.5
-p36,Malik Nabers,WR,NYG,9150,17.2
-p37,Marvin Harrison Jr,WR,ARI,9100,17.0
-p38,Drake London,WR,ATL,8700,16.8
-p39,DK Metcalf,WR,SEA,8000,15.4
-p40,DeVonta Smith,WR,PHI,8200,15.9
-p41,Zay Flowers,WR,BAL,7900,15.1
-p42,Jaylen Waddle,WR,MIA,8100,15.6
-p50,Sam LaPorta,TE,DET,8500,13.2
-p51,Trey McBride,TE,ARI,8300,13.5
-p52,Mark Andrews,TE,BAL,7800,12.8
-p53,Dalton Kincaid,TE,BUF,7600,11.9
-p54,George Kittle,TE,SF,7700,13.0
-p55,David Njoku,TE,CLE,7000,11.2
-p56,Kyle Pitts,TE,ATL,7200,10.8`;
+(() => {
+  const SLEEPER = 'https://api.sleeper.app/v1';
+  const VALUES_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
+  const DEFAULT_LEAGUE = '1313454100225990656';
+  
+  const state = {
+    leagueId: new URLSearchParams(location.search).get('league_id') || DEFAULT_LEAGUE,
+    league: null,
+    users: [],
+    rosters: [],
+    tradedPicks: [],
+    playersMap: {},
+    valuesMap: new Map(),
+    picksMap: new Map(),
+    teamA: { rosterId: null, selected: [] },
+    teamB: { rosterId: null, selected: [] },
+    loading: true
+  };
 
-function parseCSV(csv){
-    const lines = csv.trim().split('\n');
-    const headers = lines[0].split(',');
-    const out = {};
-    for(let i=1;i<lines.length;i++){
-        const parts = lines[i].split(',');
-        const obj = {};
-        headers.forEach((h,idx)=> obj[h]=parts[idx]);
-        obj.value = +obj.value;
-        obj.ppg = +obj.ppg || 0;
-        out[obj.id]=obj;
-    }
-    return out;
-}
-const players = parseCSV(csvData);
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const fmt = n => n>=1000 ? (n>=10000?Math.round(n/1000)+'k':(n/1000).toFixed(1)+'k') : Math.round(n).toString();
+  const fmt1 = n => (n>0?'+':'')+n.toFixed(1);
+  const initials = name => name.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase();
 
-// Teams
-const teams = {
-    t1:{ name:'Team Alpha', roster:['p1','p10','p11','p30','p31','p50','p13','p39','p19','p54'] },
-    t2:{ name:'Team Bravo', roster:['p2','p14','p12','p32','p33','p51','p6','p40','p20','p55'] },
-    t3:{ name:'Team Charlie', roster:['p3','p15','p16','p34','p35','p52','p7','p41','p38','p56'] },
-    t4:{ name:'Team Delta', roster:['p4','p17','p18','p36','p37','p53','p8','p42','p5'] },
-};
+  const posColors = {
+    QB:'bg-fuchsia-500/20 text-fuchsia-300 ring-fuchsia-500/30',
+    RB:'bg-emerald-500/20 text-emerald-300 ring-emerald-500/30',
+    WR:'bg-sky-500/20 text-sky-300 ring-sky-500/30',
+    TE:'bg-orange-500/20 text-orange-300 ring-orange-500/30',
+    PICKS:'bg-amber-500/20 text-amber-300 ring-amber-500/30'
+  };
 
-// State
-const state = {
-    teamAId: 't1',
-    teamBId: 't2',
-    selectedA: new Set(),
-    selectedB: new Set(),
-};
+  function showError(msg){ $('#errorMsg').textContent = msg; $('#errorBanner').classList.remove('hidden'); }
+  function hideError(){ $('#errorBanner').classList.add('hidden'); }
 
-// Helpers
-const $ = s => document.querySelector(s);
-const fmt = n => n.toLocaleString();
-const fmt1 = n => (n>=0?'+':'') + n.toFixed(1);
-const pct = n => (n>=0?'+':'') + n.toFixed(1) + '%';
-const colorDelta = (el,val) => {
-    el.classList.remove('text-emerald-400','text-red-400','text-zinc-300');
-    if(val>0.05) el.classList.add('text-emerald-400');
-    else if(val<-0.05) el.classList.add('text-red-400');
-    else el.classList.add('text-zinc-300');
-};
+  async function fetchJSON(url){
+    const r = await fetch(url, {cache:'no-store'});
+    if(!r.ok) throw new Error(`${r.status} ${r.statusText} • ${url}`);
+    return r.json();
+  }
+  async function fetchText(url){
+    const r = await fetch(url, {cache:'no-store'});
+    if(!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.text();
+  }
 
-// Populate selects
-function initSelects(){
-    const aSel = $('#teamASelect'), bSel = $('#teamBSelect');
-    Object.entries(teams).forEach(([id,t])=>{
-        aSel.add(new Option(t.name, id));
-        bSel.add(new Option(t.name, id));
-    });
-    aSel.value = state.teamAId;
-    bSel.value = state.teamBId;
-    aSel.onchange = e=>{ state.teamAId=e.target.value; state.selectedA.clear(); renderTeam('A'); updateSummary(); };
-    bSel.onchange = e=>{ state.teamBId=e.target.value; state.selectedB.clear(); renderTeam('B'); updateSummary(); };
-}
-
-// Render roster with collapsible groups
-function renderTeam(side){
-    const isA = side==='A';
-    const teamId = isA? state.teamAId : state.teamBId;
-    const team = teams[teamId];
-    const container = isA? $('#teamARoster') : $('#teamBRoster');
-    const countEl = isA? $('#teamACount') : $('#teamBCount');
-    const selectedSet = isA? state.selectedA : state.selectedB;
-    
-    container.innerHTML='';
-    countEl.textContent = `${team.roster.length} players`;
-
-    const groups = { QB:[], RB:[], WR:[], TE:[] };
-    team.roster.forEach(pid=>{
-        const p = players[pid];
-        if(p) groups[p.pos].push(p);
-    });
-    Object.entries(groups).forEach(([pos,list])=>{
-        if(!list.length) return;
-        const wrap = document.createElement('div');
-        wrap.className='border border-zinc-800 rounded-xl overflow-hidden bg-zinc-950/40';
-        const btn = document.createElement('button');
-        btn.className='w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-900 transition text-left';
-        btn.innerHTML = `<div class="flex items-center gap-2"><span class="text-[11px] font-bold pos-${pos}">${pos}</span><span class="text-xs text-zinc-500">${list.length}</span></div><svg class="w-4 h-4 text-zinc-600 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>`;
-        const body = document.createElement('div');
-        body.className='hidden border-t border-zinc-800';
-        btn.onclick = ()=>{
-            body.classList.toggle('hidden');
-            btn.querySelector('svg').classList.toggle('rotate-180');
-        };
-        list.sort((a,b)=>b.value-a.value).forEach(p=>{
-            const row = document.createElement('div');
-            const isSel = selectedSet.has(p.id);
-            row.className = `flex items-center justify-between px-3 py-2 cursor-pointer transition border-b border-zinc-900/70 last:border-0 ${isSel?'bg-amber-500/10':'hover:bg-zinc-900'}`;
-            row.innerHTML = `
-                <div class="min-w-0">
-                    <div class="text-sm font-medium truncate ${isSel?'text-amber-300':''}">${p.name}</div>
-                    <div class="text-[11px] text-zinc-500">${p.nfl} • ${fmt(p.value)}</div>
-                </div>
-                <div class="text-right">
-                    <div class="text-xs font-mono text-zinc-400">${p.ppg.toFixed(1)}</div>
-                    <div class="text-[10px] uppercase tracking-wider pos-${p.pos}">${p.pos}</div>
-                </div>`;
-            row.onclick = ()=>{
-                if(selectedSet.has(p.id)) selectedSet.delete(p.id);
-                else selectedSet.add(p.id);
-                renderTeam(side);
-                renderSelected(side);
-                updateSummary();
-            };
-            body.appendChild(row);
-        });
-        wrap.appendChild(btn);
-        wrap.appendChild(body);
-        container.appendChild(wrap);
-    });
-    renderSelected(side);
-}
-
-function renderSelected(side){
-    const isA = side==='A';
-    const container = isA? $('#teamASelected') : $('#teamBSelected');
-    const selectedSet = isA? state.selectedA : state.selectedB;
-    container.innerHTML='';
-    if(selectedSet.size===0){
-        container.innerHTML = `<div class="text-xs text-zinc-600 italic px-2 py-1">No assets selected</div>`;
-        return;
-    }
-    [...selectedSet].forEach(pid=>{
-        const p = players[pid];
-        if(!p) return;
-        const chip = document.createElement('div');
-        chip.className='group flex items-center gap-2 pl-2 pr-1 py-1 rounded-full bg-zinc-800 border border-zinc-700 hover:border-amber-500/50 transition';
-        chip.innerHTML = `
-            <span class="text-[10px] font-bold pos-${p.pos}">${p.pos}</span>
-            <span class="text-xs font-medium">${p.name.split(' ').slice(-1)[0]}</span>
-            <button class="w-5 h-5 rounded-full bg-zinc-700 group-hover:bg-red-500/20 text-zinc-400 group-hover:text-red-400 flex items-center justify-center">×</button>`;
-        chip.querySelector('button').onclick = (e)=>{
-            e.stopPropagation();
-            selectedSet.delete(pid);
-            renderTeam(side);
-            renderSelected(side);
-            updateSummary();
-        };
-        container.appendChild(chip);
-    });
-}
-
-// Optimal lineup
-function computeOptimal(playerIds){
-    const pls = playerIds.map(id=>players[id]).filter(Boolean).map(p=>({ ...p, ppg: p.ppg || 0 }));
-    const starters = [];
-    const used = new Set();
-    const pick = (pos,count)=>{
-        const pool = pls.filter(p=>p.pos===pos && !used.has(p.id)).sort((a,b)=>b.ppg-a.ppg);
-        for(let i=0;i<count && i<pool.length;i++){ starters.push(pool[i]); used.add(pool[i].id); }
+  function parseCSV(text){
+    const lines = text.trim().split(/\r?\n/);
+    if(lines.length<2) return;
+    const header = parseCSVLine(lines[0]).map(h=>h.toLowerCase().trim());
+    const idx = {
+      id: header.findIndex(h=>['sleeper_id','sleeperid','player_id','id'].includes(h)),
+      val: header.findIndex(h=>['value','dynasty_value','sf_value'].includes(h)),
+      ppg: header.findIndex(h=>['ppg','pts','fantasy_ppg'].includes(h)),
+      name: header.findIndex(h=>['player','name'].includes(h))
     };
-    pick('QB',1);
-    pick('RB',2);
-    pick('WR',3);
-    pick('TE',1);
-    // FLEX
-    const flex = pls.filter(p=>['RB','WR','TE'].includes(p.pos) && !used.has(p.id)).sort((a,b)=>b.ppg-a.ppg)[0];
-    if(flex){ starters.push(flex); used.add(flex.id); }
-    const total = starters.reduce((s,p)=>s+p.ppg,0);
-    return { starters, total, ids:new Set(starters.map(p=>p.id)) };
-}
-
-// Fairness
-function getTier(absPct){
-    if(absPct < 5) return 'Fair';
-    if(absPct < 10) return 'Slight Edge';
-    if(absPct < 20) return 'Win';
-    return 'Smash';
-}
-function upgradeTier(tier){ const order=['Fair','Slight Edge','Win','Smash']; const i=order.indexOf(tier); return order[Math.min(i+1,3)]; }
-function downgradeTier(tier){ const order=['Fair','Slight Edge','Win','Smash']; const i=order.indexOf(tier); return order[Math.max(i-1,0)]; }
-
-function updateSummary(){
-    const teamA = teams[state.teamAId];
-    const teamB = teams[state.teamBId];
-
-    const aOutIds = [...state.selectedA];
-    const bOutIds = [...state.selectedB];
-
-    const sumVals = ids => ids.reduce((s,id)=>s+(players[id]?.value||0),0);
-    const sumPpg = ids => ids.reduce((s,id)=>s+(players[id]?.ppg||0),0);
-
-    const aValOut = sumVals(aOutIds);
-    const aValIn = sumVals(bOutIds);
-    const bValOut = sumVals(bOutIds);
-    const bValIn = sumVals(aOutIds);
-
-    const aPpgOut = sumPpg(aOutIds);
-    const aPpgIn = sumPpg(bOutIds);
-    const bPpgOut = sumPpg(bOutIds);
-    const bPpgIn = sumPpg(aOutIds);
-
-    $('#teamAValueOut').textContent = aValOut? fmt(aValOut) : '—';
-    $('#teamBValueOut').textContent = bValOut? fmt(bValOut) : '—';
-
-    // Value Delta %
-    const aValPct = aValOut===0 ? 0 : (aValIn - aValOut)/aValOut*100;
-    const bValPct = bValOut===0 ? 0 : (bValIn - bValOut)/bValOut*100;
-
-    $('#teamAValuePct').textContent = aValOut||aValIn? pct(aValPct) : '—';
-    $('#teamBValuePct').textContent = bValOut||bValIn? pct(bValPct) : '—';
-    colorDelta($('#teamAValuePct'), aValPct);
-    colorDelta($('#teamBValuePct'), bValPct);
-
-    // PPG Delta
-    const aPpgDelta = aPpgIn - aPpgOut;
-    const bPpgDelta = bPpgIn - bPpgOut;
-    $('#teamAPpgDelta').textContent = aValOut||aValIn? fmt1(aPpgDelta) : '—';
-    $('#teamBPpgDelta').textContent = bValOut||bValIn? fmt1(bPpgDelta) : '—';
-    colorDelta($('#teamAPpgDelta'), aPpgDelta);
-    colorDelta($('#teamBPpgDelta'), bPpgDelta);
-
-    // In/Out display
-    $('#teamAInOut').textContent = `${fmt(aValIn)} / ${fmt(aValOut)}`;
-    $('#teamBInOut').textContent = `${fmt(bValIn)} / ${fmt(bValOut)}`;
-    $('#teamAPpgInOut').textContent = `${aPpgIn.toFixed(1)} / ${aPpgOut.toFixed(1)}`;
-    $('#teamBPpgInOut').textContent = `${bPpgIn.toFixed(1)} / ${bPpgOut.toFixed(1)}`;
-
-    // Optimal
-    const aRosterBefore = teamA.roster;
-    const bRosterBefore = teamB.roster;
-    const aRosterAfter = [...aRosterBefore.filter(id=>!state.selectedA.has(id)), ...bOutIds];
-    const bRosterAfter = [...bRosterBefore.filter(id=>!state.selectedB.has(id)), ...aOutIds];
-
-    const aOptBefore = computeOptimal(aRosterBefore);
-    const aOptAfter = computeOptimal(aRosterAfter);
-    const bOptBefore = computeOptimal(bRosterBefore);
-    const bOptAfter = computeOptimal(bRosterAfter);
-
-    const aOptDelta = aOptAfter.total - aOptBefore.total;
-    const bOptDelta = bOptAfter.total - bOptBefore.total;
-
-    $('#teamAOptBeforeAfter').textContent = `${aOptBefore.total.toFixed(1)} → ${aOptAfter.total.toFixed(1)}`;
-    $('#teamBOptBeforeAfter').textContent = `${bOptBefore.total.toFixed(1)} → ${bOptAfter.total.toFixed(1)}`;
-    $('#teamAOptDelta').textContent = fmt1(aOptDelta);
-    $('#teamBOptDelta').textContent = fmt1(bOptDelta);
-    colorDelta($('#teamAOptDelta'), aOptDelta);
-    colorDelta($('#teamBOptDelta'), bOptDelta);
-
-    // Starter changes
-    function changesText(before, after){
-        const entered = after.starters.filter(p=>!before.ids.has(p.id));
-        const exited = before.starters.filter(p=>!after.ids.has(p.id));
-        if(!entered.length && !exited.length) return 'No starter changes';
-        const parts = [];
-        if(entered.length) parts.push(`IN: ${entered.map(p=>p.name.split(' ').slice(-1)).join(', ')}`);
-        if(exited.length) parts.push(`OUT: ${exited.map(p=>p.name.split(' ').slice(-1)).join(', ')}`);
-        return parts.join(' • ');
+    for(let i=1;i<lines.length;i++){
+      const cols = parseCSVLine(lines[i]);
+      if(cols.length<header.length) continue;
+      const id = idx.id>=0 ? cols[idx.id].trim() : '';
+      if(!id) continue;
+      const v = idx.val>=0 ? parseFloat(cols[idx.val])||0 : 0;
+      const p = idx.ppg>=0 ? parseFloat(cols[idx.ppg])||0 : 0;
+      state.valuesMap.set(id, {value:v, ppg:p});
     }
-    $('#teamAStarterChanges').textContent = aValOut||aValIn? changesText(aOptBefore,aOptAfter) : '—';
-    $('#teamBStarterChanges').textContent = bValOut||bValIn? changesText(bOptBefore,bOptAfter) : '—';
-
-    // Verdict
-    const hasTrade = aValOut>0 || bValOut>0;
-    let verdict = 'Add players to evaluate';
-    let tier = 'Fair';
-    let note = '';
-    if(hasTrade){
-        const aAbs = Math.abs(aValPct);
-        const bAbs = Math.abs(bValPct);
-        const winnerSide = aValPct > bValPct ? 'A' : 'B';
-        const winnerPct = winnerSide==='A' ? aValPct : bValPct;
-        const winnerPpgDelta = winnerSide==='A' ? aPpgDelta : bPpgDelta;
-        const absPct = Math.abs(winnerPct);
-        tier = getTier(absPct);
-        const baseTier = tier;
-        if(tier==='Slight Edge' || tier==='Win'){
-            if(winnerPpgDelta >= 2.0){
-                tier = upgradeTier(tier);
-                note = `Upgraded by PPG (+${winnerPpgDelta.toFixed(1)})`;
-            } else if(winnerPpgDelta <= -1.5){
-                tier = downgradeTier(tier);
-                note = 'Value win / PPG loss';
-            }
-        }
-        const winnerName = winnerSide==='A' ? teams[state.teamAId].name : teams[state.teamBId].name;
-        if(tier==='Fair'){
-            verdict = 'Fair Trade';
-        } else {
-            verdict = `${tier} • ${winnerName}`;
-        }
+  }
+  function parseCSVLine(line){
+    const out=[]; let cur=''; let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){ inQ=!inQ; continue; }
+      if(c===',' && !inQ){ out.push(cur); cur=''; continue; }
+      cur+=c;
     }
-    $('#verdictText').textContent = verdict;
-    $('#verdictNote').textContent = note;
+    out.push(cur);
+    return out;
+  }
 
-    // Badge color
-    const badge = $('#verdictBadge');
-    badge.className = 'mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border ';
-    const dot = badge.querySelector('span') || document.createElement('span');
-    if(!badge.contains(dot)){ badge.prepend(dot); }
-    dot.className = 'w-2 h-2 rounded-full';
-    if(!hasTrade){
-        badge.classList.add('bg-zinc-800','border-zinc-700','text-zinc-400');
-        dot.classList.add('bg-zinc-500');
-    } else if(tier==='Fair'){
-        badge.classList.add('bg-amber-500/10','border-amber-500/30','text-amber-300');
-        dot.classList.add('bg-amber-400');
-    } else if(tier==='Slight Edge'){
-        badge.classList.add('bg-sky-500/10','border-sky-500/30','text-sky-300');
-        dot.classList.add('bg-sky-400');
-    } else if(tier==='Win'){
-        badge.classList.add('bg-violet-500/10','border-violet-500/30','text-violet-300');
-        dot.classList.add('bg-violet-400');
-    } else {
-        badge.classList.add('bg-fuchsia-500/10','border-fuchsia-500/30','text-fuchsia-300');
-        dot.classList.add('bg-fuchsia-400');
+  async function loadAll(){
+    try{
+      hideError();
+      state.loading=true;
+      $('#leagueName').textContent='Loading…';
+
+      const league = await fetchJSON(`${SLEEPER}/league/${state.leagueId}`);
+      state.league = league;
+      $('#leagueName').textContent = league.name || 'League';
+
+      const [users, rosters, tradedPicks] = await Promise.all([
+        fetchJSON(`${SLEEPER}/league/${state.leagueId}/users`),
+        fetchJSON(`${SLEEPER}/league/${state.leagueId}/rosters`),
+        fetchJSON(`${SLEEPER}/league/${state.leagueId}/traded_picks`).catch(()=>[])
+      ]);
+      state.users = users;
+      state.rosters = rosters;
+      state.tradedPicks = tradedPicks;
+
+      // players map (large)
+      fetchJSON(`${SLEEPER}/players/nfl`).then(m=>{ state.playersMap=m; refreshPanels(); }).catch(()=>{});
+
+      const csv = await fetchText(VALUES_CSV);
+      parseCSV(csv);
+
+      populateTeamSelects();
+      // auto pick first two rosters
+      if(rosters.length>=2){
+        setTeamRoster('A', rosters[0].roster_id);
+        setTeamRoster('B', rosters[1].roster_id);
+      }
+      state.loading=false;
+      refreshAll();
+    }catch(e){
+      console.error(e);
+      showError(e.message);
+      $('#leagueName').textContent='Error';
     }
-}
+  }
 
-// Reset
-$('#resetBtn').onclick = ()=>{
-    state.selectedA.clear();
-    state.selectedB.clear();
-    renderTeam('A');
-    renderTeam('B');
-    updateSummary();
-};
+  function populateTeamSelects(){
+    const opts = state.rosters.map(r=>{
+      const u = state.users.find(u=>u.user_id===r.owner_id);
+      const name = u?.metadata?.team_name || u?.display_name || `Team ${r.roster_id}`;
+      return `<option value="${r.roster_id}">${escapeHtml(name)}</option>`;
+    }).join('');
+    $$('.team-select').forEach(sel=>{
+      sel.innerHTML = `<option value="">Select team…</option>`+opts;
+      sel.onchange = e=>{
+        const team=e.target.dataset.team;
+        const rid=parseInt(e.target.value)||null;
+        setTeamRoster(team, rid);
+      };
+    });
+  }
 
-// Init
-initSelects();
-renderTeam('A');
-renderTeam('B');
-updateSummary();
+  function setTeamRoster(team, rosterId){
+    state[`team${team}`].rosterId = rosterId;
+    state[`team${team}`].selected = [];
+    const sel=$(`.team-select[data-team="${team}"]`);
+    if(sel) sel.value = rosterId||'';
+    renderTeamPanel(team);
+    refreshAll();
+  }
+
+  function getRoster(rosterId){
+    return state.rosters.find(r=>r.roster_id===rosterId);
+  }
+  function getUserByRoster(rosterId){
+    const r=getRoster(rosterId); if(!r) return null;
+    return state.users.find(u=>u.user_id===r.owner_id);
+  }
+
+  function buildRosterAssets(rosterId){
+    const roster=getRoster(rosterId); if(!roster) return {players:[], picks:[]};
+    const playerIds = roster.players || [];
+    const players = playerIds.map(pid=>{
+      const p = state.playersMap[pid] || {};
+      const v = state.valuesMap.get(pid) || {value:0, ppg:0};
+      return {
+        id: pid,
+        type:'player',
+        pos: p.position || 'UNK',
+        name: p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || pid,
+        team: p.team || 'FA',
+        age: p.age || '—',
+        value: v.value,
+        ppg: v.ppg
+      };
+    }).filter(p=>p.pos!=='DEF' && p.pos!=='K');
+
+    // picks
+    const picks = getPicksForRoster(rosterId).map(pk=>{
+      const id = `pick_${pk.season}_${pk.round}`;
+      const v = state.valuesMap.get(id) || state.valuesMap.get(`${pk.season}_${pk.round}`) || {value: pk.round===1?4000: pk.round===2?2000: pk.round===3?800:300, ppg:0};
+      return {
+        id,
+        type:'pick',
+        pos:'PICKS',
+        name:`${pk.season} ${ordinal(pk.round)}`,
+        team:`R${pk.original_roster_id||'?'}`,
+        age:'',
+        value:v.value,
+        ppg:0,
+        season:pk.season,
+        round:pk.round
+      };
+    });
+
+    return {players, picks};
+  }
+
+  function getPicksForRoster(rosterId){
+    const seasons=[2025,2026,2027];
+    const rounds=[1,2,3,4];
+    const owned=new Map();
+    seasons.forEach(s=>rounds.forEach(r=>{
+      const key=`${s}_${r}`;
+      owned.set(key,{season:s, round:r, owner_id:rosterId, original_roster_id:rosterId});
+    }));
+    // apply traded picks
+    state.tradedPicks.forEach(tp=>{
+      const key=`${tp.season}_${tp.round}`;
+      if(owned.has(key) && tp.previous_owner_id===rosterId){
+        owned.delete(key);
+      }
+      if(tp.owner_id===rosterId){
+        owned.set(key,{season:tp.season, round:tp.round, owner_id:rosterId, original_roster_id:tp.roster_id});
+      }
+    });
+    // remove picks that belong to others but were traded away
+    state.tradedPicks.forEach(tp=>{
+      if(tp.owner_id!==rosterId && tp.roster_id===rosterId){
+        const key=`${tp.season}_${tp.round}`;
+        owned.delete(key);
+      }
+    });
+    return [...owned.values()].sort((a,b)=>a.season-b.season||a.round-b.round);
+  }
+
+  function ordinal(n){return n===1?'1st':n===2?'2nd':n===3?'3rd':`${n}th`;}
+
+  function renderTeamPanel(team){
+    const tState=state[`team${team}`];
+    const accCont=$(`[data-accordions="${team}"]`);
+    const rosterCountEl=$(`[data-roster-count="${team}"]`);
+    if(!tState.rosterId){
+      accCont.innerHTML=''; rosterCountEl.textContent='0 players';
+      renderAssets(team); updateOut(team);
+      return;
+    }
+    const {players,picks}=buildRosterAssets(tState.rosterId);
+    const all=[...players,...picks];
+    rosterCountEl.textContent=`${all.length} assets`;
+
+    const groups={QB:[],RB:[],WR:[],TE:[],PICKS:[]};
+    players.forEach(p=>{ if(groups[p.pos]) groups[p.pos].push(p); else groups[p.pos]=[p]; });
+    groups.PICKS=picks;
+
+    const order=['QB','RB','WR','TE','PICKS'];
+    accCont.innerHTML=order.map(pos=>{
+      const items=groups[pos]||[];
+      if(items.length===0) return '';
+      const color=posColors[pos]||'bg-zinc-700';
+      return `
+      <div class="accordion" data-pos="${pos}">
+        <button class="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-900/60 transition text-left" data-toggle="${team}-${pos}">
+          <span class="text-[11px] font-bold px-2 py-0.5 rounded-md ring-1 ${color}">${pos}</span>
+          <span class="text-xs text-zinc-500 flex-1">${items.length}</span>
+          <svg class="chevron size-4 text-zinc-600 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="hidden border-t border-zinc-800/80 bg-[#060607]" data-panel="${team}-${pos}">
+          <div class="max-h-60 overflow-y-auto scroll-thin divide-y divide-zinc-900/70">
+            ${items.map(it=>playerRowHtml(it,tState.selected)).join('')}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // attach toggle
+    accCont.querySelectorAll('[data-toggle]').forEach(btn=>{
+      btn.onclick=()=>{
+        const key=btn.dataset.toggle;
+        const panel=accCont.querySelector(`[data-panel="${key}"]`);
+        const chev=btn.querySelector('.chevron');
+        const isHidden=panel.classList.contains('hidden');
+        panel.classList.toggle('hidden');
+        chev.style.transform=isHidden?'rotate(180deg)':'rotate(0)';
+      };
+    });
+    // attach row click
+    accCont.querySelectorAll('[data-asset-id]').forEach(row=>{
+      row.onclick=()=>toggleAsset(team,row.dataset.assetId,row.dataset.assetType);
+    });
+
+    renderAssets(team);
+    updateOut(team);
+  }
+
+  function playerRowHtml(it,selected){
+    const isSel=selected.some(s=>s.id===it.id);
+    const val=it.value?fmt(it.value):'—';
+    const ppg=it.ppg?it.ppg.toFixed(1):'—';
+    return `
+    <div data-asset-id="${it.id}" data-asset-type="${it.type}" class="group flex items-center gap-3 px-4 py-2.5 hover:bg-zinc-900 cursor-pointer transition ${isSel?'bg-amber-500/5 border-l-2 border-amber-500 pl-[14px]':''}">
+      <div class="size-8 rounded-full bg-zinc-800 grid place-items-center text-[11px] font-bold text-zinc-300">${initials(it.name)}</div>
+      <div class="min-w-0 flex-1">
+        <div class="text-[13px] font-medium leading-tight truncate text-zinc-100">${escapeHtml(it.name)}</div>
+        <div class="text-[11px] text-zinc-500">${it.team}${it.age?' • '+it.age:''}</div>
+      </div>
+      <div class="text-right">
+        <div class="text-[13px] font-semibold tabular-nums">${val}</div>
+        <div class="text-[10px] uppercase tracking-wide text-zinc-600">${ppg} ppg</div>
+      </div>
+    </div>`;
+  }
+
+  function toggleAsset(team, assetId, type){
+    const tState=state[`team${team}`];
+    const idx=tState.selected.findIndex(s=>s.id===assetId);
+    if(idx>=0){ tState.selected.splice(idx,1); }
+    else {
+      // find asset data
+      const {players,picks}=buildRosterAssets(tState.rosterId);
+      const pool=[...players,...picks];
+      const a=pool.find(x=>x.id===assetId);
+      if(a) tState.selected.push(a);
+    }
+    renderTeamPanel(team);
+    refreshAll();
+  }
+
+  function renderAssets(team){
+    const cont=$(`[data-assets="${team}"]`);
+    const countEl=$(`[data-count="${team}"]`);
+    const sel=state[`team${team}`].selected;
+    countEl.textContent=`${sel.length} asset${sel.length!==1?'s':''}`;
+    if(sel.length===0){
+      cont.innerHTML=`<div class="w-full h-[60px] grid place-items-center text-zinc-600 text-sm">No assets selected</div>`;
+      return;
+    }
+    cont.innerHTML=sel.map(a=>`
+      <div class="group flex items-center gap-2 pl-2 pr-2 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition">
+        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md ring-1 ${posColors[a.pos]||'bg-zinc-700'}">${a.pos}</span>
+        <span class="text-xs font-medium max-w-[120px] truncate">${escapeHtml(a.name)}</span>
+        <span class="text-[11px] text-zinc-500 tabular-nums">${fmt(a.value)}</span>
+        <button class="ml-1 size-5 grid place-items-center rounded-md hover:bg-zinc-800 text-zinc-500 hover:text-zinc-200" data-remove="${a.id}">✕</button>
+      </div>
+    `).join('');
+    cont.querySelectorAll('[data-remove]').forEach(btn=>{
+      btn.onclick=()=>toggleAsset(team, btn.dataset.remove, 'player');
+    });
+  }
+
+  function updateOut(team){
+    const outEl=$(`[data-out="${team}"]`);
+    const sel=state[`team${team}`].selected;
+    const sum=sel.reduce((s,a)=>s+a.value,0);
+    outEl.textContent= sel.length? fmt(sum) : '—';
+  }
+
+  // ---- TRADE CALC ----
+  function refreshAll(){
+    refreshPanels();
+    computeTrade();
+  }
+  function refreshPanels(){
+    if(state.playersMap && Object.keys(state.playersMap).length){
+      ['A','B'].forEach(t=>{ if(state[`team${t}`].rosterId) renderTeamPanel(t); });
+    }
+  }
+
+  function computeTrade(){
+    const A=state.teamA, B=state.teamB;
+    const aOutVal=A.selected.reduce((s,a)=>s+a.value,0);
+    const bOutVal=B.selected.reduce((s,a)=>s+a.value,0);
+    const aInVal=bOutVal;
+    const bInVal=aOutVal;
+
+    const aOutPpg=A.selected.reduce((s,a)=>s+(a.ppg||0),0);
+    const bOutPpg=B.selected.reduce((s,a)=>s+(a.ppg||0),0);
+    const aInPpg=bOutPpg;
+    const bInPpg=aOutPpg;
+
+    // deltas
+    const aValDeltaPct = aOutVal? (aInVal - aOutVal)/aOutVal*100 : 0;
+    const bValDeltaPct = bOutVal? (bInVal - bOutVal)/bOutVal*100 : 0;
+    const aPpgDelta = aInPpg - aOutPpg;
+    const bPpgDelta = bInPpg - bOutPpg;
+
+    // optimal
+    const optA_before = calcOptimal(A.rosterId, [], []);
+    const optA_after = calcOptimal(A.rosterId, A.selected, B.selected);
+    const optB_before = calcOptimal(B.rosterId, [], []);
+    const optB_after = calcOptimal(B.rosterId, B.selected, A.selected);
+
+    const aOptDelta = optA_after.total - optA_before.total;
+    const bOptDelta = optB_after.total - optB_before.total;
+
+    // update UI
+    setDelta('A-value', aOutVal? fmt1(aValDeltaPct)+'%' : '—', aValDeltaPct);
+    setDelta('B-value', bOutVal? fmt1(bValDeltaPct)+'%' : '—', bValDeltaPct);
+    setDelta('A-ppg', aOutVal||bOutVal? fmt1(aPpgDelta) : '—', aPpgDelta);
+    setDelta('B-ppg', aOutVal||bOutVal? fmt1(bPpgDelta) : '—', bPpgDelta);
+    setDelta('A-opt', aOutVal||bOutVal? fmt1(aOptDelta) : '—', aOptDelta);
+    setDelta('B-opt', aOutVal||bOutVal? fmt1(bOptDelta) : '—', bOptDelta);
+
+    setIO('A', aInVal, aOutVal, aInPpg, aOutPpg);
+    setIO('B', bInVal, bOutVal, bInPpg, bOutPpg);
+
+    $('[data-opt="A-before"]').textContent = optA_before.total? optA_before.total.toFixed(1):'—';
+    $('[data-opt="A-after"]').textContent = optA_after.total? optA_after.total.toFixed(1):'—';
+    $('[data-opt="B-before"]').textContent = optB_before.total? optB_before.total.toFixed(1):'—';
+    $('[data-opt="B-after"]').textContent = optB_after.total? optB_after.total.toFixed(1):'—';
+
+    $('[data-changes="A"]').innerHTML = formatStarterChanges(optA_before.starters, optA_after.starters);
+    $('[data-changes="B"]').innerHTML = formatStarterChanges(optB_before.starters, optB_after.starters);
+
+    // verdict
+    const verdict = getVerdict(aValDeltaPct, aPpgDelta, bValDeltaPct, bPpgDelta);
+    $('#verdictPill').textContent = verdict.text;
+    $('#verdictPill').className = `mt-4 mx-auto w-fit px-4 py-2 rounded-full border text-sm font-semibold ${verdict.cls}`;
+    $('#verdictSubtitle').textContent = (aOutVal||bOutVal) ? 'Values & starters updated live' : 'Add players to evaluate';
+  }
+
+  function setDelta(key, text, val){
+    const el=$(`[data-delta="${key}"]`);
+    el.textContent=text;
+    el.classList.remove('text-emerald-400','text-red-400','text-zinc-300');
+    if(text==='—'){ el.classList.add('text-zinc-500'); }
+    else if(val>0.05){ el.classList.add('text-emerald-400'); }
+    else if(val<-0.05){ el.classList.add('text-red-400'); }
+    else { el.classList.add('text-zinc-300'); }
+  }
+  function setIO(team, vin, vout, pin, pout){
+    const has = vin+vout+pin+pout>0;
+    $(`[data-io="${team}-vin"]`).textContent = has? fmt(vin):'—';
+    $(`[data-io="${team}-vout"]`).textContent = has? fmt(vout):'—';
+    $(`[data-io="${team}-pin"]`).textContent = has? pin.toFixed(1):'—';
+    $(`[data-io="${team}-pout"]`).textContent = has? pout.toFixed(1):'—';
+  }
+
+  function getVerdict(aPct, aPpg, bPct, bPpg){
+    const totalOut = state.teamA.selected.length + state.teamB.selected.length;
+    if(!totalOut) return {text:'— Neutral —', cls:'bg-zinc-900 border-zinc-800 text-zinc-300'};
+    // Determine winner by value delta
+    const diffPct = aPct - bPct; // positive means A gains more relative
+    // Use absolute tier based on magnitude for winning team
+    const abs = Math.abs(diffPct)/2; // approximate advantage
+    let tier='Fair';
+    if(abs<5) tier='Fair';
+    else if(abs<10) tier='Slight';
+    else if(abs<20) tier='Win';
+    else tier='Smash';
+
+    // PPG modifier
+    const ppg = aPpg; // A's ppg delta
+    if(ppg >= 2 && tier!=='Smash'){ tier = nextTier(tier, 1); }
+    else if(ppg <= -1.5 && tier!=='Fair'){ tier = nextTier(tier, -1); }
+
+    const winner = diffPct>0.5 ? 'Team A' : diffPct<-0.5 ? 'Team B' : 'Even';
+    if(winner==='Even') return {text:'Fair • Even', cls:'bg-zinc-900 border-zinc-800 text-zinc-300'};
+    const color = winner==='Team A' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' : 'bg-sky-500/10 text-sky-300 border-sky-500/30';
+    return {text:`${tier} • ${winner}`, cls:`border ${color}`};
+  }
+  function nextTier(t, dir){
+    const order=['Fair','Slight','Win','Smash'];
+    let i=order.indexOf(t);
+    i=Math.max(0,Math.min(order.length-1,i+dir));
+    return order[i];
+  }
+
+  function calcOptimal(rosterId, outAssets, inAssets){
+    if(!rosterId || !state.league) return {total:0,starters:[]};
+    const roster=getRoster(rosterId);
+    if(!roster) return {total:0,starters:[]};
+    const {players}=buildRosterAssets(rosterId);
+    const outIds=new Set(outAssets.map(a=>a.id));
+    const pool=players.filter(p=>!outIds.has(p.id));
+    // add incoming players (only real players)
+    inAssets.filter(a=>a.type==='player').forEach(a=>{
+      pool.push(a);
+    });
+
+    const positions = state.league.roster_positions || [];
+    // Build slots
+    const slots=[];
+    positions.forEach(p=>{
+      if(['BN','IR','TAXI'].includes(p)) return;
+      slots.push(p);
+    });
+    // Sort slots by restrictiveness
+    const rank = s=> s==='SUPER_FLEX'?4 : s==='FLEX'?3 : s==='REC_FLEX'?2 : 1;
+    slots.sort((a,b)=>rank(a)-rank(b));
+
+    const used=new Set();
+    const starters=[];
+
+    const eligible = (playerPos, slot) => {
+      if(slot===playerPos) return true;
+      if(slot==='FLEX') return ['RB','WR','TE'].includes(playerPos);
+      if(slot==='SUPER_FLEX') return ['QB','RB','WR','TE'].includes(playerPos);
+      if(slot==='REC_FLEX') return ['WR','TE'].includes(playerPos);
+      return false;
+    };
+
+    slots.forEach(slot=>{
+      let best=null, bestIdx=-1;
+      pool.forEach((p,i)=>{
+        if(used.has(i)) return;
+        if(!eligible(p.pos, slot)) return;
+        if(!best || (p.ppg||0) > (best.ppg||0)) { best=p; bestIdx=i; }
+      });
+      if(best){
+        used.add(bestIdx);
+        starters.push({...best, slot});
+      }
+    });
+
+    const total=starters.reduce((s,p)=>s+(p.ppg||0),0);
+    return {total, starters};
+  }
+
+  function formatStarterChanges(before, after){
+    if(!before.length && !after.length) return '—';
+    const bSet=new Set(before.map(s=>s.id));
+    const aSet=new Set(after.map(s=>s.id));
+    const ins=after.filter(s=>!bSet.has(s.id));
+    const outs=before.filter(s=>!aSet.has(s.id));
+    if(ins.length===0 && outs.length===0) return '<span class="text-zinc-600">No change</span>';
+    const parts=[];
+    outs.slice(0,3).forEach(o=> parts.push(`<span class="text-red-400">− ${escapeHtml(o.name.split(' ')[0])}</span>`));
+    ins.slice(0,3).forEach(i=> parts.push(`<span class="text-emerald-400">+ ${escapeHtml(i.name.split(' ')[0])}</span>`));
+    return parts.join(' &nbsp; ');
+  }
+
+  function escapeHtml(s){ return s.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  // Init
+  $('#reloadBtn').onclick=loadAll;
+  $('#retryBtn').onclick=loadAll;
+  loadAll();
+})();
 </script>
 </body>
 </html>
