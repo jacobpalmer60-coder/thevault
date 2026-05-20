@@ -137,7 +137,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   </div>
 
   <footer class="mt-6 text-center text-[11px] text-slate-500">
-    Players + Picks from Google Sheet • Picks adjusted by roster strength • League data from Sleeper
+    Players + Picks from Google Sheet • Picks adjusted by roster strength • Drafted years filtered • League data from Sleeper
   </footer>
 </main>
 
@@ -150,7 +150,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   const params = new URLSearchParams(location.search);
   const league_id = params.get('league_id') || DEFAULT_LEAGUE;
 
-  const state = { league:null, users:[], rosters:[], players:{}, values:new Map(), pickInventory:new Map(), teamStrength:new Map(), teamA:null, teamB:null, selectedA:new Set(), selectedB:new Set(), rosterPos:[], tradedPicks:[] };
+  const state = { league:null, users:[], rosters:[], players:{}, values:new Map(), pickInventory:new Map(), teamStrength:new Map(), draftedSeasons:new Set(), teamA:null, teamB:null, selectedA:new Set(), selectedB:new Set(), rosterPos:[], tradedPicks:[] };
   const $ = s => document.querySelector(s);
   const fmt = n => n.toLocaleString();
   const fmt1 = n => (n>=0?'+':'')+n.toFixed(1);
@@ -249,12 +249,13 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   function buildPickInventory(){
     state.rosters.forEach(r=>state.pickInventory.set(r.roster_id, []));
-    
+
     state.tradedPicks.forEach(tp=>{
       const ownerRoster = state.rosters.find(r=>r.owner_id===tp.owner_id);
       const origRoster = state.rosters.find(r=>r.roster_id===tp.roster_id);
-      if(!ownerRoster || !origRoster) return;
+      if(!ownerRoster ||!origRoster) return;
       const season = tp.season;
+      if(state.draftedSeasons.has(Number(season))) return;
       const round = tp.round;
       const slot = getProjectedSlot(origRoster.roster_id);
       const pickId = `pick_${season}_${round}_${slot}`;
@@ -279,6 +280,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     state.rosters.forEach(r=>{
       const inv = state.pickInventory.get(r.roster_id);
       years.forEach(y=>{
+        if(state.draftedSeasons.has(y)) return;
         [1,2,3].forEach(rd=>{
           const wasTradedAway = state.tradedPicks.some(tp=>tp.roster_id===r.roster_id && tp.season==y && tp.round==rd);
           if(wasTradedAway) return;
@@ -329,7 +331,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       const slotClass = p.slot==='early'?'badge-early':p.slot==='late'?'badge-late':'badge-mid';
       const row=document.createElement('div');
       row.className=`player-row flex items-center gap-2 px-2 py-1.5 rounded-lg border ${sel?'selected border-violet-500/40':'border-transparent'} cursor-pointer`;
-      const via = !p.isOwn ? '<span class="text-[10px] text-slate-500">via '+p.origTeam+'</span>' : '';
+      const via =!p.isOwn? '<span class="text-[10px] text-slate-500">via '+p.origTeam+'</span>' : '';
       row.innerHTML=
         '<input type="checkbox" '+(sel?'checked':'')+' class="w-3.5 h-3.5 accent-violet-500">'+
         '<div class="badge badge-pick">'+p.season+'</div>'+
@@ -373,7 +375,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const selPlayers=players.filter(p=>selSet.has(p.id));
     const inv=state.pickInventory.get(rosterId)||[];
     const selPicks=inv.filter(p=>selSet.has(p.id)).map(p=>({id:p.id,name:p.name,value:p.value,ppg:0,age:0,pos:'PICK',type:'pick'}));
-    return [...selPlayers, ...selPicks];
+    return [...selPlayers,...selPicks];
   }
 
   function computeImpact(){
@@ -386,10 +388,10 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const sum=a=>a.reduce((s,x)=>s+x.value,0);
     const sumPpg=a=>a.reduce((s,x)=>s+(x.ppg||0),0);
     const optBeforeA=computeOptimal(pa);
-    const afterAPlayers=[...pa.filter(p=>!state.selectedA.has(p.id)), ...selB.filter(x=>x.type!=='pick')];
+    const afterAPlayers=[...pa.filter(p=>!state.selectedA.has(p.id)),...selB.filter(x=>x.type!=='pick')];
     const optAfterA=computeOptimal(afterAPlayers);
     const optBeforeB=computeOptimal(pb);
-    const afterBPlayers=[...pb.filter(p=>!state.selectedB.has(p.id)), ...selA.filter(x=>x.type!=='pick')];
+    const afterBPlayers=[...pb.filter(p=>!state.selectedB.has(p.id)),...selA.filter(x=>x.type!=='pick')];
     const optAfterB=computeOptimal(afterBPlayers);
     const A={valueOut:sum(selA),valueIn:sum(selB),netValue:sum(selB)-sum(selA),valueDeltaPct:sum(selA)?(sum(selB)-sum(selA))/sum(selA)*100:0,ppgDelta:sumPpg(selB)-sumPpg(selA),optPpgDelta:optAfterA.total-optBeforeA.total};
     const B={valueOut:sum(selB),valueIn:sum(selA),netValue:sum(selA)-sum(selB),valueDeltaPct:sum(selB)?(sum(selA)-sum(selB))/sum(selB)*100:0,ppgDelta:sumPpg(selA)-sumPpg(selB),optPpgDelta:optAfterB.total-optBeforeB.total};
@@ -398,7 +400,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   function metricCard(label,val){
     const isStr = typeof val === 'string';
-    const color = isStr && val.startsWith('+') ? 'text-emerald-400' : isStr && val.startsWith('-') ? 'text-red-400' : 'text-slate-200';
+    const color = isStr && val.startsWith('+')? 'text-emerald-400' : isStr && val.startsWith('-')? 'text-red-400' : 'text-slate-200';
     return '<div class="rounded-lg bg-white/[0.03] border border-white/10 p-2.5"><div class="text-[10px] uppercase text-slate-400">'+label+'</div><div class="mono text-sm font-semibold mt-0.5 '+color+'">'+val+'</div></div>';
   }
 
@@ -454,14 +456,17 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   async function init(){
     setStatus('Loading league…');
-    const [league,users,rosters,players,traded]=await Promise.all([
+    const [league,users,rosters,players,traded,drafts]=await Promise.all([
       fetch(`https://api.sleeper.app/v1/league/${league_id}`).then(r=>r.json()),
       fetch(`https://api.sleeper.app/v1/league/${league_id}/users`).then(r=>r.json()),
       fetch(`https://api.sleeper.app/v1/league/${league_id}/rosters`).then(r=>r.json()),
       fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),
-      fetch(`https://api.sleeper.app/v1/league/${league_id}/traded_picks`).then(r=>r.json()).catch(()=>[])
+      fetch(`https://api.sleeper.app/v1/league/${league_id}/traded_picks`).then(r=>r.json()).catch(()=>[]),
+      fetch(`https://api.sleeper.app/v1/league/${league_id}/drafts`).then(r=>r.json()).catch(()=>[])
     ]);
     state.league=league; state.users=users; state.rosters=rosters; state.players=players; state.rosterPos=league.roster_positions||[]; state.tradedPicks=traded;
+    drafts.forEach(d=>{if(d.status==='complete' && d.season){state.draftedSeasons.add(Number(d.season));}});
+
     $('#league-name').textContent=league.name;
     setStatus('Loading values…');
     await loadValues();
