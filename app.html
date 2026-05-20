@@ -2,679 +2,573 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Roster Audit — Dark Gold</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Roster Audit • Superflex Locked</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   :root { color-scheme: dark; }
-  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background:#050505; }
-  .mono { font-family: 'JetBrains Mono', monospace; }
-  .gold { color:#e8c468; }
-  .gold-bg { background:#e8c468; }
-  .rank-pill { background:#0f0f0f; border:1px solid rgba(232,196,104,.25); color:#e8c468; }
-  .rank-1 { background:linear-gradient(135deg,#e8c468,#f5e6b3); color:#1a1200; border-color:#e8c468; }
-  .glass { backdrop-filter:blur(8px); }
-  .scrollbar::-webkit-scrollbar{height:8px;width:8px}
-  .scrollbar::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:4px}
-  .scrollbar::-webkit-scrollbar-track{background:#0a0a0a}
-  @keyframes pulse {0%,100%{opacity:.6}50%{opacity:1}}
-  .pulse {animation:pulse 1.5s infinite}
+  html,body{ background:#0a0a0b; }
+  body{ font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .mono{ font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .gold{ color:#d4af37; }
+  .gold-bg{ background:#d4af37; }
+  .card{ background:#121418; border:1px solid #21252c; }
+  .row-hover:hover{ background:#161a20; }
+  .tier-dot{ width:.6rem; height:.6rem; border-radius:9999px; display:inline-block; }
+  .scrollbar-thin::-webkit-scrollbar{ width:8px; height:8px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb{ background:#2a2f38; border-radius:4px; }
+  #tooltip{ max-width:min(520px,90vw); pointer-events:none; }
+  .spinner{ border:3px solid #2a2f38; border-top-color:#d4af37; border-radius:50%; width:28px; height:28px; animation:spin 0.8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .pill{ border:1px solid #2a2f38; }
 </style>
 </head>
-<body class="min-h-screen text-zinc-200 antialiased">
-<div class="max-w-[1400px] mx-auto px-4 py-6 md:py-10">
-  <!-- Header -->
-  <header class="mb-6">
-    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-      <div>
-        <h1 class="text-[2rem] md:text-[2.5rem] font-semibold tracking-tight">
-          Roster <span class="gold">Audit</span>
-        </h1>
-        <p class="text-zinc-400 mt-1">Superflex • Dark Gold Theme • Live Sleeper Data</p>
+<body class="min-h-screen text-[#e8e6e1] antialiased selection:bg-[#d4af37]/20">
+  <div class="max-w-[1280px] mx-auto px-4 py-6 md:py-10">
+    <!-- Header -->
+    <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+      <div class="flex items-center gap-4">
+        <h1 class="text-[28px] md:text-[32px] font-semibold tracking-tight">Roster Audit</h1>
+        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-[#d4af37] text-black tracking-wide">SF LOCKED</span>
       </div>
       <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-        <div class="flex gap-2 w-full sm:w-auto">
-          <input id="leagueInput" placeholder="Sleeper League ID" class="w-full sm:w-[320px] bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20" />
-          <button id="loadBtn" class="bg-amber-500 hover:bg-amber-400 text-black font-medium px-4 py-2.5 rounded-xl text-sm transition">Load</button>
+        <div class="flex gap-2 flex-1 lg:flex-none">
+          <input id="leagueInput" placeholder="League ID" class="w-full lg:w-[220px] bg-[#0f1115] border border-[#262b33] rounded-xl px-3.5 py-2.5 text-[15px] placeholder-[#6b7280] focus:outline-none focus:border-[#d4af37]/70 focus:ring-2 focus:ring-[#d4af37]/20" />
+          <button id="loadBtn" class="gold-bg text-black font-semibold px-5 py-2.5 rounded-xl text-[15px] hover:brightness-110 active:brightness-95 transition">Load</button>
         </div>
-        <button id="sampleBtn" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-4 py-2.5 rounded-xl text-sm transition">Load Sample League</button>
+        <div class="relative flex-1 lg:w-[260px]">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6b7280]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3"/></svg>
+          <input id="searchInput" placeholder="Search teams" class="w-full bg-[#0f1115] border border-[#262b33] rounded-xl pl-9 pr-3.5 py-2.5 text-[15px] placeholder-[#6b7280] focus:outline-none focus:border-[#d4af37]/70 focus:ring-2 focus:ring-[#d4af37]/20" />
+        </div>
+      </div>
+    </header>
+
+    <!-- Tier Legend -->
+    <div class="card rounded-2xl px-4 py-3 mb-6 flex flex-wrap items-center gap-3 text-[13px]">
+      <span class="text-[#9ca3af] font-medium mr-1">Tier Legend</span>
+      <span class="pill rounded-full px-3 py-1.5 bg-[#1a1d23] flex items-center gap-2"><span class="tier-dot" style="background:#e5e7eb"></span>Platinum • Elite</span>
+      <span class="pill rounded-full px-3 py-1.5 bg-[#1a1d23] flex items-center gap-2"><span class="tier-dot" style="background:#d4af37"></span>Gold • Contender</span>
+      <span class="pill rounded-full px-3 py-1.5 bg-[#1a1d23] flex items-center gap-2"><span class="tier-dot" style="background:#9ca3af"></span>Silver • Solid</span>
+      <span class="pill rounded-full px-3 py-1.5 bg-[#1a1d23] flex items-center gap-2"><span class="tier-dot" style="background:#cd7f32"></span>Bronze • Fringe</span>
+      <span class="pill rounded-full px-3 py-1.5 bg-[#1a1d23] flex items-center gap-2"><span class="tier-dot" style="background:#6b7280"></span>Iron • Rebuild</span>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card rounded-2xl overflow-hidden">
+      <div class="w-full">
+        <table class="w-full text-[15px] leading-[1.5]">
+          <thead class="bg-[#0f1115] border-b border-[#21252c] text-[#9ca3af] text-[12px] uppercase tracking-wide">
+            <tr>
+              <th class="text-left font-semibold px-5 py-3 w-[56px]">#</th>
+              <th class="text-left font-semibold px-5 py-3 min-w-[240px]">TEAM</th>
+              <th class="text-center font-semibold px-3 py-3 w-[64px]">QB</th>
+              <th class="text-center font-semibold px-3 py-3 w-[64px]">RB</th>
+              <th class="text-center font-semibold px-3 py-3 w-[64px]">WR</th>
+              <th class="text-center font-semibold px-3 py-3 w-[64px]">TE</th>
+              <th class="text-center font-semibold px-3 py-3 w-[64px]">PK</th>
+              <th class="text-right font-semibold px-5 py-3 w-[100px]">PPG</th>
+              <th class="text-right font-semibold px-5 py-3 w-[120px]">VALUE</th>
+              <th class="text-right font-semibold px-5 py-3 w-[90px]">AGE</th>
+            </tr>
+          </thead>
+          <tbody id="tbody" class="divide-y divide-[#1c2128]">
+            <!-- rows injected -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty / Loading State -->
+      <div id="emptyState" class="flex flex-col items-center justify-center py-24 text-center">
+        <div class="spinner mb-5"></div>
+        <p class="text-[15px] text-[#cbd5e1]">Enter a League ID and click Load</p>
+        <p class="text-[13px] text-[#6b7280] mt-1">Auto-loads from URL ?league_id=</p>
       </div>
     </div>
 
-    <!-- Status Bar -->
-    <div class="mt-6 bg-zinc-950 border border-zinc-900 rounded-2xl p-4">
-      <div class="flex flex-wrap items-center gap-3 text-xs">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-zinc-700" id="dot-league"></span>
-          <span class="text-zinc-400">League</span>
+    <!-- Tier Explanations -->
+    <div class="card rounded-2xl mt-8 p-6 md:p-8">
+      <h2 class="text-[20px] font-semibold mb-5">Tier Explanations</h2>
+      <div class="space-y-5 text-[15px] leading-relaxed">
+        <div class="flex gap-3">
+          <span class="tier-dot mt-[7px]" style="background:#e5e7eb"></span>
+          <div><span class="font-semibold">Platinum — Elite</span><br><span class="text-[#b4bcc8]">Top 10% starters PPG. Championship favorite with elite positional advantages and high floor.</span></div>
         </div>
-        <span class="text-zinc-700">›</span>
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-zinc-700" id="dot-rosters"></span>
-          <span class="text-zinc-400">Rosters</span>
+        <div class="flex gap-3">
+          <span class="tier-dot mt-[7px]" style="background:#d4af37"></span>
+          <div><span class="font-semibold">Gold — Contender</span><br><span class="text-[#b4bcc8]">Top 30%. Strong win-now window. Core is proven, depth can survive variance.</span></div>
         </div>
-        <span class="text-zinc-700">›</span>
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-zinc-700" id="dot-players"></span>
-          <span class="text-zinc-400">Players DB</span>
+        <div class="flex gap-3">
+          <span class="tier-dot mt-[7px]" style="background:#9ca3af"></span>
+          <div><span class="font-semibold">Silver — Solid</span><br><span class="text-[#b4bcc8]">Middle 40%. Competitive roster that needs 1-2 hits to jump tiers.</span></div>
         </div>
-        <span class="text-zinc-700">›</span>
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-zinc-700" id="dot-values"></span>
-          <span class="text-zinc-400">Values Sheet</span>
+        <div class="flex gap-3">
+          <span class="tier-dot mt-[7px]" style="background:#cd7f32"></span>
+          <div><span class="font-semibold">Bronze — Fringe</span><br><span class="text-[#b4bcc8]">Bottom 30%. Needs upgrades at multiple positions or a youth infusion.</span></div>
         </div>
-        <span class="text-zinc-700">›</span>
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-zinc-700" id="dot-compute"></span>
-          <span class="text-zinc-400">Compute</span>
+        <div class="flex gap-3">
+          <span class="tier-dot mt-[7px]" style="background:#6b7280"></span>
+          <div><span class="font-semibold">Iron — Rebuild</span><br><span class="text-[#b4bcc8]">Bottom 10%. Full rebuild recommended. Trade vets for picks and young upside.</span></div>
         </div>
-        <div class="ml-auto flex items-center gap-3">
-          <span id="matchedBadge" class="hidden mono text-[11px] px-2 py-1 rounded-lg bg-zinc-900 border border-zinc-800 text-amber-300">Matched 0 / 0</span>
-          <span id="statusText" class="text-zinc-500">Idle</span>
-        </div>
-      </div>
-      <div id="progressBar" class="mt-3 h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-        <div id="progressFill" class="h-full w-0 bg-gradient-to-r from-amber-600 to-amber-300 transition-all duration-500"></div>
-      </div>
-    </div>
-  </header>
-
-  <!-- Error -->
-  <div id="errorBox" class="hidden mb-6 bg-red-950/40 border border-red-900/60 rounded-2xl p-4 flex items-start gap-3">
-    <div class="text-red-400 mt-0.5">⚠</div>
-    <div class="flex-1">
-      <div class="font-medium text-red-200">Load failed</div>
-      <div id="errorMsg" class="text-sm text-red-300/80 mt-0.5"></div>
-      <div class="mt-3 flex gap-2">
-        <button id="retryBtn" class="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-medium">Retry</button>
-        <button id="showCsvBtn" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs">Paste Values CSV</button>
-      </div>
+      <div class="mt-8 text-center text-[12px] text-[#7a828e] tracking-wide">Gold theme • Superflex locked • Picks projected by PPG tier</div>
     </div>
   </div>
 
-  <!-- CSV Paste -->
-  <div id="csvBox" class="hidden mb-6 bg-zinc-950 border border-amber-900/30 rounded-2xl p-4">
-    <div class="flex items-center justify-between mb-2">
-      <div class="text-sm font-medium text-amber-200">Values CSV Fallback</div>
-      <button id="closeCsvBtn" class="text-zinc-500 hover:text-zinc-300 text-sm">✕</button>
-    </div>
-    <p class="text-xs text-zinc-400 mb-3">Columns: player_id, full_name, position, team, age, ppg, value, tier. Pick rows optional: pick_id (e.g. 2025 1.01), value.</p>
-    <textarea id="csvInput" class="w-full h-40 bg-black border border-zinc-800 rounded-xl p-3 mono text-xs focus:outline-none focus:border-amber-500/50" placeholder="player_id,full_name,position,team,age,ppg,value,tier"></textarea>
-    <div class="mt-3 flex gap-2">
-      <button id="parseCsvBtn" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-xs font-medium">Parse & Recompute</button>
-      <span class="text-xs text-zinc-500 self-center">Tip: Publish Google Sheet as CSV and paste URL below to auto-fetch.</span>
-    </div>
-    <div class="mt-3 flex gap-2">
-      <input id="csvUrlInput" placeholder="https://docs.google.com/.../pub?output=csv" class="flex-1 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-xs outline-none focus:border-amber-500/50"/>
-      <button id="fetchCsvUrlBtn" class="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs">Fetch URL</button>
-    </div>
-  </div>
-
-  <!-- Summary Table -->
-  <main>
-    <div class="overflow-x-auto scrollbar">
-      <div class="min-w-[1100px]">
-        <!-- Head -->
-        <div class="grid grid-cols-[220px_repeat(9,1fr)] gap-3 px-4 py-3 text-[11px] uppercase tracking-wider text-zinc-500 border-b border-zinc-900">
-          <div>Team</div>
-          <div class="text-center">QB</div>
-          <div class="text-center">RB</div>
-          <div class="text-center">WR</div>
-          <div class="text-center">TE</div>
-          <div class="text-center">PK</div>
-          <div class="text-center">PPG</div>
-          <div class="text-center">Value</div>
-          <div class="text-center">Age</div>
-          <div class="text-center">Tier</div>
-        </div>
-        <div id="summaryList" class="divide-y divide-zinc-900/70"></div>
-      </div>
-    </div>
-    <div id="emptyState" class="text-center py-24 text-zinc-600">
-      <div class="text-5xl mb-4">🏈</div>
-      <div class="text-lg font-medium text-zinc-300">No league loaded</div>
-      <div class="text-sm mt-1">Enter a Sleeper League ID above or load the sample league to begin audit.</div>
-    </div>
-  </main>
-
-  <footer class="mt-16 py-8 border-t border-zinc-900 text-xs text-zinc-600 flex justify-between">
-    <span>Dark Gold Roster Audit • Superflex Optimal Starters (2 QB, 2 RB, 3 WR, 1 TE, 2 FLEX)</span>
-    <span class="mono">cache: no-store • retries: 2 • timeout: 20s</span>
-  </footer>
-</div>
+  <!-- Tooltip -->
+  <div id="tooltip" class="hidden fixed z-50 card rounded-xl shadow-2xl p-4 text-[13.5px] leading-[1.55]"></div>
 
 <script>
 (() => {
-  const SAMPLE_LEAGUE = '1124831353761071104'; // public test league
-  const VALUES_CSV_URL = ''; // leave empty to force fallback/synthetic
-  const state = {
-    leagueId: null,
-    league: null,
-    rosters: [],
-    users: [],
-    players: null,
-    valuesMap: new Map(),
-    pickValues: new Map(),
-    teams: [],
-    status: 'idle'
-  };
-
-  const $ = s => document.querySelector(s);
+  const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
+  const SLEEPER = 'https://api.sleeper.app/v1';
+  const $ = sel => document.querySelector(sel);
+  const tbody = $('#tbody');
+  const emptyState = $('#emptyState');
+  const tooltip = $('#tooltip');
   const leagueInput = $('#leagueInput');
   const loadBtn = $('#loadBtn');
-  const sampleBtn = $('#sampleBtn');
-  const statusText = $('#statusText');
-  const progressFill = $('#progressFill');
-  const matchedBadge = $('#matchedBadge');
-  const errorBox = $('#errorBox');
-  const errorMsg = $('#errorMsg');
-  const retryBtn = $('#retryBtn');
-  const showCsvBtn = $('#showCsvBtn');
-  const csvBox = $('#csvBox');
-  const closeCsvBtn = $('#closeCsvBtn');
-  const csvInput = $('#csvInput');
-  const parseCsvBtn = $('#parseCsvBtn');
-  const csvUrlInput = $('#csvUrlInput');
-  const fetchCsvUrlBtn = $('#fetchCsvUrlBtn');
-  const summaryList = $('#summaryList');
-  const emptyState = $('#emptyState');
+  const searchInput = $('#searchInput');
 
-  const dots = {
-    league: $('#dot-league'),
-    rosters: $('#dot-rosters'),
-    players: $('#dot-players'),
-    values: $('#dot-values'),
-    compute: $('#dot-compute')
+  let playersDB = null;
+  let lastData = [];
+  let expandedRosterId = null;
+
+  const tierInfo = {
+    Platinum: { color:'#e5e7eb', label:'Platinum • Elite' },
+    Gold: { color:'#d4af37', label:'Gold • Contender' },
+    Silver: { color:'#9ca3af', label:'Silver • Solid' },
+    Bronze: { color:'#cd7f32', label:'Bronze • Fringe' },
+    Iron: { color:'#6b7280', label:'Iron • Rebuild' },
   };
 
-  function setStatus(step, msg) {
-    statusText.textContent = msg;
-    if (step) {
-      Object.values(dots).forEach(d => d.className = 'w-2 h-2 rounded-full bg-zinc-700');
-      if (dots[step]) dots[step].className = 'w-2 h-2 rounded-full bg-amber-400 pulse';
+  const fmtInt = n => Math.round(n).toLocaleString();
+  const fmt1 = n => (Math.round(n*10)/10).toFixed(1);
+  const esc = s => String(s??'').replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+
+  function showTooltip(html, x, y){
+    tooltip.innerHTML = html;
+    tooltip.classList.remove('hidden');
+    const pad = 12;
+    const rect = tooltip.getBoundingClientRect();
+    let left = x + pad;
+    let top = y + pad;
+    if(left + rect.width > window.innerWidth - pad) left = x - rect.width - pad;
+    if(top + rect.height > window.innerHeight - pad) top = y - rect.height - pad;
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+  }
+  function hideTooltip(){ tooltip.classList.add('hidden'); }
+
+  function parseCSV(text){
+    text = text.replace(/^\uFEFF/, '');
+    const lines = text.split(/\r?\n/).filter(l=>l.trim());
+    if(!lines.length) return [];
+    const header = splitCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+    const idx = (names)=> names.map(n=>header.findIndex(h=>h.includes(n))).find(i=>i>=0) ?? -1;
+    const i_id = idx(['player_id','sleeper_id','id']);
+    const i_name = idx(['full_name','name','player']);
+    const i_pos = idx(['pos','position']);
+    const i_team = idx(['team']);
+    const i_age = idx(['age']);
+    const i_ppg = idx(['ppg','fppg','pts']);
+    const i_val = idx(['value','val']);
+    const out = [];
+    for(let r=1;r<lines.length;r++){
+      const cols = splitCSVLine(lines[r]);
+      if(!cols.length) continue;
+      const get = i=> i>=0 ? cols[i]?.replace(/^"|"$/g,'').trim() : '';
+      const player_id = get(i_id);
+      const name = get(i_name);
+      if(!player_id && !name) continue;
+      const pos = get(i_pos).toUpperCase();
+      const age = parseFloat(get(i_age)) || null;
+      const ppg = parseFloat(get(i_ppg)) || 0;
+      const value = parseFloat(get(i_val).replace(/,/g,'')) || 0;
+      out.push({ player_id, name, pos, team:get(i_team), age, ppg, value });
     }
+    return out;
   }
-  function setProgress(p) { progressFill.style.width = p + '%'; }
-  function markDone(step) { if (dots[step]) dots[step].className = 'w-2 h-2 rounded-full bg-emerald-500'; }
-
-  async function fetchWithRetry(url, opts={}, retries=2, backoff=500, timeout=20000) {
-    for (let i=0;i<=retries;i++) {
-      const ctrl = new AbortController();
-      const t = setTimeout(()=>ctrl.abort(), timeout);
-      try {
-        const res = await fetch(url, {...opts, cache:'no-store', signal:ctrl.signal});
-        clearTimeout(t);
-        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-        return res;
-      } catch(e) {
-        clearTimeout(t);
-        if (i===retries) throw e;
-        await new Promise(r=>setTimeout(r, backoff * Math.pow(2,i)));
-      }
-    }
-  }
-
-  async function safeJson(url, step) {
-    setStatus(step, `Fetching ${step}...`);
-    const res = await fetchWithRetry(url);
-    return res.json();
-  }
-  async function safeText(url, step) {
-    setStatus(step, `Fetching ${step}...`);
-    const res = await fetchWithRetry(url);
-    return res.text();
-  }
-
-  function showError(msg, err) {
-    errorBox.classList.remove('hidden');
-    errorMsg.textContent = msg + (err ? ` — ${err.message}` : '');
-  }
-  function hideError(){ errorBox.classList.add('hidden'); }
-
-  async function loadLeague(leagueId) {
-    hideError();
-    state.leagueId = leagueId;
-    summaryList.innerHTML = '';
-    emptyState.classList.remove('hidden');
-    setProgress(0);
-    try {
-      // League
-      state.league = await safeJson(`https://api.sleeper.app/v1/league/${leagueId}`, 'league');
-      markDone('league'); setProgress(15);
-
-      // Rosters + Users
-      const [rosters, users] = await Promise.all([
-        safeJson(`https://api.sleeper.app/v1/league/${leagueId}/rosters`, 'rosters'),
-        safeJson(`https://api.sleeper.app/v1/league/${leagueId}/users`, 'rosters')
-      ]);
-      state.rosters = rosters;
-      state.users = users;
-      markDone('rosters'); setProgress(35);
-
-      // Players DB (large)
-      setStatus('players', 'Fetching players DB ( ~7MB )...');
-      state.players = await safeJson(`https://api.sleeper.app/v1/players/nfl`, 'players');
-      markDone('players'); setProgress(60);
-
-      // Traded picks
-      let tradedPicks = [];
-      try {
-        tradedPicks = await safeJson(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`, 'rosters');
-      } catch {}
-
-      // Values
-      await loadValues();
-      markDone('values'); setProgress(80);
-
-      // Compute
-      setStatus('compute', 'Computing rankings...');
-      computeTeams(tradedPicks);
-      markDone('compute'); setProgress(100);
-      setStatus(null, 'Done');
-      render();
-    } catch(e) {
-      console.error(e);
-      showError('Failed to load league data', e);
-      setStatus(null, 'Error');
-    }
-  }
-
-  async function loadValues() {
-    state.valuesMap.clear();
-    state.pickValues.clear();
-    let csvText = '';
-    const urlsToTry = [];
-    const customUrl = csvUrlInput.value.trim();
-    if (customUrl) urlsToTry.push(customUrl);
-    if (VALUES_CSV_URL) urlsToTry.push(VALUES_CSV_URL);
-    
-    for (const url of urlsToTry) {
-      try {
-        csvText = await safeText(url, 'values');
-        break;
-      } catch(e) {
-        // try jina proxy
-        try {
-          const prox = 'https://r.jina.ai/http://' + url.replace(/^https?:\/\//,'');
-          csvText = await safeText(prox, 'values');
-          break;
-        } catch(e2) {}
-      }
-    }
-    if (!csvText) {
-      // Fallback: synthesize values for players in rosters
-      synthesizeValues();
-      matchedBadge.classList.remove('hidden');
-      matchedBadge.textContent = `Synthetic values • No sheet`;
-      return;
-    }
-    parseValuesCsv(csvText);
-  }
-
-  function synthesizeValues() {
-    const rand = (min,max)=>Math.floor(Math.random()*(max-min+1))+min;
-    const allPids = new Set();
-    state.rosters.forEach(r => (r.players||[]).forEach(pid => allPids.add(pid)));
-    allPids.forEach(pid => {
-      const p = state.players[pid];
-      if (!p) return;
-      const pos = p.position;
-      const base = pos==='QB'?7000:pos==='RB'?6000:pos==='WR'?6200:pos==='TE'?4000:500;
-      const value = rand(base*0.6, base*1.4);
-      const ppg = +(rand(80,250)/10).toFixed(1);
-      const age = p.age || rand(21,31);
-      const tier = value>9000?1:value>7000?2:value>5000?3:value>3000?4:5;
-      state.valuesMap.set(pid, {value, ppg, age, tier, pos, team:p.team, name:`${p.first_name} ${p.last_name}`});
-    });
-    // Pick values
-    for (let y=0; y<3; y++) {
-      const season = (new Date().getFullYear()+1+y);
-      [1,2,3,4].forEach(rnd=>{
-        const base = [10000,5000,2500,1200][rnd-1];
-        const val = Math.round(base * Math.pow(0.78, y));
-        state.pickValues.set(`${season} ${rnd}`, val);
-      });
-    }
-  }
-
-  function parseValuesCsv(text) {
-    const lines = text.trim().split(/\r?\n/).filter(Boolean);
-    if (lines.length < 2) { synthesizeValues(); return; }
-    const headers = lines[0].split(',').map(h=>h.trim().toLowerCase());
-    const idx = (k)=>headers.indexOf(k);
-    let matched = 0, total=0;
-    for (let i=1;i<lines.length;i++) {
-      const cols = parseCsvLine(lines[i]);
-      if (cols.length < headers.length) continue;
-      const pid = cols[idx('player_id')];
-      const pickId = cols[idx('pick_id')] || cols[idx('pick')];
-      if (pickId) {
-        const val = Number(cols[idx('value')]||0);
-        if (val) state.pickValues.set(pickId.trim(), val);
-        continue;
-      }
-      if (!pid) continue;
-      total++;
-      const pos = cols[idx('position')];
-      const value = Number(cols[idx('value')]||0);
-      const ppg = Number(cols[idx('ppg')]||0);
-      const age = Number(cols[idx('age')]||0);
-      const tier = Number(cols[idx('tier')]||0);
-      if (value) {
-        state.valuesMap.set(pid, {
-          value, ppg, age, tier, pos,
-          team: cols[idx('team')]||'',
-          name: cols[idx('full_name')]||cols[idx('name')]||''
-        });
-        matched++;
-      }
-    }
-    matchedBadge.classList.remove('hidden');
-    const rosterPids = new Set(state.rosters.flatMap(r=>r.players||[]));
-    const matchedRoster = [...rosterPids].filter(pid=>state.valuesMap.has(pid)).length;
-    matchedBadge.textContent = `Matched ${matchedRoster} / ${rosterPids.size} players`;
-  }
-
-  function parseCsvLine(line) {
-    const out=[]; let cur=''; let inQ=false;
-    for (let i=0;i<line.length;i++) {
-      const ch=line[i];
-      if (ch=='"') { inQ=!inQ; continue; }
-      if (ch==',' && !inQ) { out.push(cur); cur=''; }
-      else cur+=ch;
+  function splitCSVLine(line){
+    const out=[]; let cur=''; let q=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){ q=!q; continue; }
+      if(c===',' && !q){ out.push(cur); cur=''; } else cur+=c;
     }
     out.push(cur);
-    return out.map(s=>s.trim());
+    return out;
   }
 
-  function computeTeams(tradedPicks) {
-    const userMap = new Map(state.users.map(u=>[u.user_id, u]));
-    const rosterById = new Map(state.rosters.map(r=>[r.roster_id, r]));
-    // Build pick ownership
-    const seasonStart = new Date().getFullYear()+1;
-    const pickOwnership = new Map(); // roster_id -> array of {season, round}
-    state.rosters.forEach(r=>pickOwnership.set(r.roster_id, []));
-    for (let s=0;s<3;s++) {
-      const season = seasonStart+s;
-      for (let rnd=1;rnd<=4;rnd++) {
-        state.rosters.forEach(r=>{
-          pickOwnership.get(r.roster_id).push({season, round:rnd, original:r.roster_id});
-        });
-      }
+  async function fetchJSON(url){
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('Fetch failed '+url);
+    return r.json();
+  }
+  async function fetchText(url){
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('Fetch failed '+url);
+    return r.text();
+  }
+
+  function getLeagueIdFromURL(){
+    const params = new URLSearchParams(window.location.search);
+    return params.get('league_id') || params.get('league') || params.get('id') || window.location.hash.replace('#','') || '';
+  }
+
+  function saveLastLeague(id){
+    try{ localStorage.setItem('lastLeagueId', id); }catch(e){}
+  }
+  function loadLastLeague(){
+    try{ return localStorage.getItem('lastLeagueId') || ''; }catch(e){ return ''; }
+  }
+
+  function buildPlayerMap(csvRows){
+    const byId = new Map();
+    const byName = new Map();
+    for(const r of csvRows){
+      if(r.player_id) byId.set(r.player_id, r);
+      if(r.name) byName.set(r.name.toLowerCase(), r);
     }
-    // Apply trades
-    (tradedPicks||[]).forEach(tp=>{
-      const ownerRoster = state.rosters.find(r=>r.owner_id===tp.owner_id);
-      const prevRoster = state.rosters.find(r=>r.roster_id===tp.roster_id);
-      if (!ownerRoster || !prevRoster) return;
-      const arr = pickOwnership.get(prevRoster.roster_id);
-      const idx = arr.findIndex(p=>p.season===tp.season && p.round===tp.round);
-      if (idx>-1) {
-        arr.splice(idx,1);
-        pickOwnership.get(ownerRoster.roster_id).push({season:tp.season, round:tp.round, original:prevRoster.roster_id});
+    return {byId, byName};
+  }
+
+  function getPlayerInfo(playerId, playerMap){
+    const p = playersDB?.[playerId];
+    if(!p) return null;
+    const csv = playerMap.byId.get(playerId) || playerMap.byName.get((p.first_name+' '+p.last_name).toLowerCase()) || playerMap.byName.get(p.last_name?.toLowerCase());
+    const name = p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : (csv?.name || playerId);
+    const pos = (p.position || csv?.pos || '').toUpperCase();
+    const age = p.age || csv?.age || null;
+    const ppg = csv?.ppg || 0;
+    const value = csv?.value || 0;
+    return { id:playerId, name, pos, age, ppg, value, team:p.team || csv?.team || '' };
+  }
+
+  function optimalStarters(players, slots){
+    const pool = [...players];
+    const used = new Set();
+    let totalPPG = 0;
+    const picks = [];
+    const takeBest = (eligiblePos) => {
+      let bestIdx = -1, bestPPG = -1;
+      for(let i=0;i<pool.length;i++){
+        if(used.has(i)) continue;
+        const pl = pool[i];
+        if(!pl.ppg) continue;
+        if(eligiblePos.includes(pl.pos)){
+          if(pl.ppg > bestPPG){ bestPPG = pl.ppg; bestIdx = i; }
+        }
       }
-    });
+      if(bestIdx>=0){
+        used.add(bestIdx);
+        totalPPG += pool[bestIdx].ppg;
+        picks.push(pool[bestIdx]);
+        return true;
+      }
+      return false;
+    };
+    const slotOrder = [];
+    for(const s of slots){
+      if(['QB','RB','WR','TE','K','DEF'].includes(s)) slotOrder.push(s);
+    }
+    const flexCount = slots.filter(s=>s.includes('FLEX') && !s.includes('SUPER')).length;
+    const superCount = slots.filter(s=>s.includes('SUPER')).length;
+    for(const s of slotOrder) takeBest([s]);
+    for(let i=0;i<flexCount;i++) takeBest(['RB','WR','TE']);
+    for(let i=0;i<superCount;i++) takeBest(['QB','RB','WR','TE']);
+    return { totalPPG, picks };
+  }
 
-    const teams = state.rosters.map(roster=>{
-      const user = userMap.get(roster.owner_id);
-      const teamName = user?.metadata?.team_name || user?.display_name || `Team ${roster.roster_id}`;
-      const playerIds = [...(roster.players||[]), ...(roster.taxi||[]), ...(roster.reserve||[])];
-      const players = playerIds.map(pid=>{
-        const p = state.players[pid];
-        const v = state.valuesMap.get(pid);
-        if (!p) return null;
-        return {
-          pid,
-          pos:p.position,
-          name:`${p.first_name} ${p.last_name}`,
-          team:p.team||'FA',
-          age:v?.age || p.age || null,
-          ppg:v?.ppg || 0,
-          value:v?.value || 0,
-          tier:v?.tier || 99
+  function computeTier(rank, n){
+    const pct = n>1 ? (n - rank) / (n-1) : 1;
+    if(pct >= 0.9) return 'Platinum';
+    if(pct >= 0.7) return 'Gold';
+    if(pct >= 0.3) return 'Silver';
+    if(pct >= 0.1) return 'Bronze';
+    return 'Iron';
+  }
+
+  function pickTagFromTier(tier){
+    if(tier==='Platinum' || tier==='Gold') return { tag:'Late', mult:0.7 };
+    if(tier==='Silver') return { tag:'Mid', mult:1.0 };
+    return { tag:'Early', mult:1.4 };
+  }
+
+  async function loadLeague(leagueId){
+    if(!leagueId) return;
+    emptyState.innerHTML = `<div class="spinner mb-5"></div><p class="text-[15px] text-[#cbd5e1]">Loading league ${esc(leagueId)}...</p>`;
+    emptyState.classList.remove('hidden');
+    tbody.innerHTML = '';
+    try{
+      const [league, rosters, users, tradedPicks] = await Promise.all([
+        fetchJSON(`${SLEEPER}/league/${leagueId}`),
+        fetchJSON(`${SLEEPER}/league/${leagueId}/rosters`),
+        fetchJSON(`${SLEEPER}/league/${leagueId}/users`),
+        fetchJSON(`${SLEEPER}/league/${leagueId}/traded_picks`).catch(()=>[])
+      ]);
+      if(!playersDB){
+        playersDB = await fetchJSON(`${SLEEPER}/players/nfl`);
+      }
+      const csvText = await fetchText(CSV_URL);
+      const csvRows = parseCSV(csvText);
+      const playerMap = buildPlayerMap(csvRows);
+      const userById = new Map(users.map(u=>[u.user_id, u]));
+      const rawSlots = league.roster_positions || [];
+      const starterSlots = rawSlots.filter(s=>!['BN','TAXI','RESERVE','IR'].includes(s));
+      const teams = rosters.map(r=>{
+        const user = userById.get(r.owner_id) || {};
+        const teamName = user.metadata?.team_name || user.display_name || `Team ${r.roster_id}`;
+        const ownerName = user.display_name || 'Unknown';
+        const playerIds = r.players || [];
+        const players = playerIds.map(pid=>getPlayerInfo(pid, playerMap)).filter(Boolean);
+        const byPos = { QB:[], RB:[], WR:[], TE:[], K:[], DEF:[] };
+        for(const pl of players){
+          if(byPos[pl.pos]) byPos[pl.pos].push(pl);
+        }
+        for(const k in byPos) byPos[k].sort((a,b)=>b.value-a.value);
+        const posValue = {
+          QB: byPos.QB.reduce((s,p)=>s+p.value,0),
+          RB: byPos.RB.reduce((s,p)=>s+p.value,0),
+          WR: byPos.WR.reduce((s,p)=>s+p.value,0),
+          TE: byPos.TE.reduce((s,p)=>s+p.value,0),
         };
-      }).filter(Boolean);
-
-      // Position groups
-      const byPos = {QB:[], RB:[], WR:[], TE:[]};
-      players.forEach(pl=>{ if(byPos[pl.pos]) byPos[pl.pos].push(pl); });
-      Object.values(byPos).forEach(arr=>arr.sort((a,b)=>b.value-a.value));
-
-      const posValue = {
-        QB: byPos.QB.reduce((s,p)=>s+p.value,0),
-        RB: byPos.RB.reduce((s,p)=>s+p.value,0),
-        WR: byPos.WR.reduce((s,p)=>s+p.value,0),
-        TE: byPos.TE.reduce((s,p)=>s+p.value,0)
-      };
-
-      // Picks
-      const picks = pickOwnership.get(roster.roster_id)||[];
-      const pickDetails = picks.map(pk=>{
-        const key1 = `${pk.season} ${pk.round}`;
-        const key2 = `${pk.season} ${pk.round}.01`; // alt format
-        const val = state.pickValues.get(key1) || state.pickValues.get(key2) || pickSynthetic(pk.season,pk.round);
-        return {...pk, value:val, label:`${pk.season} ${ordinal(pk.round)}`};
-      }).sort((a,b)=>a.season-b.season || a.round-b.round);
-      const pickValue = pickDetails.reduce((s,p)=>s+p.value,0);
-
-      // Optimal PPG Superflex
-      const ppgOpt = optimalPPG(players);
-
-      const totalValue = players.reduce((s,p)=>s+p.value,0) + pickValue;
-      const avgAge = players.length ? (players.reduce((s,p)=>s+(p.age||25),0)/players.length) : 0;
-      const avgTier = players.length ? (players.reduce((s,p)=>s+(p.tier||5),0)/players.length) : 0;
-
-      return {
-        roster_id:roster.roster_id,
-        teamName,
-        ownerName:user?.display_name||'',
-        players,
-        byPos,
-        posValue,
-        pickValue,
-        pickDetails,
-        ppgOpt,
-        totalValue,
-        avgAge,
-        avgTier
-      };
-    });
-
-    // Rankings
-    const metrics = [
-      {k:'QB', get:t=>t.posValue.QB, desc:true},
-      {k:'RB', get:t=>t.posValue.RB, desc:true},
-      {k:'WR', get:t=>t.posValue.WR, desc:true},
-      {k:'TE', get:t=>t.posValue.TE, desc:true},
-      {k:'PK', get:t=>t.pickValue, desc:true},
-      {k:'PPG', get:t=>t.ppgOpt, desc:true},
-      {k:'VALUE', get:t=>t.totalValue, desc:true},
-      {k:'AGE', get:t=>t.avgAge, desc:false},
-      {k:'TIER', get:t=>t.avgTier, desc:false},
-    ];
-    metrics.forEach(m=>{
-      const sorted = [...teams].sort((a,b)=> m.desc ? m.get(b)-m.get(a) : m.get(a)-m.get(b));
-      sorted.forEach((t,i)=>{ t.ranks = t.ranks||{}; t.ranks[m.k]=i+1; });
-    });
-
-    state.teams = teams.sort((a,b)=>a.ranks.VALUE - b.ranks.VALUE);
+        const { totalPPG, picks: starters } = optimalStarters(players, starterSlots);
+        const totalPlayerValue = players.reduce((s,p)=>s+p.value,0);
+        const ageW = players.filter(p=>p.age && p.value>0);
+        const ageNum = ageW.reduce((s,p)=>s+p.age*p.value,0);
+        const ageDen = ageW.reduce((s,p)=>s+p.value,0);
+        const avgAge = ageDen ? ageNum/ageDen : null;
+        return {
+          roster_id: r.roster_id,
+          teamName, ownerName,
+          players, byPos,
+          posValue,
+          startersPPG: totalPPG,
+          starters,
+          totalPlayerValue,
+          avgAge,
+          settings: r.settings || {}
+        };
+      });
+      const byPPG = [...teams].sort((a,b)=>b.startersPPG-a.startersPPG);
+      byPPG.forEach((t,i)=>{
+        t.ppgRank = i+1;
+        t.tier = computeTier(i+1, byPPG.length);
+      });
+      const seasons = new Set();
+      tradedPicks.forEach(p=>seasons.add(p.season));
+      const curYear = new Date().getFullYear();
+      for(let y=curYear; y<=curYear+3; y++) seasons.add(y);
+      const seasonList = [...seasons].sort();
+      const pickOwner = new Map();
+      for(const r of rosters){
+        for(const season of seasonList){
+          for(let round=1; round<=4; round++){
+            const key = `${season}_${round}_${r.roster_id}`;
+            pickOwner.set(key, r.roster_id);
+          }
+        }
+      }
+      for(const p of tradedPicks){
+        const key = `${p.season}_${p.round}_${p.roster_id}`;
+        pickOwner.set(key, p.owner_id);
+      }
+      const basePickValue = {1:8000,2:3500,3:1500,4:600};
+      for(const t of teams){
+        const ownedPicks = [];
+        for(const [key, ownerId] of pickOwner.entries()){
+          if(ownerId !== t.roster_id) continue;
+          const [season, round, orig] = key.split('_').map(Number);
+          const origTeam = teams.find(x=>x.roster_id===orig);
+          const tier = origTeam?.tier || 'Silver';
+          const {tag, mult} = pickTagFromTier(tier);
+          const yearsOut = Math.max(0, season - curYear);
+          const discount = Math.pow(0.8, yearsOut);
+          const base = basePickValue[round] || 200;
+          const adjValue = Math.round(base * discount * mult);
+          ownedPicks.push({ season, round, origRosterId:orig, origTeamName:origTeam?.teamName||`Team ${orig}`, tag, adjValue });
+        }
+        ownedPicks.sort((a,b)=> a.season - b.season || a.round - b.round);
+        t.picks = ownedPicks;
+        t.pickValue = ownedPicks.reduce((s,p)=>s+p.adjValue,0);
+      }
+      teams.forEach(t=>{
+        t.totalValue = t.totalPlayerValue + t.pickValue;
+        t.posValue.PK = t.pickValue;
+      });
+      for(const pos of ['QB','RB','WR','TE','PK']){
+        const sorted = [...teams].sort((a,b)=> (b.posValue[pos]||0) - (a.posValue[pos]||0));
+        sorted.forEach((t,i)=>{ t[`rank_${pos}`] = i+1; });
+      }
+      const displayTeams = [...teams].sort((a,b)=> a.ppgRank - b.ppgRank);
+      lastData = displayTeams;
+      renderTable(displayTeams);
+      emptyState.classList.add('hidden');
+      saveLastLeague(leagueId);
+    }catch(err){
+      console.error(err);
+      emptyState.innerHTML = `<p class="text-[#f87171]">Failed to load league. Check console.</p>`;
+    }
   }
 
-  function pickSynthetic(season, round) {
-    const base = [10000,5000,2500,1200][round-1]||500;
-    const years = Math.max(0, season - new Date().getFullYear() - 1);
-    return Math.round(base * Math.pow(0.78, years));
-  }
-  function ordinal(n){ return n===1?'1st':n===2?'2nd':n===3?'3rd':`${n}th`; }
-
-  function optimalPPG(players) {
-    const qbs = players.filter(p=>p.pos==='QB').sort((a,b)=>b.ppg-a.ppg);
-    const rbs = players.filter(p=>p.pos==='RB').sort((a,b)=>b.ppg-a.ppg);
-    const wrs = players.filter(p=>p.pos==='WR').sort((a,b)=>b.ppg-a.ppg);
-    const tes = players.filter(p=>p.pos==='TE').sort((a,b)=>b.ppg-a.ppg);
-    let sum=0;
-    sum += qbs.slice(0,2).reduce((s,p)=>s+p.ppg,0);
-    sum += rbs.slice(0,2).reduce((s,p)=>s+p.ppg,0);
-    sum += wrs.slice(0,3).reduce((s,p)=>s+p.ppg,0);
-    sum += tes.slice(0,1).reduce((s,p)=>s+p.ppg,0);
-    // flex: best 2 remaining RB/WR/TE
-    const used = new Set([
-      ...qbs.slice(0,2),
-      ...rbs.slice(0,2),
-      ...wrs.slice(0,3),
-      ...tes.slice(0,1)
-    ]);
-    const flexPool = players.filter(p=>['RB','WR','TE'].includes(p.pos) && !used.has(p)).sort((a,b)=>b.ppg-a.ppg);
-    sum += flexPool.slice(0,2).reduce((s,p)=>s+p.ppg,0);
-    return Math.round(sum*10)/10;
-  }
-
-  function render() {
-    if (!state.teams.length) { emptyState.classList.remove('hidden'); return; }
-    emptyState.classList.add('hidden');
-    summaryList.innerHTML = '';
-    state.teams.forEach((t, idx)=>{
-      const row = document.createElement('div');
-      row.className = 'group';
-      row.innerHTML = `
-        <button class="w-full grid grid-cols-[220px_repeat(9,1fr)] gap-3 px-4 py-4 hover:bg-zinc-950/70 transition text-left border-b border-zinc-900/60" data-roster="${t.roster_id}">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-xs mono text-zinc-500">${String(idx+1).padStart(2,'0')}</div>
-            <div>
-              <div class="font-medium leading-tight">${escapeHtml(t.teamName)}</div>
-              <div class="text-xs text-zinc-500 -mt-0.5">${escapeHtml(t.ownerName)}</div>
+  function renderTable(teams){
+    tbody.innerHTML = '';
+    expandedRosterId = null;
+    const frag = document.createDocumentFragment();
+    teams.forEach((t, idx)=>{
+      const tr = document.createElement('tr');
+      tr.className = 'row-hover cursor-pointer transition';
+      tr.dataset.rosterId = t.roster_id;
+      tr.innerHTML = `
+        <td class="px-5 py-4 align-top mono text-[#9ca3af]">${t.ppgRank}</td>
+        <td class="px-5 py-4 align-top">
+          <div class="flex items-start gap-3">
+            <div class="min-w-0">
+              <div class="font-semibold text-[16px] leading-tight truncate max-w-[240px]">${esc(t.teamName)}</div>
+              <div class="text-[13px] text-[#8a909b]">${esc(t.ownerName)}</div>
             </div>
+            <span class="ml-auto shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border" style="border-color:${tierInfo[t.tier].color}55;background:${tierInfo[t.tier].color}14;color:${tierInfo[t.tier].color}">
+              <span class="w-1.5 h-1.5 rounded-full" style="background:${tierInfo[t.tier].color}"></span>${t.tier}
+            </span>
           </div>
-          ${renderMetric(t.posValue.QB, t.ranks.QB)}
-          ${renderMetric(t.posValue.RB, t.ranks.RB)}
-          ${renderMetric(t.posValue.WR, t.ranks.WR)}
-          ${renderMetric(t.posValue.TE, t.ranks.TE)}
-          ${renderMetric(t.pickValue, t.ranks.PK, true)}
-          ${renderMetric(t.ppgOpt, t.ranks.PPG, false, true)}
-          ${renderMetric(t.totalValue, t.ranks.VALUE)}
-          ${renderMetric(t.avgAge.toFixed(1), t.ranks.AGE, false, false, true)}
-          ${renderMetric(t.avgTier.toFixed(2), t.ranks.TIER, false, false, true)}
-        </button>
-        <div class="hidden bg-[#070709] border-b border-zinc-900" data-panel="${t.roster_id}">
-          <div class="px-4 py-6 grid lg:grid-cols-[1fr_1fr_1fr_1fr_320px] gap-6">
-            ${['QB','RB','WR','TE'].map(pos=>renderPosCol(t,pos)).join('')}
-            <div class="lg:border-l lg:border-zinc-900 lg:pl-6">
-              <div class="flex items-baseline justify-between mb-3">
-                <h4 class="text-sm font-semibold tracking-wide text-amber-200">PICKS</h4>
-                <span class="mono text-amber-300 text-sm">${formatNumber(t.pickValue)}</span>
+        </td>
+        ${['QB','RB','WR','TE','PK'].map(pos=>{
+          const rank = t[`rank_${pos}`];
+          return `<td class="px-3 py-4 text-center align-top">
+            <div class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-[#0f1115] border border-[#262b33] mono text-[15px] font-medium hover:border-[#d4af37]/60 transition" data-pos="${pos}" data-roster="${t.roster_id}">${rank}</div>
+          </td>`;
+        }).join('')}
+        <td class="px-5 py-4 text-right align-top mono text-[15px]">${fmt1(t.startersPPG)}</td>
+        <td class="px-5 py-4 text-right align-top mono text-[15px]">${fmtInt(t.totalValue)}</td>
+        <td class="px-5 py-4 text-right align-top mono text-[15px]">${t.avgAge?fmt1(t.avgAge):'—'}</td>
+      `;
+      frag.appendChild(tr);
+    });
+    tbody.appendChild(frag);
+
+    tbody.querySelectorAll('[data-pos]').forEach(el=>{
+      el.addEventListener('mouseenter', e=>{
+        const pos = el.dataset.pos;
+        const rosterId = Number(el.dataset.roster);
+        const team = lastData.find(t=>t.roster_id===rosterId);
+        if(!team) return;
+        let html = '';
+        if(pos==='PK'){
+          html = `<div class="font-semibold mb-2">Picks Owned</div>
+          <div class="space-y-1.5 max-h-none">
+            ${team.picks.length? team.picks.map(p=>`
+              <div class="flex items-center justify-between gap-4">
+                <div>${p.season} R${p.round} <span class="text-[#8a909b]">(${esc(p.origTeamName)})</span></div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] px-1.5 py-0.5 rounded bg-[#1f232b] border border-[#2a2f38]">${p.tag}</span>
+                  <span class="mono">${fmtInt(p.adjValue)}</span>
+                </div>
               </div>
-              <div class="space-y-1.5 max-h-[340px] overflow-auto pr-2 scrollbar">
-                ${t.pickDetails.map(p=>`
-                  <div class="flex items-center justify-between text-xs bg-zinc-950 border border-zinc-900 rounded-lg px-3 py-2">
-                    <span class="text-zinc-300">${p.label} <span class="text-zinc-600">• ${p.original===t.roster_id?'orig':'via trade'}</span></span>
-                    <span class="mono text-amber-300">${formatNumber(p.value)}</span>
-                  </div>
-                `).join('') || '<div class="text-xs text-zinc-600">No picks</div>'}
+            `).join('') : '<div class="text-[#8a909b]">No picks</div>'}
+          </div>`;
+        }else{
+          const list = team.byPos[pos]||[];
+          html = `<div class="font-semibold mb-2">${pos} — ${esc(team.teamName)}</div>
+          <div class="space-y-1.5">
+            ${list.length? list.map(p=>`
+              <div class="grid grid-cols-[1fr_auto_auto_auto] gap-3 items-baseline">
+                <div class="truncate pr-2">${esc(p.name)}</div>
+                <div class="text-[#8a909b] text-[12px]">Age ${p.age??'—'}</div>
+                <div class="mono text-[13px]">${fmt1(p.ppg)}</div>
+                <div class="mono text-[13px] text-right">${fmtInt(p.value)}</div>
               </div>
-            </div>
+            `).join('') : '<div class="text-[#8a909b]">No players</div>'}
+          </div>`;
+        }
+        showTooltip(html, e.clientX, e.clientY);
+      });
+      el.addEventListener('mousemove', e=>{ if(!tooltip.classList.contains('hidden')) showTooltip(tooltip.innerHTML, e.clientX, e.clientY); });
+      el.addEventListener('mouseleave', hideTooltip);
+    });
+
+    tbody.querySelectorAll('tr[data-roster-id]').forEach(tr=>{
+      tr.addEventListener('click', ()=>{
+        const rosterId = Number(tr.dataset.rosterId);
+        if(expandedRosterId===rosterId){
+          const next = tr.nextElementSibling;
+          if(next && next.classList.contains('details-row')) next.remove();
+          expandedRosterId = null;
+          return;
+        }
+        tbody.querySelectorAll('.details-row').forEach(r=>r.remove());
+        expandedRosterId = rosterId;
+        const team = lastData.find(t=>t.roster_id===rosterId);
+        if(!team) return;
+        const detailsTr = document.createElement('tr');
+        detailsTr.className = 'details-row bg-[#0d0f13]';
+        const td = document.createElement('td');
+        td.colSpan = 10;
+        td.className = 'px-5 py-4 border-t border-[#21252c]';
+        td.innerHTML = renderDetails(team);
+        detailsTr.appendChild(td);
+        tr.after(detailsTr);
+      });
+    });
+  }
+
+  function renderDetails(team){
+    const posOrder = ['QB','RB','WR','TE'];
+    const maxShow = 3;
+    const posBlocks = posOrder.map(pos=>{
+      const list = team.byPos[pos]||[];
+      const shown = list.slice(0,maxShow);
+      const extra = list.length - shown.length;
+      return `
+        <div class="min-w-[160px]">
+          <div class="text-[12px] uppercase tracking-wide text-[#8a909b] font-semibold mb-1.5">${pos}</div>
+          <div class="space-y-1 text-[14px] leading-snug">
+            ${shown.map(p=>`<div class="flex gap-2"><span class="truncate max-w-[140px]">${esc(p.name)}</span><span class="mono text-[#9ca3af]">${fmtInt(p.value)}</span></div>`).join('')}
+            ${extra>0? `<div class="text-[#6b7280] text-[13px]">… +${extra} more</div>`:''}
           </div>
         </div>
       `;
-      summaryList.appendChild(row);
-    });
-
-    // toggle panels
-    summaryList.querySelectorAll('button[data-roster]').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const id = btn.getAttribute('data-roster');
-        const panel = summaryList.querySelector(`[data-panel="${id}"]`);
-        const isOpen = !panel.classList.contains('hidden');
-        summaryList.querySelectorAll('[data-panel]').forEach(p=>p.classList.add('hidden'));
-        if (!isOpen) panel.classList.remove('hidden');
-      });
-    });
-  }
-
-  function renderMetric(val, rank, isInt=false, isPPG=false, isSmall=false) {
-    const display = isPPG ? val.toFixed(1) : isInt ? formatNumber(val) : (typeof val==='number'? formatNumber(Math.round(val)) : val);
-    const rankCls = rank===1 ? 'rank-pill rank-1' : 'rank-pill';
+    }).join('');
+    const picks = team.picks.slice(0,6).map(p=>`${p.season} R${p.round} ${p.tag}`).join(' • ');
     return `
-      <div class="text-center">
-        <div class="mono text-[15px] leading-tight gold">${display}</div>
-        <div class="mt-1 flex justify-center">
-          <span class="${rankCls} text-[10px] px-1.5 py-0.5 rounded-md font-medium">#${rank}</span>
+      <div class="flex flex-wrap gap-8">
+        ${posBlocks}
+        <div class="min-w-[200px]">
+          <div class="text-[12px] uppercase tracking-wide text-[#8a909b] font-semibold mb-1.5">Picks</div>
+          <div class="text-[14px] text-[#cbd5e1]">${esc(picks)||'—'}</div>
+          <div class="text-[12px] text-[#6b7280] mt-1">Value: <span class="mono">${fmtInt(team.pickValue)}</span></div>
+        </div>
+        <div class="min-w-[140px]">
+          <div class="text-[12px] uppercase tracking-wide text-[#8a909b] font-semibold mb-1.5">Starters PPG</div>
+          <div class="text-[14px] mono">${fmt1(team.startersPPG)}</div>
+          <div class="text-[12px] text-[#6b7280] mt-1">Tier: <span style="color:${tierInfo[team.tier].color}">${team.tier}</span></div>
         </div>
       </div>
     `;
   }
 
-  function renderPosCol(team, pos) {
-    const list = team.byPos[pos]||[];
-    return `
-      <div>
-        <h4 class="text-sm font-semibold tracking-wide text-zinc-200 mb-3">${pos} <span class="text-zinc-600 font-normal">• ${list.length}</span></h4>
-        <div class="space-y-2">
-          ${list.map(p=>`
-            <div class="bg-zinc-950 border border-zinc-900 rounded-xl px-3 py-2.5">
-              <div class="flex items-baseline justify-between gap-2">
-                <div class="text-sm font-medium leading-tight truncate">${escapeHtml(p.name)}</div>
-                <div class="mono text-amber-300 text-sm">${formatNumber(p.value)}</div>
-              </div>
-              <div class="text-[11px] text-zinc-500 mt-0.5">${p.team} • ${p.age? p.age+'y': '--'} • ${p.ppg.toFixed(1)} ppg</div>
-            </div>
-          `).join('') || '<div class="text-xs text-zinc-600">—</div>'}
-        </div>
-      </div>
-    `;
-  }
+  searchInput.addEventListener('input', ()=>{
+    const q = searchInput.value.toLowerCase().trim();
+    tbody.querySelectorAll('tr[data-roster-id]').forEach(tr=>{
+      const team = lastData.find(t=>t.roster_id===Number(tr.dataset.rosterId));
+      const match = !q || team.teamName.toLowerCase().includes(q) || team.ownerName.toLowerCase().includes(q);
+      tr.style.display = match ? '' : 'none';
+      const details = tr.nextElementSibling;
+      if(details && details.classList.contains('details-row')) details.style.display = match ? '' : 'none';
+    });
+  });
 
-  function formatNumber(n){
-    if (n>=1000) return (n/1000).toFixed(n>=10000?0:1)+'k';
-    return String(n);
-  }
-  function escapeHtml(s){ return s.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-  // Events
   loadBtn.addEventListener('click', ()=>{
     const id = leagueInput.value.trim();
-    if (!id) return showError('Enter a league ID');
-    history.replaceState(null,'',`?leagueId=${id}`);
-    loadLeague(id);
+    if(id) loadLeague(id);
   });
-  sampleBtn.addEventListener('click', ()=>{
-    leagueInput.value = SAMPLE_LEAGUE;
-    loadLeague(SAMPLE_LEAGUE);
-  });
-  retryBtn.addEventListener('click', ()=>{
-    if (state.leagueId) loadLeague(state.leagueId);
-  });
-  showCsvBtn.addEventListener('click', ()=> csvBox.classList.remove('hidden'));
-  closeCsvBtn.addEventListener('click', ()=> csvBox.classList.add('hidden'));
-  parseCsvBtn.addEventListener('click', ()=>{
-    const txt = csvInput.value.trim();
-    if (!txt) return;
-    parseValuesCsv(txt);
-    if (state.rosters.length) {
-      computeTeams([]);
-      render();
-      csvBox.classList.add('hidden');
-      hideError();
-    }
-  });
-  fetchCsvUrlBtn.addEventListener('click', async ()=>{
-    const url = csvUrlInput.value.trim();
-    if (!url) return;
-    try {
-      setStatus('values','Fetching CSV URL...');
-      const res = await fetchWithRetry(url);
-      const txt = await res.text();
-      parseValuesCsv(txt);
-      if (state.rosters.length) { computeTeams([]); render(); }
-      csvBox.classList.add('hidden');
-    } catch(e){ showError('Failed to fetch CSV URL', e); }
-  });
+  leagueInput.addEventListener('keydown', e=>{ if(e.key==='Enter') loadBtn.click(); });
 
-  // Auto load from URL
-  const params = new URLSearchParams(location.search);
-  const lid = params.get('leagueId');
-  if (lid) { leagueInput.value = lid; loadLeague(lid); }
+  const initId = getLeagueIdFromURL() || loadLastLeague();
+  if(initId){
+    leagueInput.value = initId;
+    loadLeague(initId);
+  }
 })();
 </script>
 </body>
