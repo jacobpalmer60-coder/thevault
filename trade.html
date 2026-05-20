@@ -247,65 +247,65 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     return 'late';
   }
 
-  function buildPickInventory(){
-    state.rosters.forEach(r=>state.pickInventory.set(r.roster_id, []));
+function buildPickInventory(){
+  state.rosters.forEach(r=>state.pickInventory.set(r.roster_id, []));
 
-    state.tradedPicks.forEach(tp=>{
-      const ownerRoster = state.rosters.find(r=>r.owner_id===tp.owner_id);
-      const origRoster = state.rosters.find(r=>r.roster_id===tp.roster_id);
-      if(!ownerRoster ||!origRoster) return;
-      const season = tp.season;
-      if(state.draftedSeasons.has(Number(season))) return;
-      const round = tp.round;
-      const slot = getProjectedSlot(origRoster.roster_id);
-      const pickId = `pick_${season}_${round}_${slot}`;
-      const v = state.values.get(pickId) || state.values.get(`pick_${season}_${round}_mid`);
-      if(!v) return;
-      const inv = state.pickInventory.get(ownerRoster.roster_id);
-      inv.push({
-        id: `pick_${season}_${round}_${slot}_orig${origRoster.roster_id}_owner${ownerRoster.roster_id}`,
-        baseId: pickId,
-        season,
-        round,
-        slot,
-        name: v.name || `${season} ${round}th ${slot}`,
-        value: v.value,
-        origRosterId: origRoster.roster_id,
-        origTeam: teamName(origRoster),
-        isOwn: ownerRoster.roster_id === origRoster.roster_id
-      });
+  state.tradedPicks.forEach(tp=>{
+    const ownerRoster = state.rosters.find(r=>r.owner_id===tp.owner_id);
+    const origRoster = state.rosters.find(r=>r.roster_id===tp.roster_id);
+    if(!ownerRoster ||!origRoster) return;
+    const season = tp.season;
+    if(state.draftedSeasons.has(Number(season))) return;
+    const round = tp.round;
+    const slot = getProjectedSlot(origRoster.roster_id);
+    const pickId = `pick_${season}_${round}_${slot}`;
+    const v = state.values.get(pickId) || state.values.get(`pick_${season}_${round}_mid`);
+    if(!v) return;
+    const inv = state.pickInventory.get(ownerRoster.roster_id);
+    inv.push({
+      id: `pick_${season}_${round}_${slot}_orig${origRoster.roster_id}_owner${ownerRoster.roster_id}`,
+      baseId: pickId,
+      season,
+      round,
+      slot,
+      name: v.name || `${season} ${round}th ${slot}`,
+      value: v.value,
+      origRosterId: origRoster.roster_id,
+      origTeam: teamName(origRoster),
+      isOwn: ownerRoster.roster_id === origRoster.roster_id
     });
+  });
 
-    const years = [2026,2027,2028];
-    state.rosters.forEach(r=>{
-      const inv = state.pickInventory.get(r.roster_id);
-      years.forEach(y=>{
-        if(state.draftedSeasons.has(y)) return;
-        [1,2,3].forEach(rd=>{
-          const wasTradedAway = state.tradedPicks.some(tp=>tp.roster_id===r.roster_id && tp.season==y && tp.round==rd);
-          if(wasTradedAway) return;
-          const slot = getProjectedSlot(r.roster_id);
-          const pickId = `pick_${y}_${rd}_${slot}`;
-          const v = state.values.get(pickId);
-          if(!v) return;
-          if(inv.some(p=>p.baseId===pickId && p.origRosterId===r.roster_id)) return;
-          inv.push({
-            id: `pick_${y}_${rd}_${slot}_own${r.roster_id}`,
-            baseId: pickId,
-            season:y,
-            round:rd,
-            slot,
-            name: v.name || `${y} ${rd}th ${slot}`,
-            value: v.value,
-            origRosterId: r.roster_id,
-            origTeam: teamName(r),
-            isOwn:true
-          });
+  const years = [2026,2027,2028];
+  state.rosters.forEach(r=>{
+    const inv = state.pickInventory.get(r.roster_id);
+    years.forEach(y=>{
+      if(state.draftedSeasons.has(y)) return;
+      [1,2,3,4].forEach(rd=>{
+        const wasTradedAway = state.tradedPicks.some(tp=>tp.roster_id===r.roster_id && tp.season==y && tp.round==rd);
+        if(wasTradedAway) return;
+        const slot = getProjectedSlot(r.roster_id);
+        const pickId = `pick_${y}_${rd}_${slot}`;
+        const v = state.values.get(pickId);
+        if(!v) return;
+        if(inv.some(p=>p.baseId===pickId && p.origRosterId===r.roster_id)) return;
+        inv.push({
+          id: `pick_${y}_${rd}_${slot}_own${r.roster_id}`,
+          baseId: pickId,
+          season:y,
+          round:rd,
+          slot,
+          name: v.name || `${y} ${rd}th ${slot}`,
+          value: v.value,
+          origRosterId: r.roster_id,
+          origTeam: teamName(r),
+          isOwn:true
         });
       });
-      inv.sort((a,b)=>b.value-a.value);
     });
-  }
+    inv.sort((a,b)=>b.value-a.value);
+  });
+}
 
   function rosterPlayers(r){return (r.players||[]).map(playerFromId).filter(p=>p.pos!=='PICK').sort((a,b)=>b.value-a.value);}
 
