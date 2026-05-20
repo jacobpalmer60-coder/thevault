@@ -39,6 +39,16 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     </div>
   </div>
 </header>
+<nav class="border-b border-white/10 bg-slate-950/60 backdrop-blur">
+  <div class="max-w-[1800px] mx-auto px-4 h-10 flex items-center gap-6 text-xs">
+    <a id="nav-player-rankings" href="#" class="text-slate-400 hover:text-white">Player Rankings</a>
+    <a id="nav-league-overview" href="#" class="text-slate-400 hover:text-white">League Overview</a>
+    <a id="nav-trade-calculator" href="#" class="text-cyan-400 font-semibold">Trade Calculator</a>
+    <a id="nav-roster-audit" href="#" class="text-slate-400 hover:text-white">Roster Audit</a>
+    <span class="ml-auto text-[10px] text-slate-600 mono">Sleeper • Dynasty Tools</span>
+  </div>
+</nav>
+
 
 <main class="max-w-[1800px] mx-auto px-4 py-4">
   <div id="status" class="mb-3 text-xs text-slate-400 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div><span id="status-text">Loading…</span></div>
@@ -51,8 +61,15 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     </div>
     <div class="bg-slate-900/60 border border-cyan-500/20 rounded-xl p-3">
       <div class="text-[10px] uppercase text-cyan-300">Fairness</div>
-      <div id="fairness-label" class="text-xl font-semibold mono">Even</div>
+      <div id="fairness-label" class="text-lg font-semibold mono leading-tight">Even</div>
       <div class="mt-1 h-1.5 rounded-full bg-slate-800 overflow-hidden"><div id="fairness-bar" class="h-full w-1/2 bg-gradient-to-r from-cyan-400 to-violet-500"></div></div>
+      <div id="fairness-verdict" class="mt-2 text-[10px] text-slate-400 leading-snug"></div>
+      <div class="mt-3 pt-3 border-t border-white/10">
+        <div class="text-[10px] uppercase text-slate-500">Roster Fit</div>
+        <div id="fit-label" class="text-xs mono text-slate-300">Neutral</div>
+        <div class="mt-1 h-1.5 rounded-full bg-slate-800 overflow-hidden"><div id="fit-bar" class="h-full w-1/2 bg-gradient-to-r from-emerald-400 to-amber-400"></div></div>
+      </div>
+    </div>
     </div>
     <div class="bg-slate-900/60 border border-violet-500/20 rounded-xl p-3">
       <div class="text-[10px] uppercase text-violet-300">Net Value</div>
@@ -277,10 +294,11 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     });
 
     // Build list of next 3 undrafted years
-    const startYear = state.league.season || new Date().getFullYear();
+    const lastDrafted = state.draftedSeasons.size ? Math.max(...state.draftedSeasons) : (state.league.season ? state.league.season - 1 : new Date().getFullYear() - 1);
+    const startYear = lastDrafted + 1;
     const years = [];
     for(let y = startYear; years.length < 3; y++){
-      if(!state.draftedSeasons.has(y)) years.push(y);
+      years.push(y);
     }
 
     state.rosters.forEach(r=>{
@@ -409,24 +427,99 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     return '<div class="rounded-lg bg-white/[0.03] border border-white/10 p-2.5"><div class="text-[10px] uppercase text-slate-400">'+label+'</div><div class="mono text-sm font-semibold mt-0.5 '+color+'">'+val+'</div></div>';
   }
 
+  function getFairnessZone(score){
+    const zones = [
+      {min:25, label:'A Heist', idx:4},
+      {min:15, label:'A Strong Win', idx:3},
+      {min:7, label:'A Clear Win', idx:2},
+      {min:3, label:'A Edge', idx:1},
+      {min:-3, label:'Fair Market', idx:0},
+      {min:-7, label:'B Edge', idx:-1},
+      {min:-15, label:'B Clear Win', idx:-2},
+      {min:-25, label:'B Strong Win', idx:-3},
+      {min:-Infinity, label:'B Heist', idx:-4}
+    ];
+    for(const z of zones){
+      if(score >= z.min) return z;
+    }
+    return zones[4];
+  }
+
+  function getArchetypes(team, selOut, selIn, optDelta, valueDeltaPct){
+    const badges = [];
+    const picksOut = selOut.filter(x=>x.type==='pick').reduce((s,x)=>s+x.value,0);
+    const picksIn = selIn.filter(x=>x.type==='pick').reduce((s,x)=>s+x.value,0);
+    const totalOut = selOut.reduce((s,x)=>s+x.value,0);
+    const totalIn = selIn.reduce((s,x)=>s+x.value,0);
+    const picksOutPct = totalOut ? picksOut/totalOut : 0;
+    const picksInPct = totalIn ? picksIn/totalIn : 0;
+    const playersOut = selOut.filter(x=>x.type!=='pick');
+    const playersIn = selIn.filter(x=>x.type!=='pick');
+    const avgAge = arr => arr.length ? arr.reduce((s,x)=>s+(x.age||0),0)/arr.length : 0;
+    const ageOut = avgAge(playersOut);
+    const ageIn = avgAge(playersIn);
+
+    if(picksInPct >= 0.6 && optDelta <= 0) badges.push('Rebuild Haul');
+    if(picksOutPct >= 0.6 && optDelta > 1.5) badges.push('Win-Now Tax');
+    if(ageOut > 27 && ageIn > 0 && ageIn < 24) badges.push('Age Dump');
+    if(optDelta > 2 && valueDeltaPct >= -10) badges.push('Starter Upgrade');
+    if(selOut.length >= 3 && selIn.length === 1 && Math.abs(valueDeltaPct) < 10) badges.push('Depth Consolidation');
+    if(valueDeltaPct < -10 && ageIn > 0 && ageOut > 0 && (ageOut - ageIn) > 3) badges.push('Youth Tax');
+    return badges.slice(0,2);
+  }
+
   function renderImpact(){
     const imp=computeImpact(); if(!imp) return;
     const {A,B,selA,selB,optBeforeA,optAfterA,optBeforeB,optAfterB}=imp;
     const picksA = selA.filter(x=>x.type==='pick').length;
     const picksB = selB.filter(x=>x.type==='pick').length;
 
-    const netA = (A.netValue>=0?'+':'')+fmt(A.netValue);
-    const netB = (B.netValue>=0?'+':'')+fmt(B.netValue);
+    // Fairness
+    const fairnessScore = A.valueDeltaPct; // positive = A wins
+    const zone = getFairnessZone(fairnessScore);
+    const fairnessPct = Math.max(0, Math.min(100, 50 + fairnessScore * 1.2));
+    $('#fairness-bar').style.width = fairnessPct + '%';
+    $('#fairness-label').textContent = zone.label;
 
+    // Verdict sentence
+    const badgesA = getArchetypes('A', selA, selB, A.optPpgDelta, A.valueDeltaPct);
+    const badgesB = getArchetypes('B', selB, selA, B.optPpgDelta, B.valueDeltaPct);
+    const verdictEl = document.getElementById('fairness-verdict');
+    if(verdictEl){
+      const parts = [];
+      if(zone.label !== 'Fair Market') parts.push(zone.label);
+      const allBadges = [...new Set([...badgesA, ...badgesB])];
+      if(allBadges.length) parts.push(allBadges.join(' · '));
+      verdictEl.textContent = parts.join(' · ') || 'Fair Market';
+    }
+
+    // Roster fit bar
+    const fitBar = document.getElementById('fit-bar');
+    if(fitBar){
+      const fitScore = A.optPpgDelta; // positive = A more win-now
+      const fitPct = Math.max(0, Math.min(100, 50 + fitScore * 10));
+      fitBar.style.width = fitPct + '%';
+      const fitLabel = document.getElementById('fit-label');
+      if(fitLabel){
+        let txt = 'Neutral';
+        if(fitScore > 3) txt = 'A All-In Win-Now';
+        else if(fitScore > 1) txt = 'A Win-Now Edge';
+        else if(fitScore < -3) txt = 'A Rebuild';
+        else if(fitScore < -1) txt = 'A Youth Edge';
+        fitLabel.textContent = txt;
+      }
+    }
+
+    // Impact cards
     $('#impact-a').innerHTML = [
-      metricCard('Net Value', netA),
+      metricCard('Net Value', (A.netValue>=0?'+':'')+fmt(A.netValue)),
       metricCard('Value Δ %', fmtPct(A.valueDeltaPct)),
       metricCard('PPG Δ', fmt1(A.ppgDelta)),
       metricCard('OPT PPG Δ', fmt1(A.optPpgDelta))
     ].join('');
 
     $('#impact-b').innerHTML = [
-      metricCard('Net Value', netB),
+      metricCard('Net Value', (B.netValue>=0?'+':'')+fmt(B.netValue)),
       metricCard('Value Δ %', fmtPct(B.valueDeltaPct)),
       metricCard('PPG Δ', fmt1(B.ppgDelta)),
       metricCard('OPT PPG Δ', fmt1(B.optPpgDelta))
@@ -438,20 +531,23 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     $('#count-b').textContent=selB.length;
     $('#picks-count-a').textContent=picksA;
     $('#picks-count-b').textContent=picksB;
-    $('#net-a').textContent=netA;
-    $('#net-b').textContent=netB;
-    const fairness=Math.max(-100,Math.min(100,B.valueDeltaPct-A.valueDeltaPct));
-    $('#fairness-bar').style.width=`${50+fairness/2}%`;
-    $('#fairness-label').textContent=Math.abs(fairness)<5?'Even':fairness>0?'B +':'A +';
+    $('#net-a').textContent=(A.netValue>=0?'+':'')+fmt(A.netValue);
+    $('#net-b').textContent=(B.netValue>=0?'+':'')+fmt(B.netValue);
+
     const lineHTML=(b,a)=>b.line.map((l,i)=>'<div class="flex justify-between"><span class="text-slate-500 w-14">'+l.slot+'</span><span class="truncate flex-1">'+(l.player?.name||'—')+'</span><span class="text-slate-600 mx-1">→</span><span class="truncate flex-1 text-cyan-300">'+(a.line[i].player?.name||'—')+'</span></div>').join('');
     $('#opt-a').innerHTML=lineHTML(optBeforeA,optAfterA);
     $('#opt-b').innerHTML=lineHTML(optBeforeB,optAfterB);
-    const warn=(m, picks)=>{const w=[];if(m.valueDeltaPct<-10)w.push('Losing value');if(m.optPpgDelta<-1)w.push('Starters weaker');if(picks>0 && m.optPpgDelta>0)w.push('Win-now move');if(picks>0 && m.optPpgDelta<=0)w.push('Rebuild move');return w;};
-    $('#warnings-a').innerHTML=warn(A,picksA).map(t=>'<div class="text-xs px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-200">'+t+'</div>').join('')||'<div class="text-xs text-slate-500">No warnings</div>';
-    $('#warnings-b').innerHTML=warn(B,picksB).map(t=>'<div class="text-xs px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-200">'+t+'</div>').join('')||'<div class="text-xs text-slate-500">No warnings</div>';
-  }
 
-  function updateAll(){
+    const warn=(m, picks)=>{const w=[];if(m.valueDeltaPct<-10)w.push('Losing value');if(m.optPpgDelta<-1)w.push('Starters weaker');if(picks>0 && m.optPpgDelta>0)w.push('Win-now move');if(picks>0 && m.optPpgDelta<=0)w.push('Rebuild move');return w;};
+    const renderBadges = (badges, warns) => {
+      const b = badges.map(t=>'<div class="text-[10px] px-2 py-1 rounded bg-violet-500/10 border border-violet-500/20 text-violet-200">'+t+'</div>').join('');
+      const w = warns.map(t=>'<div class="text-[10px] px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-200">'+t+'</div>').join('');
+      return b + w || '<div class="text-xs text-slate-500">No warnings</div>';
+    };
+    $('#warnings-a').innerHTML = renderBadges(badgesA, warn(A,picksA));
+    $('#warnings-b').innerHTML = renderBadges(badgesB, warn(B,picksB));
+  }
+function updateAll(){
     renderPicks(state.teamA,'#picks-a',state.selectedA);
     renderPicks(state.teamB,'#picks-b',state.selectedB);
     renderRoster(state.teamA,'#roster-a',state.selectedA,'a');
@@ -479,6 +575,17 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     buildPickInventory();
     renderSelect();
     setStatus('Ready');
+    // Update nav links with league_id
+    const baseLinks = {
+      'nav-player-rankings': 'player-rankings.html',
+      'nav-league-overview': 'league-overview.html',
+      'nav-trade-calculator': 'trade-calculator.html',
+      'nav-roster-audit': 'roster-audit.html'
+    };
+    Object.entries(baseLinks).forEach(([id, file])=>{
+      const el = document.getElementById(id);
+      if(el) el.href = file + '?league_id=' + league_id;
+    });
     updateAll();
   }
 
