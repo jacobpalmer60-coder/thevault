@@ -3,388 +3,630 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>League Overview – Dynasty Audit</title>
+<title>Dynasty Audit</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>
-    :root { color-scheme: dark; }
-    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: radial-gradient(1200px 800px at 10% -10%, rgba(245,158,11,0.08), transparent), radial-gradient(1000px 600px at 110% 10%, rgba(56,189,248,0.08), transparent), #020617; }
-    .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-    .mono { font-family: 'JetBrains Mono', monospace; }
-    .scrollbar { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
-    .scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
-    .scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
-    .scrollbar::-webkit-scrollbar-track { background: transparent; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-    .fade-in { animation: fadeIn .3s ease-out; }
+  :root { color-scheme: dark; }
+  html { scroll-behavior:smooth }
+  body { font-family: Inter, system-ui, -apple-system, sans-serif; background:#070708; }
+  .display { font-family:"Space Grotesk", Inter, sans-serif; }
+  .gold-text {
+    background: linear-gradient(180deg,#FFE9A8 0%,#D4AF37 45%,#A67C00 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .gold-border { border-color: rgba(212,175,55,0.35); }
+  .card {
+    background: radial-gradient(120% 120% at 0% 0%, rgba(212,175,55,0.08) 0%, rgba(12,12,14,0.9) 40%), #0C0D10;
+    border:1px solid rgba(255,255,255,0.06);
+  }
+  .rank-pill {
+    background: linear-gradient(180deg,#FDEBA7 0%,#D4AF37 50%,#8C6A0A 100%);
+    color:#0a0a0a; font-weight:800;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6) inset, 0 2px 8px rgba(212,175,55,0.25);
+  }
+  .tier-pill { border:1px solid rgba(212,175,55,0.4); background: rgba(212,175,55,0.08); color:#FDEBA7; }
+  .chip {
+    background:#111217; border:1px solid rgba(255,255,255,0.08);
+  }
+  .chip:hover { border-color: rgba(212,175,55,0.5); }
+  .pos-pill { background:#0f1013; border:1px solid rgba(255,255,255,0.08); }
+  th.sortable { cursor:pointer; user-select:none; }
+  th.sortable:hover { color:#FDEBA7; }
+  .draft-chip { background:#0f1013; border:1px solid rgba(212,175,55,0.25); }
+  .divider { height:1px; background:linear-gradient(90deg,transparent,rgba(212,175,55,0.35),transparent); }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-track { background:#0a0a0c; }
+  ::-webkit-scrollbar-thumb { background:#2a2a31; border-radius:999px; }
+  ::-webkit-scrollbar-thumb:hover { background:#3a3a44; }
 </style>
 </head>
-<body class="min-h-screen text-slate-100">
-    <!-- Header -->
-    <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/80 glass">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-900/30">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v6c0 4.418-3.582 8-8 8s-8-3.582-8-8V7l9-4z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>
-                    </div>
-                    <div>
-                        <h1 class="text-lg font-bold tracking-tight">League Overview</h1>
-                        <p class="text-xs text-slate-400 -mt-0.5">Dynasty Audit</p>
-                    </div>
-                </div>
-                <div class="hidden sm:flex items-center gap-2">
-                    <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Sleeper</span>
-                    <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">Live Data</span>
-                </div>
-            </div>
+<body class="min-h-screen text-zinc-200 antialiased">
+  <!-- Header -->
+  <header class="backdrop-blur-xl bg-[#070708]/80 border-b border-white/5">
+    <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-4 flex items-center gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-300 to-yellow-700 flex items-center justify-center shadow-lg shadow-amber-900/30">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2-4.5-4.4 6.2-.9L12 2z" fill="#0a0a0a"/></svg>
         </div>
-    </header>
-
-    <!-- Main -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Navigation Bar -->
-        <nav id="topNav" class="flex flex-wrap items-center gap-5 mb-6 text-sm">
-          <a href="https://rosteraudit.com/" target="_blank" class="text-amber-300 hover:text-amber-200 hover:underline underline-offset-4">Roster Audit</a>
-          <a id="navVault" href="https://jacobpalmer60-coder.github.io/thevault/app.html" target="_blank" class="text-amber-300 hover:text-amber-200 hover:underline underline-offset-4">The Vault</a>
-          <a id="navRankings" href="https://jacobpalmer60-coder.github.io/thevault/player_rankings.html" target="_blank" class="text-amber-300 hover:text-amber-200 hover:underline underline-offset-4">Player Rankings</a>
-          <a id="navTrade" href="https://jacobpalmer60-coder.github.io/thevault/trade.html" target="_blank" class="text-amber-300 hover:text-amber-200 hover:underline underline-offset-4">Trade</a>
-        </nav>
-
-        <!-- Controls -->
-        <div id="controls" class="mb-6 grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <div class="lg:col-span-5 flex items-center gap-2 bg-slate-900/70 border border-slate-800 rounded-2xl p-2">
-                <div class="pl-3 pr-1 text-slate-500">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 0 0012.15 12.15z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                </div>
-                <input id="leagueInput" type="text" placeholder="Enter Sleeper League ID" class="w-full bg-transparent outline-none placeholder-slate-500 text-sm py-2 px-1 mono" />
-                <button id="loadBtn" class="ml-1 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-semibold transition">
-                    Load
-                </button>
-                <button id="shareBtn" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm border border-slate-700 transition">
-                    Share
-                </button>
-            </div>
-            <div class="lg:col-span-7 flex flex-wrap items-center gap-2">
-                <div class="flex items-center gap-2 bg-slate-900/70 border border-slate-800 rounded-2xl p-2">
-                    <span class="text-xs text-slate-400 px-2">View</span>
-                    <button data-view="overview" class="view-btn px-3 py-1.5 rounded-lg text-sm bg-amber-500 text-slate-950 font-semibold">Overview</button>
-                    <button data-view="rosters" class="view-btn px-3 py-1.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">Rosters</button>
-                    <button data-view="picks" class="view-btn px-3 py-1.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">Picks</button>
-                    <button data-view="power" class="view-btn px-3 py-1.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800">Power</button>
-                </div>
-                <div class="flex items-center gap-2 bg-slate-900/70 border border-slate-800 rounded-2xl p-2">
-                    <span class="text-xs text-slate-400 px-2">Season</span>
-                    <select id="seasonSelect" class="bg-slate-800 border border-slate-700 rounded-lg text-sm px-2 py-1.5 outline-none focus:ring-2 focus:ring-amber-500">
-                        <option>2024</option>
-                        <option>2025</option>
-                        <option selected>2026</option>
-                    </select>
-                </div>
-                <button id="refreshBtn" class="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-sm">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1016 0 8 8 0 00-16 0zm16 0h-4m-8 0H4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                    Refresh
-                </button>
-            </div>
+        <div>
+          <div class="display text-[20px] font-bold leading-none gold-text tracking-wide">DYNASTY AUDIT</div>
+          <div class="text-[11px] uppercase tracking-widest text-zinc-500 -mt-0.5">Gold Dark Edition</div>
         </div>
+      </div>
 
-        <!-- League Header Card -->
-        <div id="leagueHeader" class="mb-6 rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900/80 to-slate-950/80 p-6 shadow-xl">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h2 id="leagueName" class="text-2xl font-extrabold tracking-tight">—</h2>
-                    <div class="mt-1 flex flex-wrap items-center gap-3 text-sm text-slate-400">
-                        <span id="leagueMeta" class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> <span id="teamCount">— teams</span> • <span id="leagueType">Dynasty</span></span>
-                        <span class="hidden sm:inline">•</span>
-                        <span id="scoringType" class="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-xs">PPR</span>
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-3 text-center">
-                    <div class="rounded-2xl bg-slate-900 border border-slate-800 p-3">
-                        <div class="text-[10px] uppercase tracking-wider text-slate-500">Avg Age</div>
-                        <div id="statAge" class="text-xl font-bold mono">—</div>
-                    </div>
-                    <div class="rounded-2xl bg-slate-900 border border-slate-800 p-3">
-                        <div class="text-[10px] uppercase tracking-wider text-slate-500">Contenders</div>
-                        <div id="statContenders" class="text-xl font-bold mono">—</div>
-                    </div>
-                    <div class="rounded-2xl bg-slate-900 border border-slate-800 p-3">
-                        <div class="text-[10px] uppercase tracking-wider text-slate-500">Total Value</div>
-                        <div id="statValue" class="text-xl font-bold mono">—</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div class="hidden md:block h-8 w-px bg-white/10"></div>
 
-        <!-- Main Grid -->
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            <!-- Table -->
-            <section class="xl:col-span-8 rounded-3xl border border-slate-800 bg-slate-950/60 overflow-hidden">
-                <div class="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
-                    <h3 class="font-bold">Teams</h3>
-                    <div class="flex items-center gap-2">
-                        <input id="searchInput" type="text" placeholder="Filter teams..." class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-amber-500 w-44" />
-                    </div>
-                <div class="overflow-x-auto scrollbar">
-                    <table class="w-full text-sm">
-                        <thead class="bg-slate-900/60 text-slate-400 text-xs uppercase tracking-wider">
-                            <tr>
-                                <th class="text-left font-semibold px-5 py-3">Team</th>
-                                <th class="text-left font-semibold px-5 py-3">Record</th>
-                                <th class="text-left font-semibold px-5 py-3">Starter Value</th>
-                                <th class="text-left font-semibold px-5 py-3">Bench</th>
-                                <th class="text-left font-semibold px-5 py-3">Picks</th>
-                                <th class="text-left font-semibold px-5 py-3">Age</th>
-                                <th class="text-left font-semibold px-5 py-3">Trend</th>
-                            </tr>
-                        </thead>
-                        <tbody id="teamsTbody" class="divide-y divide-slate-900/80">
-                            <!-- Rows injected -->
-                        </tbody>
-                    </table>
-                </div>
-                <div id="emptyState" class="hidden p-12 text-center text-slate-500">
-                    <div class="mx-auto w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mb-3">🔍</div>
-                    <p class="text-sm">Load a league to see the audit.</p>
-                </div>
-            </section>
+      <div class="flex-1 min-w-0">
+        <div id="leagueName" class="display text-xl md:text-2xl font-bold truncate">Load a league</div>
+        <div id="leagueMeta" class="text-xs text-zinc-500 -mt-0.5">Enter Sleeper League ID</div>
+      </div>
 
-            <!-- Side Panel -->
-            <aside class="xl:col-span-4 space-y-6">
-                <!-- Power Rankings -->
-                <div class="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="font-bold">Power Rankings</h3>
-                        <span class="text-xs text-slate-500">Week to date</span>
-                    </div>
-                    <ol id="powerList" class="space-y-2">
-                        <!-- Items -->
-                    </ol>
-                </div>
+      <div class="flex items-center gap-2">
+        <input id="leagueInput" placeholder="League ID" class="w-[200px] md:w-[260px] bg-[#0f1013] border border-white/10 rounded-xl px-3 py-2 text-sm placeholder-zinc-600 focus:outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20"/>
+        <button id="loadBtn" class="px-4 py-2 rounded-xl bg-gradient-to-b from-amber-400 to-yellow-600 text-black font-semibold text-sm shadow-lg shadow-amber-900/25 hover:brightness-110 active:scale-[0.98] transition">
+          Load
+        </button>
+      </div>
+    </div>
+  </header>
 
-                <!-- Top Assets -->
-                <div class="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
-                    <h3 class="font-bold mb-3">Top Assets</h3>
-                    <div id="topAssets" class="grid grid-cols-1 gap-2">
-                        <!-- Items -->
-                    </div>
-                </div>
+  <main class="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
+<nav id="topNav" class="flex flex-wrap items-center gap-5 mb-6 text-sm">
+  <a href="https://rosteraudit.com/" target="_blank" class="text-amber-300 hover:text-amber-200 hover:underline underline-offset-4">Roster Audit</a>
+  <a id="navVault" href="https://jacobpalmer60-coder.github.io/thevault/app.html" target="_blank" class="text-amber-300 hover:text-amber-200 hover:underline underline-offset-4">The Vault</a>
+  <a id="navRankings" href="https://jacobpalmer60-coder.github.io/thevault/player_rankings.html" target="_blank" class="text-amber-300 hover:text-amber-200 hover:underline underline-offset-4">Player Rankings</a>
+  <a id="navTrade" href="https://jacobpalmer60-coder.github.io/thevault/trade.html" target="_blank" class="text-amber-300 hover:text-amber-200 hover:underline underline-offset-4">Trade</a>
+</nav>
 
-                <!-- Notes -->
-                <div class="rounded-3xl border border-slate-800 bg-slate-950/60 p-5">
-                    <h3 class="font-bold mb-2">Audit Notes</h3>
-                    <ul class="text-sm text-slate-400 space-y-2 list-disc list-inside">
-                        <li>Starter value weighted by positional scarcity and age curve.</li>
-                        <li>Pick values normalized to current class strength.</li>
-                        <li>Trend = 4 week value delta.</li>
-                    </ul>
-                </div>
-            </aside>
-        </div>
+    <!-- Controls -->
+    <div class="flex flex-wrap items-center gap-3 mb-5">
+      <div id="status" class="text-sm text-zinc-400">Ready</div>
+      <div class="ml-auto flex items-center gap-2 text-xs text-zinc-500">
+        <span class="hidden md:inline">Rank pills = league rank • Values from CSV exact</span>
+      </div>
+    </div>
 
-        <!-- Footer -->
-        <footer class="mt-12 pt-6 border-t border-slate-900 text-xs text-slate-600 flex items-center justify-between">
-            <p>© 2026 Roster Audit • Dynasty Tools</p>
-            <p class="mono">build v1.4.0</p>
-        </footer>
-    </main>
+    <!-- Table -->
+    <div class="card rounded-2xl overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-[#0a0b0e]/80 backdrop-blur sticky top-0 z-30 border-b border-white/5">
+            <tr class="text-[11px] uppercase tracking-wider text-zinc-500">
+              <th class="text-left font-semibold px-5 py-3 w-[280px]">Team</th>
+              <th class="text-left font-semibold px-4 py-3 sortable" data-sort="tier">Tier</th>
+              <th class="text-left font-semibold px-4 py-3 sortable" data-sort="overall">Overall</th>
+              <th class="text-left font-semibold px-4 py-3 sortable" data-sort="ppg">PPG</th>
+              <th class="text-left font-semibold px-4 py-3 sortable" data-sort="qb">QB</th>
+              <th class="text-left font-semibold px-4 py-3 sortable" data-sort="rb">RB</th>
+              <th class="text-left font-semibold px-4 py-3 sortable" data-sort="wr">WR</th>
+              <th class="text-left font-semibold px-4 py-3 sortable" data-sort="te">TE</th>
+              <th class="text-left font-semibold px-4 py-3 sortable" data-sort="draft">Draft</th>
+              <th class="w-10"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody" class="divide-y divide-white/[0.04]">
+            <!-- rows -->
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-    <!-- Toast -->
-    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-sm px-4 py-2 rounded-xl shadow-2xl hidden"></div>
+    <div class="mt-6 text-[11px] text-zinc-600">
+      Draft capital = future picks only. Baseline values R1 5,000 • R2 2,500 • R3 1,200 • R4 600 • R5 300 with 0.85/yr discount. Pick ownership = baseline + traded_picks.
+    </div>
+  </main>
 
 <script>
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
+const SLEEPER = 'https://api.sleeper.app/v1';
 
-const leagueInput = $('#leagueInput');
-const loadBtn = $('#loadBtn');
-const shareBtn = $('#shareBtn');
-const refreshBtn = $('#refreshBtn');
-const searchInput = $('#searchInput');
-const teamsTbody = $('#teamsTbody');
-const powerList = $('#powerList');
-const topAssets = $('#topAssets');
-const emptyState = $('#emptyState');
-const toast = $('#toast');
-
-let state = {
-    leagueId: '',
-    league: null,
-    rosters: [],
-    users: [],
-    filtered: []
+const state = {
+  league: null,
+  users: [],
+  rosters: [],
+  picks: [],
+  drafts: [],
+  players: null,
+  csvMap: new Map(),
+  teams: [],
+  sortKey: 'overall',
+  sortDir: 'desc',
+  expanded: new Set()
 };
 
-function showToast(msg) {
-    toast.textContent = msg;
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 2200);
+const fmt = {
+  int: n => Math.round(n).toLocaleString(),
+  k: n => n >= 1000 ? (n/1000).toFixed(n>=10000?0:1).replace(/\.0$/,'')+'k' : Math.round(n).toString(),
+  ppg: n => n.toFixed(1),
+  val: n => n >= 1000 ? Math.round(n).toLocaleString() : Math.round(n).toString()
+};
+
+const $ = s => document.querySelector(s);
+const tbody = $('#tbody');
+const statusEl = $('#status');
+const leagueNameEl = $('#leagueName');
+const leagueMetaEl = $('#leagueMeta');
+const leagueInput = $('#leagueInput');
+const loadBtn = $('#loadBtn');
+
+function setStatus(msg){ statusEl.textContent = msg; }
+
+function parseCSV(text){
+  const lines = text.trim().split(/\r?\n/);
+  if(lines.length < 2) return;
+  const header = lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/"/g,''));
+  const idx = {};
+  header.forEach((h,i)=> idx[h]=i);
+  const get = (row,keys)=> {
+    for(const k of keys){ if(idx[k]!=null) return row[idx[k]]; }
+    return '';
+  };
+  for(let i=1;i<lines.length;i++){
+    const row = splitCSVLine(lines[i]);
+    if(row.length < header.length) continue;
+    const sid = get(row, ['sleeper_id','player_id','id']);
+    if(!sid) continue;
+    const value = parseFloat(get(row, ['value','val']))||0;
+    const ppg = parseFloat(get(row, ['ppg','fantasy_points_per_game']))||0;
+    const name = get(row, ['full_name','player','player_name','name']);
+    const pos = get(row, ['position','pos']);
+    const team = get(row, ['team']);
+    state.csvMap.set(sid, {value, ppg, name, pos, team});
+  }
+}
+function splitCSVLine(line){
+  const out=[]; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){ inQ=!inQ; continue; }
+    if(c===',' && !inQ){ out.push(cur); cur=''; }
+    else cur+=c;
+  }
+  out.push(cur);
+  return out;
 }
 
-function fmt(n) { return new Intl.NumberFormat().format(n); }
-
-function mockTeams() {
-    const names = ['No Mercy','Palmer Pounder','Kittle Corn','CMC Factory','Lamarvel','Bijan Mustard','Burrow Row','Taylored','Achoo','Mahomes Alone','Yoshi','St. Brown Town'];
-    return names.map((name, i) => ({
-        id: i+1,
-        name,
-        owner: ['JP','MK','AL','CS','RT','DW','BH','KM','ZT','JL','AP','NR'][i],
-        record: `${Math.floor(Math.random()*5)+7}-${Math.floor(Math.random()*5)+4}`,
-        starter: 8200 + Math.floor(Math.random()*2500),
-        bench: 3400 + Math.floor(Math.random()*1500),
-        picks: `${Math.floor(Math.random()*3)+1}.${['Early','Mid','Late'][Math.floor(Math.random()*3)]}`,
-        age: (24.8 + Math.random()*2.5).toFixed(1),
-        trend: Math.random() > 0.5 ? 'up' : 'down',
-        avatar: `https://i.pravatar.cc/40?u=${i}`
-    }));
+async function fetchJSON(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('Fetch failed '+url);
+  return r.json();
+}
+async function fetchText(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('Fetch failed '+url);
+  return r.text();
 }
 
-function renderTeams(rows) {
-    if (!rows.length) {
-        teamsTbody.innerHTML = '';
-        emptyState.classList.remove('hidden');
-        return;
-    }
-    emptyState.classList.add('hidden');
-    teamsTbody.innerHTML = rows.map(t => `
-        <tr class="hover:bg-slate-900/60 transition cursor-pointer fade-in">
-            <td class="px-5 py-3">
-                <div class="flex items-center gap-3">
-                    <img src="${t.avatar}" alt="" class="w-8 h-8 rounded-lg border border-slate-800" />
-                    <div>
-                        <div class="font-semibold leading-tight">${t.name}</div>
-                        <div class="text-xs text-slate-500">@${t.owner}</div>
-                    </div>
-                </div>
-            </td>
-            <td class="px-5 py-3 mono text-slate-300">${t.record}</td>
-            <td class="px-5 py-3">
-                <div class="flex items-center gap-2">
-                    <div class="w-24 h-2 rounded-full bg-slate-800 overflow-hidden">
-                        <div class="h-full bg-gradient-to-r from-amber-400 to-orange-500" style="width:${Math.min(100, (t.starter/11000)*100)}%"></div>
-                    </div>
-                    <span class="mono text-slate-300">${fmt(t.starter)}</span>
-                </div>
-            </td>
-            <td class="px-5 py-3 mono text-slate-400">${fmt(t.bench)}</td>
-            <td class="px-5 py-3"><span class="px-2 py-0.5 rounded-lg bg-slate-900 border border-slate-800 text-xs mono">${t.picks}</span></td>
-            <td class="px-5 py-3 mono">${t.age}</td>
-            <td class="px-5 py-3">
-                <span class="inline-flex items-center gap-1 text-xs ${t.trend==='up'?'text-emerald-400':'text-rose-400'}">
-                    ${t.trend==='up'?'▲':'▼'} ${t.trend==='up'?'Rising':'Fading'}
-                </span>
-            </td>
-        </tr>
-    `).join('');
+async function loadAll(leagueId){
+  setStatus('Loading CSV...');
+  const csvText = await fetchText(CSV_URL);
+  parseCSV(csvText);
+
+  setStatus('Loading league...');
+  const [league, users, rosters, traded, drafts] = await Promise.all([
+    fetchJSON(`${SLEEPER}/league/${leagueId}`),
+    fetchJSON(`${SLEEPER}/league/${leagueId}/users`),
+    fetchJSON(`${SLEEPER}/league/${leagueId}/rosters`),
+    fetchJSON(`${SLEEPER}/league/${leagueId}/traded_picks`),
+    fetchJSON(`${SLEEPER}/league/${leagueId}/drafts`),
+  ]);
+  state.league = league;
+  state.users = users;
+  state.rosters = rosters;
+  state.picks = traded;
+  state.drafts = drafts;
+
+  // Players - lazy, only if needed
+  setStatus('Loading players...');
+  try {
+    state.players = await fetchJSON(`${SLEEPER}/players/nfl`);
+  } catch(e){ state.players = {}; }
+
+  setStatus('Computing...');
+  compute();
+  setStatus(`Loaded ${state.teams.length} teams`);
 }
 
-function renderPower(rows) {
-    powerList.innerHTML = rows.slice(0,6).map((t,i)=>`
-        <li class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
-            <div class="flex items-center gap-3">
-                <span class="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-xs font-bold mono">${i+1}</span>
-                <span class="text-sm font-medium">${t.name}</span>
-            </div>
-            <span class="text-xs mono text-slate-400">${fmt(t.starter + t.bench)}</span>
-        </li>
-    `).join('');
-}
+function compute(){
+  const league = state.league;
+  const currentYear = parseInt(league.season);
+  const completedSeasons = new Set(
+    state.drafts.filter(d=>d.status==='complete').map(d=>parseInt(d.season))
+  );
+  let futureSeasons = [currentYear, currentYear+1, currentYear+2].filter(y=>!completedSeasons.has(y));
 
-function renderTopAssets() {
-    const assets = [
-        {name:'J. Jefferson', pos:'WR', val:9850},
-        {name:'B. Robinson', pos:'RB', val:9420},
-        {name:'J. Chase', pos:'WR', val:9380},
-        {name:'C. Stroud', pos:'QB', val:8910},
-    ];
-    topAssets.innerHTML = assets.map(a=>`
-        <div class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
-            <div>
-                <div class="text-sm font-semibold">${a.name} <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 ml-1">${a.pos}</span></div>
-            </div>
-            <div class="mono text-sm text-amber-300">${fmt(a.val)}</div>
-        </div>
-    `).join('');
-}
+  // rounds
+  let rounds = 4;
+  if(state.drafts.length){
+    const recent = state.drafts.sort((a,b)=> (b.season||0)-(a.season||0))[0];
+    rounds = recent.settings?.rounds || rounds;
+  }
 
-function loadLeague(id) {
-    state.leagueId = id;
-    $('#leagueName').textContent = 'Palmetto Dynasty • 12 Team SF';
-    $('#teamCount').textContent = '12 teams';
-    $('#leagueType').textContent = 'Superflex';
-    $('#scoringType').textContent = '0.5 PPR TE+';
-    $('#statAge').textContent = '25.9';
-    $('#statContenders').textContent = '5';
-    $('#statValue').textContent = '128.4k';
-    const teams = mockTeams().sort((a,b)=>b.starter-a.starter);
-    state.filtered = teams;
-    renderTeams(teams);
-    renderPower(teams);
-    renderTopAssets();
-    history.replaceState(null,'',`?league_id=${encodeURIComponent(id)}`);
-    showToast('League loaded');
-}
-
-function initFromURL() {
-    const p = new URLSearchParams(location.search);
-    const lid = p.get('league_id') || p.get('leagueId');
-    if (lid) {
-        leagueInput.value = lid;
-        loadLeague(lid);
-    } else {
-        emptyState.classList.remove('hidden');
-        renderTopAssets();
-    }
-}
-
-loadBtn.addEventListener('click', ()=>{
-    const id = leagueInput.value.trim();
-    if (!id) return showToast('Enter a league ID');
-    loadLeague(id);
-});
-
-shareBtn.addEventListener('click', async ()=>{
-    const url = location.href;
-    try { await navigator.clipboard.writeText(url); showToast('Link copied'); } catch { showToast(url); }
-});
-
-refreshBtn.addEventListener('click', ()=>{
-    if (!state.leagueId) return showToast('Load a league first');
-    showToast('Refreshed');
-    loadLeague(state.leagueId);
-});
-
-searchInput.addEventListener('input', e=>{
-    const q = e.target.value.toLowerCase();
-    const rows = state.filtered.filter(t => t.name.toLowerCase().includes(q) || t.owner.toLowerCase().includes(q));
-    renderTeams(rows);
-});
-
-$$('.view-btn').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-        $$('.view-btn').forEach(b=>{
-            b.classList.remove('bg-amber-500','text-slate-950','font-semibold');
-            b.classList.add('text-slate-300');
+  // baseline picks
+  const baseline = [];
+  for(const roster of state.rosters){
+    for(const season of futureSeasons){
+      for(let r=1;r<=rounds;r++){
+        baseline.push({
+          season,
+          round:r,
+          original_roster_id: roster.roster_id,
+          owner_roster_id: roster.roster_id
         });
-        btn.classList.add('bg-amber-500','text-slate-950','font-semibold');
-        btn.classList.remove('text-slate-300');
-        showToast(`View: ${btn.dataset.view}`);
+      }
+    }
+  }
+  // apply traded picks
+  const futureSet = new Set(futureSeasons);
+  for(const tp of state.picks){
+    const season = parseInt(tp.season);
+    if(!futureSet.has(season)) continue;
+    const round = tp.round;
+    const orig = tp.roster_id;
+    const owner = tp.owner_id;
+    const pick = baseline.find(p=>p.season===season && p.round===round && p.original_roster_id===orig);
+    if(pick) pick.owner_roster_id = owner;
+  }
+
+  // map roster_id -> picks
+  const picksByRoster = new Map();
+  for(const r of state.rosters) picksByRoster.set(r.roster_id, []);
+  for(const p of baseline){
+    picksByRoster.get(p.owner_roster_id).push(p);
+  }
+
+  // pick value
+  const baseVals = {1:5000,2:2500,3:1200,4:600,5:300};
+  const pickValue = (season, round)=>{
+    const base = baseVals[round]||200;
+    const yearsOut = season - currentYear;
+    return base * Math.pow(0.85, yearsOut);
+  };
+
+  // user map
+  const userById = new Map(state.users.map(u=>[u.user_id,u]));
+  // team build
+  const teams = state.rosters.map(roster=>{
+    const user = state.users.find(u=>u.user_id===roster.owner_id) || {};
+    const name = user.metadata?.team_name || user.display_name || `Team ${roster.roster_id}`;
+    const avatar = user.avatar ? `https://sleepercdn.com/avatars/thumbs/${user.avatar}` : '';
+
+    const playerIds = roster.players || [];
+    const players = playerIds.map(pid=>{
+      const csv = state.csvMap.get(pid) || {};
+      const p = state.players?.[pid] || {};
+      return {
+        id: pid,
+        name: csv.name || p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || pid,
+        pos: csv.pos || p.position || 'UNK',
+        team: csv.team || p.team || '',
+        value: csv.value || 0,
+        ppg: csv.ppg || 0
+      };
     });
+
+    // positional values
+    const posVals = {QB:0,RB:0,WR:0,TE:0};
+    let overallVal = 0;
+    for(const pl of players){
+      overallVal += pl.value;
+      if(posVals[pl.pos]!=null) posVals[pl.pos]+=pl.value;
+    }
+
+    // draft equity
+    const ownedPicks = picksByRoster.get(roster.roster_id) || [];
+    const draftEquity = ownedPicks.reduce((s,p)=> s + pickValue(p.season,p.round), 0);
+
+    // optimal starters
+    const starters = getOptimalStarters(league.roster_positions, players);
+    const ppgTotal = starters.reduce((s,pl)=> s + pl.ppg, 0);
+
+    // group by pos for panels
+    const byPos = {QB:[],RB:[],WR:[],TE:[]};
+    for(const pl of players){
+      if(byPos[pl.pos]) byPos[pl.pos].push(pl);
+    }
+    Object.values(byPos).forEach(arr=>arr.sort((a,b)=> b.value - a.value));
+
+    // draft chips data
+    const draftChips = ownedPicks
+      .sort((a,b)=> a.season - b.season || a.round - b.round)
+      .map(p=>{
+        const via = p.original_roster_id!==roster.roster_id ? ` (via ${p.original_roster_id})` : '';
+        return `${p.season} R${p.round}${via}`;
+      });
+
+    return {
+      roster_id: roster.roster_id,
+      owner_id: roster.owner_id,
+      name,
+      avatar,
+      record: `${roster.settings.wins}-${roster.settings.losses}${roster.settings.ties?'-'+roster.settings.ties:''}`,
+      players,
+      overallVal,
+      ppgTotal,
+      posVals,
+      draftEquity,
+      draftCount: ownedPicks.length,
+      draftChips,
+      starters,
+      byPos
+    };
+  });
+
+  // ranks
+  const rank = (key, getter) => {
+    const sorted = [...teams].sort((a,b)=> getter(b)-getter(a));
+    const map = new Map();
+    sorted.forEach((t,i)=> map.set(t.roster_id, i+1));
+    return map;
+  };
+  const rOverall = rank('overall', t=>t.overallVal);
+  const rPPG = rank('ppg', t=>t.ppgTotal);
+  const rQB = rank('qb', t=>t.posVals.QB);
+  const rRB = rank('rb', t=>t.posVals.RB);
+  const rWR = rank('wr', t=>t.posVals.WR);
+  const rTE = rank('te', t=>t.posVals.TE);
+  const rDraft = rank('draft', t=>t.draftEquity);
+
+  teams.forEach(t=>{
+    t.ranks = {
+      overall: rOverall.get(t.roster_id),
+      ppg: rPPG.get(t.roster_id),
+      qb: rQB.get(t.roster_id),
+      rb: rRB.get(t.roster_id),
+      wr: rWR.get(t.roster_id),
+      te: rTE.get(t.roster_id),
+      draft: rDraft.get(t.roster_id)
+    };
+    // tier
+    const ro = t.ranks.overall;
+    let tier='MID', tierClass='tier-pill';
+    if(ro<=2){ tier='ELITE'; }
+    else if(ro<=5){ tier='CONTENDER'; }
+    else if(ro<=8){ tier='MID'; }
+    else if(ro<=10){ tier='REBUILD'; }
+    else { tier='TANK'; }
+    t.tier = tier;
+  });
+
+  // sort initial
+  state.teams = teams;
+  leagueNameEl.textContent = league.name || 'League';
+  leagueMetaEl.textContent = `${state.users.length} managers • Season ${league.season}`;
+  sortAndRender();
+}
+
+function getOptimalStarters(rosterPositions, players){
+  const slots = [];
+  for(const pos of rosterPositions){
+    if(['BN','TAXI','IR','IR+'].includes(pos)) continue;
+    let allowed=[];
+    if(pos==='FLEX') allowed=['RB','WR','TE'];
+    else if(pos==='SUPER_FLEX') allowed=['QB','RB','WR','TE'];
+    else if(pos==='WRRB_FLEX') allowed=['WR','RB'];
+    else if(pos==='REC_FLEX') allowed=['WR','TE'];
+    else allowed=[pos];
+    slots.push({pos, allowed});
+  }
+  // sort slots by restrictiveness
+  slots.sort((a,b)=> a.allowed.length - b.allowed.length);
+  const remaining = [...players].sort((a,b)=> b.ppg - a.ppg);
+  const used = new Set();
+  const chosen=[];
+  for(const slot of slots){
+    let bestIdx=-1, bestPPG=-1;
+    for(let i=0;i<remaining.length;i++){
+      const pl = remaining[i];
+      if(used.has(pl.id)) continue;
+      if(slot.allowed.includes(pl.pos)){
+        if(pl.ppg > bestPPG){ bestPPG = pl.ppg; bestIdx = i; }
+      }
+    }
+    if(bestIdx>=0){
+      const pl = remaining[bestIdx];
+      used.add(pl.id);
+      chosen.push({...pl, slot:slot.pos});
+    }
+  }
+  return chosen;
+}
+
+function sortAndRender(){
+  const key = state.sortKey;
+  const dir = state.sortDir==='asc'?1:-1;
+  const getter = {
+    tier: t=> t.ranks.overall,
+    overall: t=> t.overallVal,
+    ppg: t=> t.ppgTotal,
+    qb: t=> t.posVals.QB,
+    rb: t=> t.posVals.RB,
+    wr: t=> t.posVals.WR,
+    te: t=> t.posVals.TE,
+    draft: t=> t.draftEquity,
+    team: t=> t.name.toLowerCase()
+  }[key] || (t=>t.overallVal);
+  state.teams.sort((a,b)=> (getter(a)-getter(b))*dir);
+  if(key==='tier' || key==='team') state.teams.sort((a,b)=> getter(a).toString().localeCompare(getter(b).toString()) * (state.sortDir==='asc'?1:-1));
+  render();
+}
+
+function render(){
+  tbody.innerHTML='';
+  state.teams.forEach(team=>{
+    const tr = document.createElement('tr');
+    tr.className = 'group hover:bg-white/[0.02] transition cursor-pointer';
+    tr.dataset.roster = team.roster_id;
+    tr.innerHTML = `
+      <td class="px-5 py-4">
+        <div class="flex items-center gap-3">
+          <img src="${team.avatar||'https://sleepercdn.com/images/v2/icons/player_default.webp'}" class="w-10 h-10 rounded-xl object-cover bg-[#0f1013] border border-white/10"/>
+          <div class="min-w-0">
+            <div class="font-semibold leading-tight truncate">${team.name}</div>
+            <div class="text-xs text-zinc-500">${team.record}</div>
+          </div>
+        </div>
+      </td>
+      <td class="px-4 py-4"><span class="tier-pill text-[11px] font-bold px-2.5 py-1 rounded-full">${team.tier}</span></td>
+      ${cellRank(team.ranks.overall, fmt.k(team.overallVal))}
+      ${cellRank(team.ranks.ppg, fmt.ppg(team.ppgTotal))}
+      ${cellRank(team.ranks.qb, fmt.k(team.posVals.QB))}
+      ${cellRank(team.ranks.rb, fmt.k(team.posVals.RB))}
+      ${cellRank(team.ranks.wr, fmt.k(team.posVals.WR))}
+      ${cellRank(team.ranks.te, fmt.k(team.posVals.TE))}
+      ${cellRank(team.ranks.draft, fmt.int(team.draftEquity))}
+      <td class="px-2 py-4 text-zinc-600">
+        <svg class="w-5 h-5 group-hover:text-amber-400 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    // expanded row
+    const expTr = document.createElement('tr');
+    expTr.className = 'hidden bg-[#050507]';
+    expTr.dataset.expanded = team.roster_id;
+    expTr.innerHTML = `
+      <td colspan="10" class="px-5 py-6">
+        <div class="space-y-6">
+          <!-- Optimal Starters -->
+          <div>
+            <div class="text-[11px] uppercase tracking-widest text-zinc-500 mb-2">Optimal Starters</div>
+            <div class="flex flex-wrap gap-2">
+              ${team.starters.map(s=>`
+                <span class="chip rounded-full px-3 py-1.5 text-sm flex items-center gap-2">
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-zinc-300">${s.slot}</span>
+                  <span class="font-medium">${s.name}</span>
+                  <span class="text-amber-300 font-semibold">${fmt.int(s.value)}</span>
+                </span>
+              `).join('')}
+            </div>
+          </div>
+          <div class="divider"></div>
+          <!-- Panels -->
+          <div class="grid lg:grid-cols-5 md:grid-cols-2 grid-cols-1 gap-4">
+            ${['QB','RB','WR','TE'].map(pos=>panelPos(team,pos)).join('')}
+            ${panelDraft(team)}
+          </div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(expTr);
+
+    tr.addEventListener('click', ()=>{
+      const isOpen = !expTr.classList.contains('hidden');
+      // close all?
+      document.querySelectorAll('tr[data-expanded]').forEach(el=> el.classList.add('hidden'));
+      if(!isOpen) expTr.classList.remove('hidden');
+    });
+  });
+}
+
+function cellRank(rank,val){
+  return `<td class="px-4 py-4"><div class="flex items-center gap-2"><span class="rank-pill w-6 h-6 rounded-full flex items-center justify-center text-[11px]">${rank}</span><span class="font-medium text-zinc-200">${val}</span></div></td>`;
+}
+
+function panelPos(team,pos){
+  const list = team.byPos[pos] || [];
+  return `
+    <div class="card rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="display font-bold text-lg">${pos}</div>
+        <div class="text-[10px] uppercase tracking-wider text-zinc-500">VAL / PPG</div>
+      </div>
+      <div class="space-y-2">
+        ${list.length? list.map(pl=>`
+          <div class="flex items-center gap-2 text-sm">
+            <span class="pos-pill text-[10px] px-1.5 py-0.5 rounded font-bold text-zinc-400 w-10 text-center">${pl.pos}</span>
+            <span class="flex-1 truncate">${pl.name}</span>
+            <span class="font-semibold text-amber-300">${fmt.int(pl.value)}</span>
+            <span class="text-zinc-500 w-12 text-right">${fmt.ppg(pl.ppg)}</span>
+          </div>
+        `).join('') : `<div class="text-zinc-600 text-sm">No players</div>`}
+      </div>
+    </div>
+  `;
+}
+
+function panelDraft(team){
+  return `
+    <div class="card rounded-2xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <div class="display font-bold text-lg">Draft Capital</div>
+        <div class="text-xs text-zinc-500">Equity ${fmt.int(team.draftEquity)}</div>
+      </div>
+      <div class="text-xs text-zinc-500 mb-2">${team.draftCount} picks owned</div>
+      <div class="flex flex-wrap gap-2">
+        ${team.draftChips.map(c=>`<span class="draft-chip text-xs px-2.5 py-1 rounded-full">${c}</span>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// Sorting
+document.querySelectorAll('th.sortable').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.sort;
+    if(state.sortKey===key){
+      state.sortDir = state.sortDir==='desc'?'asc':'desc';
+    } else {
+      state.sortKey=key;
+      state.sortDir='desc';
+    }
+    sortAndRender();
+  });
 });
 
-// Init
-initFromURL();
+// Load button
+loadBtn.addEventListener('click', ()=> doLoad());
+leagueInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doLoad(); });
 
-// Nav league_id appending
-const paramsNav = new URLSearchParams(location.search);
-const lidNav = paramsNav.get('league_id') || paramsNav.get('leagueId') || '';
-if(lidNav){
-  document.getElementById('navVault').href += '?league_id=' + encodeURIComponent(lidNav);
-  document.getElementById('navRankings').href += '?league_id=' + encodeURIComponent(lidNav);
-  document.getElementById('navTrade').href += '?league_id=' + encodeURIComponent(lidNav);
+function doLoad(){
+  const id = leagueInput.value.trim();
+  if(!id) return;
+  history.replaceState(null,'','?league_id='+id);
+  loadAll(id).catch(err=>{
+    console.error(err);
+    setStatus('Error loading league');
+    alert('Failed to load: '+ err.message);
+  });
 }
+
+// Auto load from URL
+(function init(){
+  const params = new URLSearchParams(location.search);
+  const id = params.get('league_id') || params.get('leagueId');
+  if(id){
+    leagueInput.value = id;
+    doLoad();
+  }
+})();
 </script>
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const lid = params.get('league_id') || params.get('leagueId') || '';
+  const baseVault = 'https://jacobpalmer60-coder.github.io/thevault/app.html';
+  const baseRank = 'https://jacobpalmer60-coder.github.io/thevault/player_rankings.html';
+  const baseTrade = 'https://jacobpalmer60-coder.github.io/thevault/trade.html';
+  const navVault = document.getElementById('navVault');
+  const navRank = document.getElementById('navRankings');
+  const navTrade = document.getElementById('navTrade');
+  if(lid){
+    if(navVault) navVault.href = baseVault + '?league_id=' + encodeURIComponent(lid);
+    if(navRank) navRank.href = baseRank + '?league_id=' + encodeURIComponent(lid);
+    if(navTrade) navTrade.href = baseTrade + '?league_id=' + encodeURIComponent(lid);
+  }
+  const path = location.pathname.toLowerCase();
+  if(path.includes('player_rankings') && navRank) navRank.style.display = 'none';
+  if(path.includes('app.html') && navVault) navVault.style.display = 'none';
+  if(path.includes('trade.html') && navTrade) navTrade.style.display = 'none';
+})();
+</script>
+
 </body>
 </html>
