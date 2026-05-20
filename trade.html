@@ -17,25 +17,15 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
 .scroll-thin::-webkit-scrollbar-track { background: transparent; }
 .scroll-thin::-webkit-scrollbar-thumb { background: rgba(148,163,184,.3); border-radius: 3px; }
 .scroll-thin::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,.5); }
-.shimmer { position: relative; overflow: hidden; }
-.shimmer::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
-  transform: translateX(-100%); animation: shimmer 2s infinite;
-}
-@keyframes shimmer { 100% { transform: translateX(100%); } }
 .player-row:hover { background: rgba(255,255,255,.03); }
-.player-row.selected { background: rgba(56,189,248,.08); border-color: rgba(56,189,248,.4); }
-.badge { font-size: .65rem; letter-spacing:.04em; }
+.player-row.selected { background: rgba(56,189,248,.08); }
 </style>
 </head>
 <body class="bg-[#020617] text-slate-200 min-h-screen">
 <div class="fixed inset-0 -z-10">
   <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(56,189,248,.15),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(139,92,246,.12),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(16,185,129,.10),transparent_50%)]"></div>
-  <div class="absolute inset-0 opacity-[0.04] mix-blend-soft-light" style="background-image:repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 40px),repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 40px)"></div>
 </div>
 
-<!-- NAV -->
 <header class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/70 glass">
   <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
@@ -47,6 +37,7 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
           <div class="font-semibold leading-tight">Dynasty Trade Calculator</div>
           <div class="text-xs text-slate-400 -mt-0.5">Sleeper • Auto-loaded</div>
         </div>
+      </div>
       <nav class="hidden md:flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/10">
         <a id="nav-values" href="#" class="px-4 py-1.5 rounded-full text-sm hover:bg-white/10 transition">Values</a>
         <a id="nav-league" href="#" class="px-4 py-1.5 rounded-full text-sm hover:bg-white/10 transition">League</a>
@@ -63,17 +54,15 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
 </header>
 
 <main class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
-  <!-- Status -->
   <div id="status" class="mb-6 flex items-center gap-3 text-sm text-slate-300">
     <div class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
     <span id="status-text">Initializing…</span>
   </div>
 
-  <!-- 3 COLUMN LAYOUT -->
   <div class="grid grid-cols-1 xl:grid-cols-[1fr_1.1fr_1fr] gap-6 items-start">
-    
+
     <!-- TEAM A -->
-    <section class="bg-slate-900/60 border border-white/10 rounded-2xl shadow-black/30 overflow-hidden flex flex-col">
+    <section class="bg-slate-900/60 border border-white/10 rounded-2xl shadow-2xl shadow-black/30 overflow-hidden flex flex-col">
       <div class="p-4 border-b border-white/10 bg-gradient-to-r from-cyan-500/10 to-transparent">
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2">
@@ -88,8 +77,15 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
           <button id="clear-a" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs">Clear</button>
         </div>
       </div>
-      <div id="roster-a" class="flex-1 overflow-y-auto scroll-thin max-h-[520px] p-2 space-y-1"></div>
-      <!-- Impact A -->
+
+      <div class="px-2 pt-2">
+        <div class="grid grid-cols-[28px_48px_1fr_50px_60px_50px] gap-2 px-2 py-1.5 text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5">
+          <div></div><div>Pos</div><div>Name</div><div class="text-right">Age</div><div class="text-right">Value</div><div class="text-right">PPG</div><div class="text-right">Team</div>
+        </div>
+      </div>
+
+      <div id="roster-a" class="flex-1 overflow-y-auto scroll-thin max-h-[520px] p-2 space-y-0.5"></div>
+
       <div class="border-t border-white/10 p-4 bg-slate-950/40">
         <h3 class="text-sm font-semibold text-cyan-300 mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-line"></i> Impact on Team A</h3>
         <div id="impact-a" class="grid grid-cols-2 gap-3 text-sm"></div>
@@ -104,9 +100,7 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
           <h2 class="font-semibold flex items-center gap-2"><i class="fa-solid fa-scale-balanced text-violet-300"></i> Trade Central</h2>
           <span class="text-xs mono px-2 py-0.5 rounded-full bg-white/5 border border-white/10" id="trade-count">0 ↔ 0</span>
         </div>
-      </div>
       <div class="p-4 space-y-5">
-        <!-- Trade Summary -->
         <div class="grid grid-cols-2 gap-4">
           <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-3">
             <div class="text-xs uppercase tracking-wide text-cyan-300/80 mb-1">Team A Sends</div>
@@ -120,7 +114,6 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
           </div>
         </div>
 
-        <!-- Fairness Meter -->
         <div>
           <div class="flex justify-between text-xs mb-1">
             <span class="text-cyan-300">A advantage</span>
@@ -132,7 +125,6 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
           </div>
         </div>
 
-        <!-- Optimal Starters -->
         <div class="rounded-xl border border-white/10 bg-slate-950/50">
           <button id="toggle-opt" class="w-full flex items-center justify-between p-3 text-sm font-medium hover:bg-white/[0.02]">
             <span class="flex items-center gap-2"><i class="fa-solid fa-list-check text-emerald-400"></i> Optimal Starters Slot-by-Slot</span>
@@ -150,10 +142,8 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
           </div>
         </div>
 
-        <!-- Warnings Global -->
         <div id="global-warnings" class="space-y-2"></div>
 
-        <!-- Quick Actions -->
         <div class="flex flex-wrap gap-2 pt-2">
           <button id="swap-btn" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs flex items-center gap-1.5"><i class="fa-solid fa-right-left"></i> Swap Teams</button>
           <button id="reset-btn" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs flex items-center gap-1.5"><i class="fa-solid fa-ban"></i> Reset Picks</button>
@@ -177,8 +167,16 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
           <input id="search-b" placeholder="Filter players…" class="flex-1 bg-slate-950/70 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30" />
           <button id="clear-b" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-xs">Clear</button>
         </div>
-      <div id="roster-b" class="flex-1 overflow-y-auto scroll-thin max-h-[520px] p-2 space-y-1"></div>
-      <!-- Impact B -->
+      </div>
+
+      <div class="px-2 pt-2">
+        <div class="grid grid-cols-[28px_48px_1fr_50px_60px_50px] gap-2 px-2 py-1.5 text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5">
+          <div></div><div>Pos</div><div>Name</div><div class="text-right">Age</div><div class="text-right">Value</div><div class="text-right">PPG</div><div class="text-right">Team</div>
+        </div>
+      </div>
+
+      <div id="roster-b" class="flex-1 overflow-y-auto scroll-thin max-h-[520px] p-2 space-y-0.5"></div>
+
       <div class="border-t border-white/10 p-4 bg-slate-950/40">
         <h3 class="text-sm font-semibold text-violet-300 mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-line"></i> Impact on Team B</h3>
         <div id="impact-b" class="grid grid-cols-2 gap-3 text-sm"></div>
@@ -187,7 +185,6 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
     </section>
   </div>
 
-  <!-- Footer -->
   <footer class="mt-10 text-center text-xs text-slate-500">
     Auto-loaded from Sleeper • Values from CSV • Age & Optimal PPG computed live
   </footer>
@@ -200,58 +197,37 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
   const params = new URLSearchParams(location.search);
   const league_id = params.get('league_id') || DEFAULT_LEAGUE;
 
-  const state = {
-    league: null,
-    users: [],
-    rosters: [],
-    players: {},
-    values: new Map(),
-    teamA: null,
-    teamB: null,
-    selectedA: new Set(),
-    selectedB: new Set(),
-    rosterPos: []
-  };
-
+  const state = { league:null, users:[], rosters:[], players:{}, values:new Map(), teamA:null, teamB:null, selectedA:new Set(), selectedB:new Set(), rosterPos:[] };
   const $ = s => document.querySelector(s);
   const setStatus = t => { $('#status-text').textContent = t; };
   const fmt = n => n.toLocaleString(undefined,{maximumFractionDigits:0});
   const fmt1 = n => (n>=0?'+':'') + n.toFixed(1);
   const fmtPct = n => (n>=0?'+':'') + n.toFixed(1) + '%';
 
-  // Nav links
   $('#nav-values').href = `values.html?league_id=${league_id}`;
   $('#nav-league').href = `league.html?league_id=${league_id}`;
   $('#nav-audit').href = `roster-audit.html?league_id=${league_id}`;
 
   const teamName = r => {
     const u = state.users.find(x=>x.user_id===r.owner_id);
-    if (!u) return `Team ${r.roster_id}`;
-    return u.metadata?.team_name || u.display_name || `Team ${r.roster_id}`;
+    return u?.metadata?.team_name || u?.display_name || `Team ${r.roster_id}`;
   };
 
   const isEligible = (pos, slot) => {
-    if (!pos || !slot) return false;
+    if (!pos ||!slot) return false;
     if (slot === pos) return true;
     if (slot === 'FLEX') return ['RB','WR','TE'].includes(pos);
     if (slot === 'SUPER_FLEX' || slot === 'SUPERFLEX') return ['QB','RB','WR','TE'].includes(pos);
     if (slot === 'REC_FLEX') return ['WR','TE'].includes(pos);
-    if (slot === 'WRRB_FLEX') return ['WR','RB'].includes(pos);
     return false;
   };
 
-  const slotPriority = s => {
-    const order = { QB:1, RB:2, WR:2, TE:3, SUPER_FLEX:4, SUPERFLEX:4, FLEX:5, REC_FLEX:5, WRRB_FLEX:5, K:6, DEF:6 };
-    return order[s] ?? 10;
-  };
-
   function computeOptimalStarters(players, rosterPositions) {
-    const starters = rosterPositions.filter(p=>!['BN','IR','TAXI','RES'].includes(p));
+    const starters = rosterPositions.filter(p=>!['BN','IR','TAXI'].includes(p));
     const pool = [...players];
     const used = new Set();
     const line = [];
-    const sortedSlots = [...starters].sort((a,b)=>slotPriority(a)-slotPriority(b));
-    for (const slot of sortedSlots) {
+    for (const slot of starters) {
       let best = null;
       for (const p of pool) {
         if (used.has(p.id)) continue;
@@ -261,8 +237,8 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
       else { line.push({slot, player:null}); }
     }
     const totalPpg = line.reduce((s,x)=>s+(x.player?.ppg||0),0);
-    const ages = line.filter(x=>x.player).map(x=>x.player.age).filter(a=>a>0);
-    const avgAge = ages.length ? ages.reduce((a,b)=>a+b,0)/ages.length : 0;
+    const ages = line.filter(x=>x.player).map(x=>x.player.age);
+    const avgAge = ages.length? ages.reduce((a,b)=>a+b,0)/ages.length : 0;
     return { line, totalPpg, avgAge };
   }
 
@@ -271,11 +247,10 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
     for(let i=0;i<line.length;i++){
       const c=line[i];
       if(c==='"'){ if(q && line[i+1]==='"'){cur+='"'; i++;} else q=!q; }
-      else if(c===',' && !q){ out.push(cur); cur=''; }
+      else if(c===',' &&!q){ out.push(cur); cur=''; }
       else cur+=c;
     }
-    out.push(cur);
-    return out;
+    out.push(cur); return out;
   }
 
   async function loadValues() {
@@ -284,43 +259,38 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
       let text;
       try {
         const r = await fetch(CSV_URL, {cache:'no-store'});
-        if(!r.ok) throw new Error('direct');
+        if(!r.ok) throw 0;
         text = await r.text();
       } catch {
-        const prox = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(CSV_URL);
-        const r2 = await fetch(prox, {cache:'no-store'});
-        text = await r2.text();
+        const r = await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(CSV_URL));
+        text = await r.text();
       }
       const lines = text.split(/\r?\n/).filter(l=>l.trim());
-      if(lines.length<2) return;
-      const header = parseCSVLine(lines[0]).map(h=>h.toLowerCase().trim());
+      const header = parseCSVLine(lines[0]).map(h=>h.toLowerCase());
       const idx = {
         id: header.findIndex(h=>h.includes('sleeper')||h.includes('player_id')),
-        name: header.findIndex(h=>h.includes('name')),
-        team: header.findIndex(h=>h.includes('team')),
-        pos: header.findIndex(h=>h.includes('pos')),
-        age: header.findIndex(h=>h.includes('age')),
         value: header.findIndex(h=>h.includes('value')),
-        ppg: header.findIndex(h=>h.includes('ppg')||h.includes('pts')),
+        ppg: header.findIndex(h=>h.includes('ppg')),
+        age: header.findIndex(h=>h.includes('age')),
+        pos: header.findIndex(h=>h.includes('pos')),
+        team: header.findIndex(h=>h.includes('team')),
+        name: header.findIndex(h=>h.includes('name')),
       };
       for(let i=1;i<lines.length;i++){
-        const cols = parseCSVLine(lines[i]);
-        const id = cols[idx.id]?.trim();
+        const c = parseCSVLine(lines[i]);
+        const id = c[idx.id]?.trim();
         if(!id) continue;
         state.values.set(id, {
-          value: Number(cols[idx.value]||0),
-          ppg: Number(cols[idx.ppg]||0),
-          age: Number(cols[idx.age]||0),
-          pos: cols[idx.pos]?.trim(),
-          team: cols[idx.team]?.trim(),
-          name: cols[idx.name]?.trim()
+          value: Number(c[idx.value]||0),
+          ppg: Number(c[idx.ppg]||0),
+          age: Number(c[idx.age]||0),
+          pos: c[idx.pos],
+          team: c[idx.team],
+          name: c[idx.name]
         });
       }
-      setStatus(`Values loaded: ${state.values.size} players`);
-    } catch(e) {
-      console.warn('CSV load failed', e);
-      setStatus('Values load failed, using synthetic');
-    }
+      setStatus(`Values loaded: ${state.values.size}`);
+    } catch(e){ setStatus('Values failed'); }
   }
 
   function playerFromId(pid) {
@@ -330,260 +300,136 @@ body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; }
     const age = p.age || v.age || 24;
     const name = p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || v.name || pid;
     const team = p.team || v.team || 'FA';
-    const value = v.value ?? Math.max(100, Math.round((pos==='QB'?5200:pos==='RB'?4200:pos==='WR'?4400:pos==='TE'?3000:800) * Math.max(0.5, 1-(age-24)*0.04)));
-    const ppg = v.ppg ?? Math.max(1, (pos==='QB'?20:pos==='RB'?11:pos==='WR'?11.5:pos==='TE'?8.5:3) * Math.max(0.7, 1-(age-27)*0.02));
-    return { id:pid, name, pos, team, age: +age, value: Math.round(value), ppg: +ppg.toFixed(1) };
+    const value = v.value?? 1000;
+    const ppg = v.ppg?? 5;
+    return { id:pid, name, pos, team, age:+age, value:Math.round(value), ppg:+ppg.toFixed(1) };
   }
 
-  function rosterPlayers(roster) {
-    const ids = roster.players || [];
-    return ids.map(playerFromId).sort((a,b)=>b.value-a.value);
+  function rosterPlayers(r) {
+    return (r.players||[]).map(playerFromId).sort((a,b)=>b.value-a.value);
   }
 
   function renderSelect() {
-    const aSel = $('#team-a-select'), bSel = $('#team-b-select');
-    aSel.innerHTML = bSel.innerHTML = '';
+    const a=$('#team-a-select'), b=$('#team-b-select');
+    a.innerHTML=b.innerHTML='';
     state.rosters.forEach(r=>{
-      const opt = document.createElement('option');
-      opt.value = r.roster_id;
-      opt.textContent = teamName(r);
-      aSel.appendChild(opt.cloneNode(true));
-      bSel.appendChild(opt.cloneNode(true));
+      const o=document.createElement('option');
+      o.value=r.roster_id; o.textContent=teamName(r);
+      a.appendChild(o.cloneNode(true)); b.appendChild(o.cloneNode(true));
     });
-    state.teamA = state.rosters[0]?.roster_id;
-    state.teamB = state.rosters[1]?.roster_id || state.rosters[0]?.roster_id;
-    aSel.value = state.teamA;
-    bSel.value = state.teamB;
+    state.teamA=state.rosters[0]?.roster_id;
+    state.teamB=state.rosters[1]?.roster_id||state.rosters[0]?.roster_id;
+    a.value=state.teamA; b.value=state.teamB;
   }
 
-  function renderRoster(teamId, containerId, selectedSet, side) {
-    const roster = state.rosters.find(r=>r.roster_id==teamId);
-    if (!roster) return;
-    const players = rosterPlayers(roster);
-    const filter = $(`#search-${side}`).value.toLowerCase();
-    const cont = $(containerId);
-    cont.innerHTML = '';
-    players.filter(p => !filter || p.name.toLowerCase().includes(filter) || p.pos.toLowerCase().includes(filter)).forEach(p=>{
-      const sel = selectedSet.has(p.id);
-      const row = document.createElement('div');
-      row.className = `player-row group flex items-center gap-3 p-2.5 rounded-xl border ${sel?'selected border-cyan-500/40':'border-white/5'} cursor-pointer transition`;
-      row.innerHTML = `
-        <input type="checkbox" ${sel?'checked':''} class="w-4 h-4 accent-cyan-500 rounded bg-slate-800 border-white/10">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 flex items-center justify-center text-[10px] font-bold mono">${p.pos}</div>
-        <div class="flex-1 min-w-0">
-          <div class="text-sm font-medium truncate">${p.name}</div>
-          <div class="text-[11px] text-slate-400 flex items-center gap-2"><span>${p.team}</span>•<span>${p.age.toFixed(1)}y</span></div>
-        </div>
-        <div class="text-right">
-          <div class="text-xs mono font-semibold">${fmt(p.value)}</div>
-          <div class="text-[10px] text-slate-400">${p.ppg.toFixed(1)} ppg</div>
-        </div>
+  function renderRoster(teamId, containerId, selSet, side) {
+    const r=state.rosters.find(x=>x.roster_id==teamId);
+    if(!r) return;
+    const players=rosterPlayers(r);
+    const filter=$(`#search-${side}`).value.toLowerCase();
+    const cont=$(containerId);
+    cont.innerHTML='';
+    players.filter(p=>!filter||p.name.toLowerCase().includes(filter)||p.pos.toLowerCase().includes(filter)).forEach(p=>{
+      const sel=selSet.has(p.id);
+      const row=document.createElement('div');
+      row.className=`player-row grid grid-cols-[28px_48px_1fr_50px_60px_50px] gap-2 items-center px-2 py-2 rounded-xl border ${sel?'selected border-cyan-500/40':'border-transparent'} cursor-pointer`;
+      row.innerHTML=`
+        <input type="checkbox" ${sel?'checked':''} class="w-4 h-4 accent-cyan-500 justify-self-center">
+        <div class="w-8 h-8 rounded-lg bg-slate-800 border-white/10 flex items-center justify-center text-[10px] font-bold mono">${p.pos}</div>
+        <div class="text-sm truncate">${p.name}</div>
+        <div class="text-xs mono text-right">${p.age.toFixed(1)}</div>
+        <div class="text-xs mono font-semibold text-right">${fmt(p.value)}</div>
+        <div class="text-xs mono text-right">${p.ppg.toFixed(1)}</div>
+        <div class="text-[11px] text-right text-slate-400">${p.team}</div>
       `;
-      row.addEventListener('click', e=>{
-        if (e.target.tagName!=='INPUT') row.querySelector('input').click();
-      });
-      row.querySelector('input').addEventListener('change', e=>{
-        if (e.target.checked) selectedSet.add(p.id); else selectedSet.delete(p.id);
-        updateAll();
-      });
+      row.onclick=e=>{ if(e.target.tagName!=='INPUT') row.querySelector('input').click(); };
+      row.querySelector('input').onchange=e=>{ e.target.checked?selSet.add(p.id):selSet.delete(p.id); updateAll(); };
       cont.appendChild(row);
     });
-    $(`#count-${side}`).textContent = `${selectedSet.size} selected`;
+    $(`#count-${side}`).textContent=`${selSet.size} selected`;
   }
 
   function computeImpact() {
-    const ra = state.rosters.find(r=>r.roster_id==state.teamA);
-    const rb = state.rosters.find(r=>r.roster_id==state.teamB);
-    if (!ra||!rb) return null;
-    const playersA = rosterPlayers(ra);
-    const playersB = rosterPlayers(rb);
-    const selA = playersA.filter(p=>state.selectedA.has(p.id));
-    const selB = playersB.filter(p=>state.selectedB.has(p.id));
+    const ra=state.rosters.find(r=>r.roster_id==state.teamA);
+    const rb=state.rosters.find(r=>r.roster_id==state.teamB);
+    if(!ra||!rb) return null;
+    const pa=rosterPlayers(ra), pb=rosterPlayers(rb);
+    const selA=pa.filter(p=>state.selectedA.has(p.id));
+    const selB=pb.filter(p=>state.selectedB.has(p.id));
+    const sum=(a,k)=>a.reduce((s,x)=>s+x[k],0);
+    const avg=a=>a.length?a.reduce((s,x)=>s+x.age,0)/a.length:0;
 
-    const sum = (arr,k)=>arr.reduce((s,x)=>s+x[k],0);
-    const avg = arr=> arr.length? arr.reduce((s,x)=>s+x.age,0)/arr.length : 0;
+    const optBeforeA=computeOptimalStarters(pa,state.rosterPos);
+    const afterA=[...pa.filter(p=>!state.selectedA.has(p.id)),...selB];
+    const optAfterA=computeOptimalStarters(afterA,state.rosterPos);
 
-    const valueOutA = sum(selA,'value');
-    const valueInA = sum(selB,'value');
-    const valueDeltaPctA = valueOutA>0 ? (valueInA-valueOutA)/valueOutA*100 : 0;
-    const ppgDeltaA = sum(selB,'ppg') - sum(selA,'ppg');
-
-    const optBeforeA = computeOptimalStarters(playersA, state.rosterPos);
-    const afterAPlayers = [...playersA.filter(p=>!state.selectedA.has(p.id)), ...selB];
-    const optAfterA = computeOptimalStarters(afterAPlayers, state.rosterPos);
-
-    const ageRosterBeforeA = avg(playersA);
-    const ageRosterAfterA = avg(afterAPlayers);
-    const ageDeltaRosterA = ageRosterAfterA - ageRosterBeforeA;
-
-    const valueOutB = sum(selB,'value');
-    const valueInB = sum(selA,'value');
-    const valueDeltaPctB = valueOutB>0 ? (valueInB-valueOutB)/valueOutB*100 : 0;
-    const ppgDeltaB = sum(selA,'ppg') - sum(selB,'ppg');
-
-    const optBeforeB = computeOptimalStarters(playersB, state.rosterPos);
-    const afterBPlayers = [...playersB.filter(p=>!state.selectedB.has(p.id)), ...selA];
-    const optAfterB = computeOptimalStarters(afterBPlayers, state.rosterPos);
-
-    const ageRosterBeforeB = avg(playersB);
-    const ageRosterAfterB = avg(afterBPlayers);
-    const ageDeltaRosterB = ageRosterAfterB - ageRosterBeforeB;
+    const optBeforeB=computeOptimalStarters(pb,state.rosterPos);
+    const afterB=[...pb.filter(p=>!state.selectedB.has(p.id)),...selA];
+    const optAfterB=computeOptimalStarters(afterB,state.rosterPos);
 
     return {
-      A: {
-        valueOut:valueOutA, valueIn:valueInA, valueDeltaPct:valueDeltaPctA,
-        ppgDelta:ppgDeltaA,
-        optPpgDelta: optAfterA.totalPpg - optBeforeA.totalPpg,
-        ageDeltaRoster: ageDeltaRosterA,
-        ageDeltaStarters: optAfterA.avgAge - optBeforeA.avgAge,
-        optBefore:optBeforeA, optAfter:optAfterA
-      },
-      B: {
-        valueOut:valueOutB, valueIn:valueInB, valueDeltaPct:valueDeltaPctB,
-        ppgDelta:ppgDeltaB,
-        optPpgDelta: optAfterB.totalPpg - optBeforeB.totalPpg,
-        ageDeltaRoster: ageDeltaRosterB,
-        ageDeltaStarters: optAfterB.avgAge - optBeforeB.avgAge,
-        optBefore:optBeforeB, optAfter:optAfterB
-      },
-      selA, selB
+      A:{valueOut:sum(selA,'value'),valueIn:sum(selB,'value'),valueDeltaPct:sum(selA,'value')? (sum(selB,'value')-sum(selA,'value'))/sum(selA,'value')*100:0,ppgDelta:sum(selB,'ppg')-sum(selA,'ppg'),optPpgDelta:optAfterA.totalPpg-optBeforeA.totalPpg,ageDeltaRoster:avg(afterA)-avg(pa),ageDeltaStarters:optAfterA.avgAge-optBeforeA.avgAge,optBefore:optBeforeA,optAfter:optAfterA},
+      B:{valueOut:sum(selB,'value'),valueIn:sum(selA,'value'),valueDeltaPct:sum(selB,'value')? (sum(selA,'value')-sum(selB,'value'))/sum(selB,'value')*100:0,ppgDelta:sum(selA,'ppg')-sum(selB,'ppg'),optPpgDelta:optAfterB.totalPpg-optBeforeB.totalPpg,ageDeltaRoster:avg(afterB)-avg(pb),ageDeltaStarters:optAfterB.avgAge-optBeforeB.avgAge,optBefore:optBeforeB,optAfter:optAfterB},
+      selA,selB
     };
   }
 
-  function metricCard(label, value, sub='') {
-    return `<div class="rounded-lg bg-white/[0.03] border border-white/10 p-2.5">
-      <div class="text-[10px] uppercase tracking-wide text-slate-400">${label}</div>
-      <div class="mono text-sm font-semibold mt-0.5">${value}</div>
-      ${sub?`<div class="text-[10px] text-slate-500">${sub}</div>`:''}
-    </div>`;
+  function metricCard(l,v){return `<div class="rounded-lg bg-white/[0.03] border border-white/10 p-2.5"><div class="text-[10px] uppercase text-slate-400">${l}</div><div class="mono text-sm font-semibold">${v}</div></div>`}
+
+  function renderImpact(){
+    const imp=computeImpact(); if(!imp) return;
+    const {A,B,selA,selB}=imp;
+    $('#impact-a').innerHTML=[metricCard('Value Δ %',fmtPct(A.valueDeltaPct)),metricCard('PPG Δ',fmt1(A.ppgDelta)),metricCard('OPT PPG Δ',fmt1(A.optPpgDelta)),metricCard('Age Δ Roster',fmt1(A.ageDeltaRoster)+'y'),metricCard('Age Δ Starters',fmt1(A.ageDeltaStarters)+'y')].join('');
+    $('#impact-b').innerHTML=[metricCard('Value Δ %',fmtPct(B.valueDeltaPct)),metricCard('PPG Δ',fmt1(B.ppgDelta)),metricCard('OPT PPG Δ',fmt1(B.optPpgDelta)),metricCard('Age Δ Roster',fmt1(B.ageDeltaRoster)+'y'),metricCard('Age Δ Starters',fmt1(B.ageDeltaStarters)+'y')].join('');
+    $('#send-a').textContent=fmt(A.valueOut);
+    $('#send-b').textContent=fmt(B.valueOut);
+    $('#trade-count').textContent=`${selA.length} ↔ ${selB.length}`;
+    const fairness=Math.max(-100,Math.min(100,B.valueDeltaPct-A.valueDeltaPct));
+    $('#fairness-bar').style.width=`${50+fairness/2}%`;
+    $('#fairness-label').textContent=Math.abs(fairness)<5?'Even':fairness>0?'B +':'A +';
   }
 
-  function renderImpact() {
-    const imp = computeImpact();
-    if (!imp) return;
-    const {A,B,selA,selB} = imp;
-
-    $('#impact-a').innerHTML = [
-      metricCard('Value Δ %', fmtPct(A.valueDeltaPct)),
-      metricCard('PPG Δ', fmt1(A.ppgDelta)),
-      metricCard('OPT PPG Δ', fmt1(A.optPpgDelta)),
-      metricCard('Age Δ Roster', fmt1(A.ageDeltaRoster)+'y')
-    ].join('') + metricCard('Age Δ Starters', fmt1(A.ageDeltaStarters)+'y');
-
-    $('#impact-b').innerHTML = [
-      metricCard('Value Δ %', fmtPct(B.valueDeltaPct)),
-      metricCard('PPG Δ', fmt1(B.ppgDelta)),
-      metricCard('OPT PPG Δ', fmt1(B.optPpgDelta)),
-      metricCard('Age Δ Roster', fmt1(B.ageDeltaRoster)+'y')
-    ].join('') + metricCard('Age Δ Starters', fmt1(B.ageDeltaStarters)+'y');
-
-    const warn = (m) => {
-      const w=[];
-      if (m.valueDeltaPct < -10) w.push({t:'Losing value',c:'amber'});
-      if (m.optPpgDelta < -1) w.push({t:'Starting lineup weaker',c:'red'});
-      if (m.ageDeltaRoster > .5) w.push({t:'Getting older',c:'amber'});
-      if (m.valueDeltaPct > 20) w.push({t:'Big value win',c:'emerald'});
-      return w;
-    };
-    const renderWarn = (el, list) => {
-      el.innerHTML = list.map(w=>`<div class="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg bg-${w.c}-500/10 border border-${w.c}-500/20 text-${w.c}-300"><i class="fa-solid fa-triangle-exclamation"></i>${w.t}</div>`).join('') || `<div class="text-xs text-slate-500">No warnings</div>`;
-    };
-    renderWarn($('#warnings-a'), warn(A));
-    renderWarn($('#warnings-b'), warn(B));
-
-    $('#send-a').textContent = fmt(A.valueOut);
-    $('#send-b').textContent = fmt(B.valueOut);
-    $('#trade-count').textContent = `${selA.length} ↔ ${selB.length}`;
-
-    const fairness = Math.max(-100, Math.min(100, B.valueDeltaPct - A.valueDeltaPct));
-    const pct = 50 + fairness/2;
-    $('#fairness-bar').style.width = `${pct}%`;
-    $('#fairness-label').textContent = Math.abs(fairness)<5 ? 'Even' : fairness>0 ? 'B +' : 'A +';
-
-    const lineHTML = (opt) => opt.line.map(l=>`
-      <div class="flex items-center gap-2 py-0.5">
-        <span class="w-20 text-slate-500">${l.slot}</span>
-        <span class="flex-1 truncate">${l.player ? l.player.name : '—'}</span>
-        <span class="text-slate-400">${l.player ? l.player.ppg.toFixed(1) : ''}</span>
-      </div>`).join('');
-    $('#opt-a').innerHTML = `<div class="grid grid-cols-2 gap-4"><div>${lineHTML(A.optBefore)}</div><div>${lineHTML(A.optAfter)}</div></div>`;
-    $('#opt-b').innerHTML = `<div class="grid grid-cols-2 gap-4"><div>${lineHTML(B.optBefore)}</div><div>${lineHTML(B.optAfter)}</div></div>`;
-
-    const gw = [];
-    if (selA.length===0 && selB.length===0) gw.push('Select assets to evaluate trade');
-    if (A.valueDeltaPct < -20 || B.valueDeltaPct < -20) gw.push('Trade is heavily lopsided');
-    $('#global-warnings').innerHTML = gw.map(t=>`<div class="text-xs px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200">${t}</div>`).join('');
-  }
-
-  function updateAll() {
-    renderRoster(state.teamA, '#roster-a', state.selectedA, 'a');
-    renderRoster(state.teamB, '#roster-b', state.selectedB, 'b');
+  function updateAll(){
+    renderRoster(state.teamA,'#roster-a',state.selectedA,'a');
+    renderRoster(state.teamB,'#roster-b',state.selectedB,'b');
     renderImpact();
   }
 
-  async function loadPlayers() {
-    try {
-      setStatus('Loading players database…');
-      const r = await fetch('https://api.sleeper.app/v1/players/nfl');
-      state.players = await r.json();
-    } catch(e) {
-      console.warn('Players fetch failed', e);
-      state.players = {};
-    }
-  }
-
-  async function loadLeague() {
+  async function loadLeague(){
     setStatus('Loading league…');
-    const [league, users, rosters] = await Promise.all([
+    const [league,users,rosters]=await Promise.all([
       fetch(`https://api.sleeper.app/v1/league/${league_id}`).then(r=>r.json()),
       fetch(`https://api.sleeper.app/v1/league/${league_id}/users`).then(r=>r.json()),
-      fetch(`https://api.sleeper.app/v1/league/${league_id}/rosters`).then(r=>r.json()),
+      fetch(`https://api.sleeper.app/v1/league/${league_id}/rosters`).then(r=>r.json())
     ]);
-    state.league = league;
-    state.users = users;
-    state.rosters = rosters;
-    state.rosterPos = league.roster_positions || [];
-    $('#league-name').textContent = league.name;
-    $('#nav-league').textContent = league.name.slice(0,20);
+    state.league=league; state.users=users; state.rosters=rosters; state.rosterPos=league.roster_positions||[];
+    $('#league-name').textContent=league.name;
   }
 
-  async function init() {
+  async function init(){
     await loadLeague();
-    await Promise.all([loadPlayers(), loadValues()]);
+    await Promise.all([
+      fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()).then(p=>state.players=p),
+      loadValues()
+    ]);
     renderSelect();
     setStatus('Ready');
     updateAll();
   }
 
-  // Events
-  $('#team-a-select').addEventListener('change', e=>{ state.teamA = +e.target.value; state.selectedA.clear(); updateAll(); });
-  $('#team-b-select').addEventListener('change', e=>{ state.teamB = +e.target.value; state.selectedB.clear(); updateAll(); });
-  $('#search-a').addEventListener('input', ()=> renderRoster(state.teamA,'#roster-a',state.selectedA,'a'));
-  $('#search-b').addEventListener('input', ()=> renderRoster(state.teamB,'#roster-b',state.selectedB,'b'));
-  $('#clear-a').addEventListener('click', ()=>{ state.selectedA.clear(); updateAll(); });
-  $('#clear-b').addEventListener('click', ()=>{ state.selectedB.clear(); updateAll(); });
-  $('#reset-btn').addEventListener('click', ()=>{ state.selectedA.clear(); state.selectedB.clear(); updateAll(); });
-  $('#swap-btn').addEventListener('click', ()=>{
-    [state.teamA, state.teamB] = [state.teamB, state.teamA];
-    [state.selectedA, state.selectedB] = [state.selectedB, state.selectedA];
-    $('#team-a-select').value = state.teamA;
-    $('#team-b-select').value = state.teamB;
-    updateAll();
-  });
-  $('#copy-btn').addEventListener('click', async ()=>{
-    const url = new URL(location.href);
-    url.searchParams.set('league_id', league_id);
-    await navigator.clipboard.writeText(url.toString());
-    setStatus('Link copied!');
-    setTimeout(()=>setStatus('Ready'),1500);
-  });
-  $('#toggle-opt').addEventListener('click', ()=>{
-    $('#opt-body').classList.toggle('hidden');
-    $('#opt-chevron').classList.toggle('rotate-180');
-  });
-  $('#reload-btn').addEventListener('click', ()=> location.reload());
+  $('#team-a-select').onchange=e=>{state.teamA=+e.target.value;state.selectedA.clear();updateAll()};
+  $('#team-b-select').onchange=e=>{state.teamB=+e.target.value;state.selectedB.clear();updateAll()};
+  $('#search-a').oninput=()=>renderRoster(state.teamA,'#roster-a',state.selectedA,'a');
+  $('#search-b').oninput=()=>renderRoster(state.teamB,'#roster-b',state.selectedB,'b');
+  $('#clear-a').onclick=()=>{state.selectedA.clear();updateAll()};
+  $('#clear-b').onclick=()=>{state.selectedB.clear();updateAll()};
+  $('#reset-btn').onclick=()=>{state.selectedA.clear();state.selectedB.clear();updateAll()};
+  $('#swap-btn').onclick=()=>{[state.teamA,state.teamB]=[state.teamB,state.teamA];[state.selectedA,state.selectedB]=[state.selectedB,state.selectedA];$('#team-a-select').value=state.teamA;$('#team-b-select').value=state.teamB;updateAll()};
+  $('#copy-btn').onclick=async()=>{const u=new URL(location.href);u.searchParams.set('league_id',league_id);await navigator.clipboard.writeText(u.toString());setStatus('Link copied!');setTimeout(()=>setStatus('Ready'),1500)};
+  $('#toggle-opt').onclick=()=>{$('#opt-body').classList.toggle('hidden');$('#opt-chevron').classList.toggle('rotate-180')};
+  $('#reload-btn').onclick=()=>location.reload();
 
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded',init);
 })();
 </script>
 </body>
