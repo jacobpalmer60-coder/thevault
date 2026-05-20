@@ -1,541 +1,531 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Roster Audit • Sleeper Dynasty</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Roster Audit — Dynasty Dashboard</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{color-scheme:dark}
-  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0b0e14}
-  .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
-  .scroll-thin::-webkit-scrollbar{width:8px;height:8px}
-  .scroll-thin::-webkit-scrollbar-thumb{background:#2a3242;border-radius:8px}
-  .pill{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
-  .rank-pill{box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 0 20px rgba(0,0,0,.2)}
-  .glass{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));backdrop-filter:blur(8px)}
+  :root { color-scheme: dark; }
+  body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; }
+  * { scrollbar-width: thin; scrollbar-color: #334155 #0f172a; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #0f172a; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 </style>
 </head>
-<body class="min-h-screen text-slate-100 antialiased">
-  <div class="max-w-[1400px] mx-auto px-4 md:px-6 py-6 md:py-10">
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+  <div class="max-w-[1280px] mx-auto px-4 py-6 md:py-10">
     <!-- Header -->
-    <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
       <div>
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-900/30">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12l4 4 8-10" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div>
-            <h1 class="text-[28px] md:text-[32px] font-bold tracking-tight">Roster Audit</h1>
-            <p class="text-sm text-slate-400 -mt-0.5">Sleeper dynasty valuations • PPG • Draft capital</p>
-          </div>
-        </div>
-      <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-        <div class="relative flex-1 sm:w-[380px]">
-          <input id="leagueInput" placeholder="Enter Sleeper League ID or URL" class="w-full pl-10 pr-3 h-11 rounded-xl bg-[#121723] border border-slate-700/60 focus:border-violet-500 focus:outline-none text-[14px] placeholder-slate-500" />
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 opacity-60" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35m0 0A7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </div>
-        <button id="loadBtn" class="h-11 px-5 rounded-xl bg-violet-600 hover:bg-violet-500 active:bg-violet-700 font-medium text-sm shadow-lg shadow-violet-900/30 transition">Audit League</button>
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Roster Audit</h1>
+        <p class="text-slate-400 mt-1">Dynasty value, optimal PPG, and draft capital — computed from your league settings</p>
       </div>
-    </header>
+      <div class="flex items-center gap-2">
+        <input id="leagueId" placeholder="Sleeper League ID" class="w-[240px] md:w-[280px] bg-slate-900 border-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 placeholder-slate-500" />
+        <button id="loadBtn" class="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 transition rounded-xl px-4 py-2.5 text-sm font-medium shadow-lg shadow-indigo-900/30">Load</button>
+      </div>
+    </div>
 
     <!-- League Meta -->
-    <div id="leagueMeta" class="hidden mb-6">
-      <div class="glass rounded-2xl border border-slate-800 p-4 flex flex-wrap items-center gap-4">
-        <img id="leagueAvatar" class="w-12 h-12 rounded-xl bg-slate-800 object-cover" alt="">
-        <div class="min-w-0">
-          <div id="leagueName" class="text-lg font-semibold leading-tight truncate"></div>
-          <div id="leagueSub" class="text-xs text-slate-400 mono"></div>
-        </div>
-        <div class="ml-auto flex items-center gap-2 text-xs">
-          <span class="px-2 py-1 rounded-lg bg-slate-800/80 border border-slate-700" id="metaTeams"></span>
-          <span class="px-2 py-1 rounded-lg bg-slate-800/80 border border-slate-700" id="metaScoring"></span>
-          <span class="px-2 py-1 rounded-lg bg-slate-800/80 border border-slate-700" id="metaRoster"></span>
-        </div>
-      </div>
+    <div id="leagueMeta" class="hidden mb-6 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-wrap items-center gap-4 text-sm">
+      <div class="font-semibold" id="leagueName"></div>
+      <div class="h-4 w-px bg-slate-800"></div>
+      <div id="leagueSize" class="text-slate-400"></div>
+      <div class="h-4 w-px bg-slate-800"></div>
+      <div id="rosterString" class="text-slate-400 mono"></div>
     </div>
 
-    <!-- Controls -->
-    <div id="controls" class="hidden mb-4 flex flex-wrap items-center gap-3">
-      <div class="flex items-center gap-2 text-xs">
-        <span class="text-slate-400">Tier:</span>
-        <div id="tierLegend" class="flex items-center gap-1.5"></div>
-      </div>
-      <div class="ml-auto flex items-center gap-2">
-        <input id="searchTeams" placeholder="Search team…" class="h-9 w-[200px] rounded-lg bg-[#121723] border border-slate-700/60 px-3 text-sm placeholder-slate-500 focus:outline-none focus:border-violet-500">
-      </div>
-    </div>
+    <!-- Loading / Error -->
+    <div id="status" class="hidden mb-4 text-sm text-slate-400"></div>
+    <div id="error" class="hidden mb-4 p-3 rounded-xl bg-rose-950/50 border border-rose-900 text-rose-200 text-sm"></div>
 
-    <!-- Table -->
-    <div id="tableWrap" class="hidden">
-      <div class="overflow-x-auto rounded-2xl border border-slate-800 bg-[#0f1320]/70">
+    <!-- Rankings Table -->
+    <div class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
+      <div class="overflow-x-auto">
         <table class="w-full text-sm">
-          <thead class="text-[11px] uppercase tracking-wider text-slate-400 bg-[#0c111c]">
-            <tr class="[&>th]:py-3 [&>th]:px-3 [&>th]:font-semibold [&>th]:text-left">
-              <th class="w-[260px]">Team</th>
-              <th class="w-[130px]">Tier</th>
-              <th>Overall</th>
-              <th>PPG</th>
-              <th>QB</th>
-              <th>RB</th>
-              <th>WR</th>
-              <th>TE</th>
-              <th>Draft</th>
-              <th class="w-10"></th>
+          <thead class="bg-slate-900/80 border-b border-slate-800 text-slate-300 uppercase tracking-wider text-xs">
+            <tr>
+              <th class="text-left font-semibold px-4 py-3 w-12"></th>
+              <th class="text-left font-semibold px-4 py-3 min-w-[200px]">Team</th>
+              <th class="text-left font-semibold px-4 py-3">Tier</th>
+              <th class="text-left font-semibold px-4 py-3">Overall</th>
+              <th class="text-left font-semibold px-4 py-3">PPG</th>
+              <th class="text-left font-semibold px-4 py-3">QB</th>
+              <th class="text-left font-semibold px-4 py-3">RB</th>
+              <th class="text-left font-semibold px-4 py-3">WR</th>
+              <th class="text-left font-semibold px-4 py-3">TE</th>
+              <th class="text-left font-semibold px-4 py-3">Draft</th>
             </tr>
           </thead>
-          <tbody id="rankTbody" class="divide-y divide-slate-800/70"></tbody>
+          <tbody id="tableBody" class="divide-y divide-slate-800/70">
+            <tr>
+              <td colspan="10" class="px-4 py-16 text-center text-slate-500">
+                Enter a Sleeper League ID to load roster audit
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
-      <p class="mt-3 text-[11px] text-slate-500">Rank pills show league rank. Muted value is raw total next to pill. Hover for details. Click row to expand.</p>
     </div>
 
-    <!-- Loading / Empty -->
-    <div id="emptyState" class="rounded-2xl border border-dashed border-slate-700 bg-[#0f1320]/40 p-12 text-center">
-      <div class="mx-auto max-w-md">
-        <div class="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center mx-auto mb-4">📊</div>
-        <h2 class="text-xl font-semibold mb-2">Audit any Sleeper dynasty league</h2>
-        <p class="text-sm text-slate-400">Paste a league ID or URL. We auto-load <span class="mono">?league_id=</span> from the URL. Values & PPG are pulled live from a CSV source and merged with Sleeper data.</p>
-      </div>
-    </div>
-
-    <div id="loadingState" class="hidden">
-      <div class="rounded-2xl border border-slate-800 bg-[#0f1320]/70 p-12 text-center">
-        <div class="inline-flex items-center gap-3">
-          <svg class="animate-spin" width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="#334155" stroke-width="3" fill="none"/><path d="M21 12a9 9 0 00-9-9" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round" fill="none"/></svg>
-          <span class="text-sm text-slate-300">Fetching league, rosters, drafts, picks & values…</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="mt-10 text-center text-[11px] text-slate-600">Made for dynasty grinders • Dark mode only</footer>
+    <p class="mt-4 text-xs text-slate-500">PPG is computed from optimal starters using your league's roster_positions. Values & PPG sourced from CSV. Draft capital is future picks only.</p>
   </div>
 
 <script>
-const $ = s => document.querySelector(s);
-const fmt = n => n.toLocaleString();
-const fmt1 = n => n.toFixed(1);
+(() => {
+  const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
+  const PLAYERS_URL = 'https://api.sleeper.app/v1/players/nfl';
 
-const TIER_CFG = [
-  {name:'Elite', cls:'bg-purple-600/20 text-purple-300 ring-purple-600/30'},
-  {name:'Contender', cls:'bg-blue-600/20 text-blue-300 ring-blue-600/30'},
-  {name:'Mid Pack', cls:'bg-slate-600/20 text-slate-300 ring-slate-600/30'},
-  {name:'Rebuild', cls:'bg-rose-900/30 text-rose-300 ring-rose-800/40'},
-];
+  const $ = s => document.querySelector(s);
+  const statusEl = $('#status');
+  const errorEl = $('#error');
+  const tableBody = $('#tableBody');
+  const leagueMeta = $('#leagueMeta');
+  const leagueNameEl = $('#leagueName');
+  const leagueSizeEl = $('#leagueSize');
+  const rosterStringEl = $('#rosterString');
+  const loadBtn = $('#loadBtn');
+  const leagueIdInput = $('#leagueId');
 
-let STATE = {
-  league:null, users:[], rosters:[], drafts:[], traded:[], players:{}, values:new Map(),
-  teams:[], completedSeasons:new Set(), futureSeasons:[]
-};
+  const fmtNum = n => n.toLocaleString(undefined, {maximumFractionDigits:0});
+  const fmtPPG = n => n.toFixed(1);
+  const normalize = s => (s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 
-function getLeagueIdFromInput(v){
-  if(!v) return null;
-  const m = v.match(/(\d{10,20})/);
-  return m ? m[1] : v.trim();
-}
+  function setStatus(msg){ statusEl.textContent = msg; statusEl.classList.toggle('hidden', !msg); }
+  function setError(msg){ errorEl.textContent = msg; errorEl.classList.toggle('hidden', !msg); }
 
-function rankColor(rank){
-  if(rank===1) return 'bg-amber-500/20 text-amber-300 ring-amber-500/30';
-  if(rank===2) return 'bg-zinc-400/20 text-zinc-200 ring-zinc-400/30';
-  if(rank===3) return 'bg-orange-700/25 text-orange-300 ring-orange-700/40';
-  if(rank<=4) return 'bg-emerald-500/15 text-emerald-300 ring-emerald-600/30';
-  return 'bg-slate-700/50 text-slate-300 ring-slate-600/40';
-}
-
-function tierForRank(rank,total){
-  const pct = rank/total;
-  if(rank<=2) return 0;
-  if(rank<=4) return 1;
-  if(pct<=0.66) return 2;
-  return 3;
-}
-
-function csvParse(text){
-  const lines = text.trim().split(/\r?\n/);
-  const head = lines.shift().split(',').map(h=>h.trim());
-  const rows=[];
-  for(const line of lines){
-    if(!line) continue;
-    const parts=[]; let cur='',inQ=false;
+  // CSV parser
+  function splitCSVLine(line){
+    const out = []; let cur=''; let inQ=false;
     for(let i=0;i<line.length;i++){
-      const c=line[i];
-      if(c==='"'){inQ=!inQ;continue}
-      if(c===','&&!inQ){parts.push(cur);cur='';continue}
-      cur+=c;
+      const ch=line[i];
+      if(ch === '"'){
+        if(inQ && line[i+1]==='"'){ cur+='"'; i++; }
+        else inQ=!inQ;
+      } else if(ch===',' && !inQ){ out.push(cur); cur=''; }
+      else cur+=ch;
     }
-    parts.push(cur);
-    const obj={}; head.forEach((h,i)=>obj[h]=parts[i]);
-    rows.push(obj);
+    out.push(cur);
+    return out;
   }
-  return rows;
-}
-
-// ---- CSV DIRECT PULL FOR VALUES/PPG ----
-async function fetchValuesCSV(players){
-  // Build CSV from Sleeper players to simulate a live CSV feed
-  const lines=['player_id,value,ppg,position,name'];
-  for(const [id,p] of Object.entries(players)){
-    if(!p.position || !['QB','RB','WR','TE'].includes(p.position)) continue;
-    const rank = p.search_rank || 9999;
-    const base = 13000 - rank*4;
-    const value = Math.max(0, Math.round(base));
-    const ppg = p.position==='QB' ? Math.max(0, 26 - rank*0.0035) : Math.max(0, 20 - rank*0.003);
-    const name = (p.full_name||'').replace(/,/g,' ');
-    lines.push(`${id},${value},${ppg.toFixed(1)},${p.position},${name}`);
+  function parseCSV(text){
+    const lines = text.trim().split(/\r?\n/).filter(l=>l.trim().length);
+    if(!lines.length) return [];
+    const headers = splitCSVLine(lines[0]).map(h=>h.trim());
+    const rows=[];
+    for(let i=1;i<lines.length;i++){
+      const fields = splitCSVLine(lines[i]);
+      const obj={};
+      headers.forEach((h,idx)=> obj[h]= (fields[idx]||'').trim());
+      rows.push(obj);
+    }
+    return rows;
   }
-  const csv = lines.join('\n');
-  const url = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  const res = await fetch(url);
-  const text = await res.text();
-  const rows = csvParse(text);
-  const map = new Map();
-  for(const r of rows){
-    map.set(r.player_id, {value:+r.value||0, ppg:+r.ppg||0, position:r.position, name:r.name});
+
+  async function fetchCSVMap(){
+    const res = await fetch(CSV_URL);
+    if(!res.ok) throw new Error('CSV fetch failed');
+    const txt = await res.text();
+    const rows = parseCSV(txt);
+    if(!rows.length) throw new Error('CSV empty');
+
+    const headers = Object.keys(rows[0]);
+    const findCol = (re) => headers.find(h=> re.test(h.toLowerCase()));
+    const sidCol = findCol(/sleeper|player_id|^id$/);
+    const nameCol = findCol(/player|name/);
+    const posCol = findCol(/^pos/);
+    const ageCol = findCol(/age/);
+    const valueCol = findCol(/value|dynasty/);
+    const ppgCol = findCol(/ppg|pts|fantasy/);
+
+    const byId = new Map();
+    const byName = new Map();
+    for(const r of rows){
+      const sid = sidCol ? r[sidCol] : '';
+      const name = nameCol ? r[nameCol] : '';
+      const pos = posCol ? (r[posCol]||'').toUpperCase() : '';
+      const age = ageCol ? Number(r[ageCol])||0 : 0;
+      const value = valueCol ? Number(r[valueCol])||0 : 0;
+      const ppg = ppgCol ? Number(r[ppgCol])||0 : 0;
+      if(!name && !sid) continue;
+      const entry = { sleeper_id: sid, name, pos, age, value, ppg };
+      if(sid) byId.set(String(sid), entry);
+      if(name) byName.set(normalize(name), entry);
+    }
+    return { byId, byName };
   }
-  return map;
-}
 
-async function fetchJSON(url){
-  const r = await fetch(url);
-  if(!r.ok) throw new Error('Fetch failed '+url);
-  return r.json();
-}
-
-async function loadLeague(leagueId){
-  $('#emptyState').classList.add('hidden');
-  $('#tableWrap').classList.add('hidden');
-  $('#leagueMeta').classList.add('hidden');
-  $('#controls').classList.add('hidden');
-  $('#loadingState').classList.remove('hidden');
-
-  try{
-    const [league, users, rosters, drafts, traded] = await Promise.all([
-      fetchJSON(`https://api.sleeper.app/v1/league/${leagueId}`),
-      fetchJSON(`https://api.sleeper.app/v1/league/${leagueId}/users`),
-      fetchJSON(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
-      fetchJSON(`https://api.sleeper.app/v1/league/${leagueId}/drafts`).catch(()=>[]),
-      fetchJSON(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`).catch(()=>[])
+  async function fetchSleeper(leagueId){
+    const [league, users, rosters, traded, drafts] = await Promise.all([
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}`).then(r=>r.json()),
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`).then(r=>r.json()),
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`).then(r=>r.json()),
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`).then(r=>r.json()),
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}/drafts`).then(r=>r.json()),
     ]);
-    const players = await fetchJSON('https://api.sleeper.app/v1/players/nfl');
-    const values = await fetchValuesCSV(players);
-
-    STATE.league=league; STATE.users=users; STATE.rosters=rosters; STATE.drafts=drafts; STATE.traded=traded; STATE.players=players; STATE.values=values;
-
-    // Determine completed draft seasons
-    const now = Date.now();
-    const completed = new Set();
-    for(const d of drafts){
-      const season = parseInt(d.season);
-      if(!season) continue;
-      if(d.status==='complete') {completed.add(season); continue;}
-      // heuristic: if draft started and all picks made
-      if(d.start_time && new Date(d.start_time).getTime() < now && d.slot_to_roster_id && Object.keys(d.slot_to_roster_id).length >= (d.settings?.teams||0)* (d.settings?.rounds||0)*0.95){
-        completed.add(season);
-      }
-    }
-    STATE.completedSeasons = completed;
-
-    const curYear = new Date().getFullYear();
-    const seasons = [];
-    for(let y=curYear; y<=curYear+3; y++){
-      if(!completed.has(y)) seasons.push(y);
-    }
-    STATE.futureSeasons = seasons;
-
-    buildTeams();
-    renderMeta();
-    renderTable();
-
-    $('#loadingState').classList.add('hidden');
-    $('#tableWrap').classList.remove('hidden');
-    $('#leagueMeta').classList.remove('hidden');
-    $('#controls').classList.remove('hidden');
-  }catch(e){
-    console.error(e);
-    $('#loadingState').classList.add('hidden');
-    $('#emptyState').classList.remove('hidden');
-    alert('Failed to load league. Check ID and try again.');
-  }
-}
-
-function buildTeams(){
-  const {rosters, users, players, values, traded, futureSeasons, completedSeasons} = STATE;
-  const userById = new Map(users.map(u=>[u.user_id,u]));
-  const rosterById = new Map(rosters.map(r=>[r.roster_id,r]));
-
-  // Build pick ownership map
-  // For each original roster, for each future season/round, find trade
-  const picksByOwner = new Map(); // roster_id -> []
-  for(const r of rosters) picksByOwner.set(r.roster_id, []);
-
-  const rounds = [1,2,3,4];
-  for(const r of rosters){
-    for(const season of futureSeasons){
-      for(const round of rounds){
-        const trade = traded.find(t => t.season==season && t.round==round && t.roster_id==r.roster_id);
-        const ownerId = trade ? trade.owner_id : r.roster_id;
-        const pick = {season, round, original_roster_id:r.roster_id, owner_id:ownerId};
-        picksByOwner.get(ownerId).push(pick);
-      }
-    }
+    return { league, users, rosters, traded, drafts };
   }
 
-  // Filter picks: future-only logic already applied via futureSeasons, also drop seasons in completed set
-  // Deduplicate players
-  const teams=[];
-  for(const r of rosters){
-    const user = userById.get(r.owner_id);
-    const ids = [
-      ...(r.players||[]),
-      ...(r.taxi||[]),
-      ...(r.reserve||[])
-    ].filter(Boolean);
-    const uniqIds = [...new Set(ids)]; // dedupe Drew Allar / Kaytron Allen type dupes
-
-    let playerValue=0, ppgStarter=0;
-    const posVal={QB:0,RB:0,WR:0,TE:0};
-    const posPlayers={QB:[],RB:[],WR:[],TE:[]};
-
-    for(const pid of uniqIds){
-      const p = players[pid];
-      if(!p) continue;
-      const v = values.get(pid) || {value:0,ppg:0,position:p.position};
-      playerValue += v.value;
-      if(['QB','RB','WR','TE'].includes(p.position)){
-        posVal[p.position] += v.value;
-        posPlayers[p.position].push({id:pid, name:p.full_name||p.first_name+' '+p.last_name, value:v.value, ppg:v.ppg, age:p.age, team:p.team});
-      }
-    }
-    // starter PPG total
-    const starters = [...new Set([...(r.starters||[]).filter(Boolean)])];
-    for(const sid of starters){
-      const v = values.get(sid);
-      if(v) ppgStarter += v.ppg;
-    }
-    // If no starters (offseason), approximate best ball
-    if(ppgStarter===0){
-      const all = uniqIds.map(pid=>({pid, ...values.get(pid)} )).filter(x=>x && x.ppg).sort((a,b)=>b.ppg-a.ppg);
-      const slots = (STATE.league.roster_positions||[]).filter(p=>!['BN','IR','TAXI'].includes(p)).length || 9;
-      ppgStarter = all.slice(0,slots).reduce((s,x)=>s+x.ppg,0);
-    }
-
-    // Draft capital
-    const picks = picksByOwner.get(r.roster_id)||[];
-    // future-only filter already done, but also ensure not in completed seasons
-    const futurePicks = picks.filter(pk => !completedSeasons.has(pk.season) && pk.season >= new Date().getFullYear());
-    const pickValue = futurePicks.reduce((sum,pk)=>{
-      const base = {1:8000,2:3000,3:1200,4:500}[pk.round]||200;
-      const yrDiscount = Math.pow(0.82, pk.season - new Date().getFullYear());
-      return sum + base*yrDiscount;
-    },0);
-
-    const totalValue = playerValue + pickValue;
-
-    teams.push({
-      roster_id:r.roster_id,
-      owner_id:r.owner_id,
-      teamName: user?.metadata?.team_name || user?.display_name || `Team ${r.roster_id}`,
-      avatar: user?.avatar ? `https://sleepercdn.com/avatars/thumbs/${user.avatar}` : '',
-      record: `${r.settings?.wins||0}-${r.settings?.losses||0}${r.settings?.ties?`-${r.settings.ties}`:''}`,
-      playerValue, pickValue, totalValue,
-      ppgStarter,
-      posVal,
-      posPlayers,
-      picks: futurePicks.sort((a,b)=>a.season-b.season || a.round-b.round),
-      rawRoster:r
-    });
-  }
-
-  // Compute ranks
-  const rankBy = (key, desc=true) => {
-    const sorted = [...teams].sort((a,b)=> desc ? b[key]-a[key] : a[key]-b[key]);
-    const map=new Map();
-    sorted.forEach((t,i)=> map.set(t.roster_id,i+1));
-    return map;
-  };
-  const overallRank = rankBy('totalValue');
-  const ppgRank = rankBy('ppgStarter');
-  const qbRank = rankBy(t=>t.posVal.QB);
-  const rbRank = rankBy(t=>t.posVal.RB);
-  const wrRank = rankBy(t=>t.posVal.WR);
-  const teRank = rankBy(t=>t.posVal.TE);
-  const draftRank = rankBy('pickValue');
-
-  // Wait rankBy with function
-  function rankByFn(fn){
-    const sorted = [...teams].sort((a,b)=> fn(b)-fn(a));
-    const map=new Map();
-    sorted.forEach((t,i)=> map.set(t.roster_id,i+1));
-    return map;
-  }
-  const qbR = rankByFn(t=>t.posVal.QB);
-  const rbR = rankByFn(t=>t.posVal.RB);
-  const wrR = rankByFn(t=>t.posVal.WR);
-  const teR = rankByFn(t=>t.posVal.TE);
-
-  for(const t of teams){
-    t.ranks={
-      overall: overallRank.get(t.roster_id),
-      ppg: ppgRank.get(t.roster_id),
-      qb: qbR.get(t.roster_id),
-      rb: rbR.get(t.roster_id),
-      wr: wrR.get(t.roster_id),
-      te: teR.get(t.roster_id),
-      draft: draftRank.get(t.roster_id),
+  function getSlotCounts(rosterPositions){
+    const c = {};
+    for(const p of rosterPositions) c[p] = (c[p]||0)+1;
+    return {
+      qb: c['QB']||0,
+      rb: c['RB']||0,
+      wr: c['WR']||0,
+      te: c['TE']||0,
+      flex: c['FLEX']||0,
+      super_flex: c['SUPER_FLEX']||0,
+      rec_flex: c['REC_FLEX']||0,
+      wrrb_flex: c['WR_RB_FLEX']||0,
     };
-    t.tierIdx = tierForRank(t.ranks.overall, teams.length);
   }
 
-  teams.sort((a,b)=> a.ranks.overall - b.ranks.overall);
-  STATE.teams = teams;
-}
+  function rosterPositionsString(counts){
+    const parts=[];
+    if(counts.qb) parts.push(`QB ${counts.qb}`);
+    if(counts.rb) parts.push(`RB ${counts.rb}`);
+    if(counts.wr) parts.push(`WR ${counts.wr}`);
+    if(counts.te) parts.push(`TE ${counts.te}`);
+    if(counts.flex) parts.push(`FLEX ${counts.flex}`);
+    if(counts.super_flex) parts.push(`SUPER_FLEX ${counts.super_flex}`);
+    if(counts.rec_flex) parts.push(`REC_FLEX ${counts.rec_flex}`);
+    if(counts.wrrb_flex) parts.push(`WRRB_FLEX ${counts.wrrb_flex}`);
+    return parts.join(' ');
+  }
 
-function renderMeta(){
-  const L = STATE.league;
-  $('#leagueName').textContent = L.name;
-  $('#leagueSub').textContent = `ID ${L.league_id} • Season ${L.season} • ${L.total_rosters} teams`;
-  $('#metaTeams').textContent = `${L.total_rosters} Teams`;
-  $('#metaScoring').textContent = `PPR ${L.scoring_settings?.rec||1}`;
-  $('#metaRoster').textContent = `${(L.roster_positions||[]).filter(p=>!['BN','IR','TAXI'].includes(p)).length} Starters`;
-  const av = L.avatar ? `https://sleepercdn.com/avatars/thumbs/${L.avatar}` : '';
-  $('#leagueAvatar').src = av || 'https://sleepercdn.com/images/v2/icons/league/nfl/white.png';
-  // tier legend
-  const leg = $('#tierLegend'); leg.innerHTML='';
-  TIER_CFG.forEach((t,i)=>{
-    const el=document.createElement('span');
-    el.className=`px-2 py-0.5 rounded-full text-[10px] font-medium ring-1 pill ${t.cls}`;
-    el.textContent=t.name;
-    leg.appendChild(el);
-  });
-}
+  function computeOptimalStarters(players, counts){
+    const remaining = players.filter(p=>p.ppg>0).map(p=>({...p}));
+    const order = [
+      {label:'QB', count:counts.qb, elig:new Set(['QB'])},
+      {label:'RB', count:counts.rb, elig:new Set(['RB'])},
+      {label:'WR', count:counts.wr, elig:new Set(['WR'])},
+      {label:'TE', count:counts.te, elig:new Set(['TE'])},
+      {label:'REC_FLEX', count:counts.rec_flex, elig:new Set(['WR','TE'])},
+      {label:'WRRB_FLEX', count:counts.wrrb_flex, elig:new Set(['WR','RB'])},
+      {label:'FLEX', count:counts.flex, elig:new Set(['RB','WR','TE'])},
+      {label:'SUPER_FLEX', count:counts.super_flex, elig:new Set(['QB','RB','WR','TE'])},
+    ];
+    const selected=[];
+    for(const slot of order){
+      for(let i=0;i<slot.count;i++){
+        let bestIdx=-1, best=-1;
+        for(let j=0;j<remaining.length;j++){
+          const p=remaining[j];
+          if(slot.elig.has(p.pos) && p.ppg>best){
+            best=p.ppg; bestIdx=j;
+          }
+        }
+        if(bestIdx>=0){
+          const p=remaining.splice(bestIdx,1)[0];
+          selected.push({slot:slot.label, player:p});
+        }
+      }
+    }
+    const total = selected.reduce((s,x)=>s+x.player.ppg,0);
+    return {selected,total};
+  }
 
-function rankPill(rank, value, fmtFn, label){
-  return `
-  <div class="group relative flex items-center gap-2">
-    <span class="rank-pill inline-flex items-center justify-center min-w-[28px] h-7 px-1.5 rounded-full text-[13px] font-bold ring-1 ${rankColor(rank)}">${rank}</span>
-    <span class="text-xs text-slate-400 mono">${fmtFn(value)}</span>
-    <div class="pointer-events-none absolute left-0 -top-9 opacity-0 group-hover:opacity-100 transition bg-[#0b0e14] border border-slate-700 text-[11px] px-2 py-1 rounded-lg shadow-xl whitespace-nowrap z-10">${label}</div>
-  </div>`;
-}
+  function rankMap(arr, key, desc=true){
+    const sorted=[...arr].sort((a,b)=> desc? b[key]-a[key] : a[key]-b[key]);
+    const map=new Map();
+    sorted.forEach((it,i)=> map.set(it.roster_id,i+1));
+    return map;
+  }
 
-function renderTable(filter=''){
-  const tbody = $('#rankTbody');
-  tbody.innerHTML='';
-  const teams = STATE.teams.filter(t=> t.teamName.toLowerCase().includes(filter.toLowerCase()));
+  function tierInfo(rank,total){
+    const pct = rank/total;
+    if(pct<=0.2) return {label:'Elite', cls:'bg-fuchsia-600/20 text-fuchsia-300 border-fuchsia-700/40'};
+    if(pct<=0.4) return {label:'Contender', cls:'bg-emerald-600/20 text-emerald-300 border-emerald-700/40'};
+    if(pct<=0.7) return {label:'Mid', cls:'bg-amber-600/20 text-amber-300 border-amber-700/40'};
+    return {label:'Rebuild', cls:'bg-rose-600/20 text-rose-300 border-rose-700/40'};
+  }
 
-  for(const t of teams){
-    const tr=document.createElement('tr');
-    tr.className='hover:bg-slate-800/40 cursor-pointer transition';
-    tr.dataset.roster=t.roster_id;
-    tr.innerHTML=`
-      <td class="py-2.5 px-3">
-        <div class="flex items-center gap-3">
-          <img src="${t.avatar||'https://sleepercdn.com/images/v2/icons/player/nfl/default.png'}" class="w-9 h-9 rounded-xl object-cover bg-slate-800">
-          <div class="min-w-0">
-            <div class="font-semibold leading-tight truncate max-w-[180px]">${t.teamName}</div>
-            <div class="text-[11px] text-slate-500 mono">${t.record}</div>
-          </div>
-        </div>
-      </td>
-      <td class="px-3">
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ring-1 pill ${TIER_CFG[t.tierIdx].cls}">${TIER_CFG[t.tierIdx].name}</span>
-      </td>
-      <td class="px-3">${rankPill(t.ranks.overall, t.totalValue, fmt, 'Total = players + picks')}</td>
-      <td class="px-3">${rankPill(t.ranks.ppg, t.ppgStarter, fmt1, 'Starter PPG total')}</td>
-      <td class="px-3">${rankPill(t.ranks.qb, t.posVal.QB, fmt, 'QB value sum')}</td>
-      <td class="px-3">${rankPill(t.ranks.rb, t.posVal.RB, fmt, 'RB value sum')}</td>
-      <td class="px-3">${rankPill(t.ranks.wr, t.posVal.WR, fmt, 'WR value sum')}</td>
-      <td class="px-3">${rankPill(t.ranks.te, t.posVal.TE, fmt, 'TE value sum')}</td>
-      <td class="px-3">${rankPill(t.ranks.draft, t.pickValue, v=>fmt(Math.round(v)), 'Draft capital')}</td>
-      <td class="px-3 text-right"><button class="expandBtn w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center">⌄</button></td>
-    `;
-    tbody.appendChild(tr);
+  function rankPill(rank){
+    let cls='bg-slate-800 text-slate-200 border-slate-700';
+    if(rank===1) cls='bg-amber-500/20 text-amber-300 border-amber-600/50';
+    else if(rank===2) cls='bg-slate-500/20 text-slate-200 border-slate-600/50';
+    else if(rank===3) cls='bg-orange-700/20 text-orange-300 border-orange-800/50';
+    return `<span class="inline-flex items-center justify-center w-8 h-6 rounded-lg border text-xs font-bold ${cls}">#${rank}</span>`;
+  }
 
-    // Expanded row
-    const expTr=document.createElement('tr');
-    expTr.className='hidden bg-[#0a0d14]';
-    expTr.dataset.expanded=t.roster_id;
-    expTr.innerHTML=`<td colspan="10" class="p-0">
-      <div class="border-t border-slate-800 p-4">
-        <div class="grid lg:grid-cols-4 gap-4 mb-4">
-          ${['QB','RB','WR','TE'].map(pos=>{
-            const list = t.posPlayers[pos].sort((a,b)=>b.value-a.value).slice(0,8);
-            return `<div class="rounded-xl border border-slate-800 bg-[#0f1320] p-3">
-              <div class="flex items-center justify-between mb-2">
-                <h4 class="text-xs font-semibold tracking-wide text-slate-300">${pos}</h4>
-                <span class="text-[11px] text-slate-500 mono">${fmt(t.posVal[pos])}</span>
-              </div>
-              <div class="space-y-1.5 max-h-[220px] overflow-auto scroll-thin pr-1">
-                ${list.length? list.map(p=>`
-                  <div class="flex items-center justify-between text-[12px]">
-                    <div class="truncate pr-2">
-                      <span class="text-slate-200">${p.name}</span>
-                      <span class="text-slate-500 ml-1">${p.team||''}</span>
-                    </div>
-                    <div class="flex items-center gap-3 mono text-[11px]">
-                      <span class="text-slate-400">${fmt(p.value)}</span>
-                      <span class="text-violet-300">${p.ppg.toFixed(1)}</span>
-                    </div>
+  function ordinal(n){
+    const s=["th","st","nd","rd"], v=n%100;
+    return n + (s[(v-20)%10]||s[v]||s[0]);
+  }
+
+  async function load(){
+    setError('');
+    const leagueId = leagueIdInput.value.trim();
+    if(!leagueId){ setError('Enter a league ID'); return; }
+    setStatus('Fetching CSV values...');
+    loadBtn.disabled=true; loadBtn.classList.add('opacity-60');
+    try{
+      const [csvMap, sleeper, playersDB] = await Promise.all([
+        fetchCSVMap(),
+        fetchSleeper(leagueId),
+        fetch(PLAYERS_URL).then(r=>r.json())
+      ]);
+      setStatus('Computing rankings...');
+
+      const {league, users, rosters, traded, drafts} = sleeper;
+      const userMap = new Map(users.map(u=>[u.user_id, u]));
+      const rosterIdToTeam = new Map();
+      const rosterIdToOwner = new Map();
+
+      const slotCounts = getSlotCounts(league.roster_positions||[]);
+      const rosterStr = rosterPositionsString(slotCounts);
+
+      leagueMeta.classList.remove('hidden');
+      leagueNameEl.textContent = league.name || 'League';
+      leagueSizeEl.textContent = `${rosters.length} teams`;
+      rosterStringEl.textContent = rosterStr;
+
+      // drafts completed
+      const completedSeasons = new Set();
+      for(const d of drafts){ if(d.status==='complete' && d.season) completedSeasons.add(Number(d.season)); }
+      const maxCompleted = completedSeasons.size? Math.max(...completedSeasons) : new Date().getFullYear()-1;
+      const futureSeasons = [maxCompleted+1, maxCompleted+2, maxCompleted+3];
+      const draftRounds = league.settings?.draft_rounds || 4;
+
+      // initialize picks
+      const pickMap = new Map();
+      for(const r of rosters){
+        pickMap.set(r.roster_id, []);
+        rosterIdToOwner.set(r.roster_id, r.owner_id);
+        const u = userMap.get(r.owner_id);
+        const teamName = u?.metadata?.team_name || u?.display_name || `Team ${r.roster_id}`;
+        rosterIdToTeam.set(r.roster_id, teamName);
+      }
+      for(const season of futureSeasons){
+        for(let round=1; round<=draftRounds; round++){
+          for(const r of rosters){
+            pickMap.get(r.roster_id).push({season, round, original_roster_id:r.roster_id});
+          }
+        }
+      }
+      // apply trades
+      for(const t of traded||[]){
+        const season = Number(t.season);
+        if(!futureSeasons.includes(season)) continue;
+        const orig = t.roster_id;
+        const owner = t.owner_id;
+        const round = Number(t.round);
+        const arr = pickMap.get(orig);
+        if(arr){
+          const idx = arr.findIndex(p=>p.season===season && p.round===round && p.original_roster_id===orig);
+          if(idx>=0) arr.splice(idx,1);
+        }
+        if(pickMap.has(owner)){
+          pickMap.get(owner).push({season, round, original_roster_id:orig});
+        }
+      }
+
+      const pickBase = {1:6000,2:3000,3:1500,4:750,5:350,6:150};
+      const nowYear = new Date().getFullYear();
+      const pickEquity = new Map();
+      for(const [rid, picks] of pickMap){
+        let sum=0;
+        for(const p of picks){
+          const base = pickBase[p.round]||100;
+          const discount = Math.pow(0.85, Math.max(0, p.season-nowYear));
+          sum += base*discount;
+        }
+        pickEquity.set(rid, sum);
+      }
+
+      // build teams
+      const teams=[];
+      for(const r of rosters){
+        const pidSet = new Set([ ...(r.players||[]), ...(r.taxi||[]), ...(r.reserve||[]) ].filter(Boolean));
+        const players=[];
+        for(const pid of pidSet){
+          const pd = playersDB[pid];
+          if(!pd) continue;
+          const name = pd.full_name || `${pd.first_name||''} ${pd.last_name||''}`.trim();
+          const pos = (pd.position||'').toUpperCase();
+          const csv = csvMap.byId.get(String(pid)) || csvMap.byName.get(normalize(name));
+          if(!csv){
+            // console.warn('Missing CSV for', name, pid);
+          }
+          players.push({
+            sleeper_id: pid,
+            name,
+            pos,
+            age: pd.age||0,
+            value: csv?.value||0,
+            ppg: csv?.ppg||0,
+          });
+        }
+        // dedup by id already
+        const qbVal = players.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0);
+        const rbVal = players.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0);
+        const wrVal = players.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0);
+        const teVal = players.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0);
+        const playerValueSum = players.reduce((s,p)=>s+p.value,0);
+        const picks = pickMap.get(r.roster_id)||[];
+        const pickEq = pickEquity.get(r.roster_id)||0;
+        const overallValue = playerValueSum + pickEq;
+        const opt = computeOptimalStarters(players, slotCounts);
+        teams.push({
+          roster_id: r.roster_id,
+          owner_id: r.owner_id,
+          team_name: rosterIdToTeam.get(r.roster_id),
+          players,
+          qbVal, rbVal, wrVal, teVal,
+          pickEq,
+          picks,
+          overallValue,
+          starter_ppg_total: opt.total,
+          optimal: opt,
+        });
+      }
+
+      // ranks
+      const overallRank = rankMap(teams,'overallValue');
+      const ppgRank = rankMap(teams,'starter_ppg_total');
+      const qbRank = rankMap(teams,'qbVal');
+      const rbRank = rankMap(teams,'rbVal');
+      const wrRank = rankMap(teams,'wrVal');
+      const teRank = rankMap(teams,'teVal');
+      const draftRank = rankMap(teams,'pickEq');
+
+      teams.forEach(t=>{
+        t.rank = {
+          overall: overallRank.get(t.roster_id),
+          ppg: ppgRank.get(t.roster_id),
+          qb: qbRank.get(t.roster_id),
+          rb: rbRank.get(t.roster_id),
+          wr: wrRank.get(t.roster_id),
+          te: teRank.get(t.roster_id),
+          draft: draftRank.get(t.roster_id),
+        };
+      });
+
+      // sort by overall rank
+      teams.sort((a,b)=> a.rank.overall - b.rank.overall);
+
+      renderTable(teams, rosterStr, rosterIdToTeam);
+      setStatus('');
+    }catch(e){
+      console.error(e);
+      setError(e.message||'Failed to load');
+      setStatus('');
+    }finally{
+      loadBtn.disabled=false; loadBtn.classList.remove('opacity-60');
+    }
+  }
+
+  function renderTable(teams, rosterStr, rosterIdToTeam){
+    tableBody.innerHTML='';
+    teams.forEach(team=>{
+      const tier = tierInfo(team.rank.overall, teams.length);
+      const tr = document.createElement('tr');
+      tr.className='hover:bg-slate-900/60 cursor-pointer transition';
+      tr.dataset.roster=team.roster_id;
+      tr.innerHTML=`
+        <td class="px-4 py-3"><span class="text-slate-500">›</span></td>
+        <td class="px-4 py-3">
+          <div class="font-semibold">${team.team_name}</div>
+          <div class="text-xs text-slate-500 mono">Roster ${team.roster_id}</div>
+        </td>
+        <td class="px-4 py-3"><span class="inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${tier.cls}">${tier.label}</span></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2">${rankPill(team.rank.overall)}<span class="mono text-slate-200">${fmtNum(team.overallValue)}</span></div></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2">${rankPill(team.rank.ppg)}<span class="mono text-slate-200">${fmtPPG(team.starter_ppg_total)}</span></div></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2">${rankPill(team.rank.qb)}<span class="mono text-slate-300">${fmtNum(team.qbVal)}</span></div></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2">${rankPill(team.rank.rb)}<span class="mono text-slate-300">${fmtNum(team.rbVal)}</span></div></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2">${rankPill(team.rank.wr)}<span class="mono text-slate-300">${fmtNum(team.wrVal)}</span></div></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2">${rankPill(team.rank.te)}<span class="mono text-slate-300">${fmtNum(team.teVal)}</span></div></td>
+        <td class="px-4 py-3"><div class="flex items-center gap-2">${rankPill(team.rank.draft)}<span class="mono text-slate-300">${fmtNum(Math.round(team.pickEq))}</span></div></td>
+      `;
+      tableBody.appendChild(tr);
+
+      const expTr = document.createElement('tr');
+      expTr.className='hidden bg-slate-950/60';
+      expTr.dataset.exp=team.roster_id;
+      expTr.innerHTML=`
+        <td colspan="10" class="px-4 py-6 border-t border-slate-800">
+          <div class="space-y-5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div class="text-sm text-slate-300">Optimal Starters — <span class="mono text-slate-400">${rosterStr}</span></div>
+              <div class="text-sm">Total PPG <span class="mono font-semibold text-xl ml-2">${fmtPPG(team.starter_ppg_total)}</span></div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              ${team.optimal.selected.map(s=>`
+                <span class="px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs">
+                  <span class="text-slate-400">${s.slot}:</span> <span class="font-medium text-slate-100">${s.player.name}</span> <span class="text-slate-400">(${fmtPPG(s.player.ppg)})</span>
+                </span>
+              `).join('') || '<span class="text-slate-500 text-sm">No starters found</span>'}
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              ${['QB','RB','WR','TE'].map(pos=>{
+                const list = team.players.filter(p=>p.pos===pos).sort((a,b)=>b.value-a.value);
+                return `
+                <div class="rounded-2xl border border-slate-800 bg-slate-900/50">
+                  <div class="px-3 py-2 border-b border-slate-800 font-semibold text-sm">${pos}</div>
+                  <div class="p-2 space-y-1 max-h-64 overflow-auto">
+                    ${list.length? list.map(p=>`
+                      <div class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-slate-800/60">
+                        <div class="truncate pr-2">${p.name}</div>
+                        <div class="flex items-center gap-3 mono text-xs text-slate-400">
+                          <span>${fmtNum(p.value)}</span>
+                          <span class="w-10 text-right">${fmtPPG(p.ppg)}</span>
+                        </div>
+                      </div>
+                    `).join('') : `<div class="text-xs text-slate-500 px-2 py-4">No ${pos}s</div>`}
                   </div>
-                `).join('') : `<div class="text-[12px] text-slate-600">No players</div>`}
+                </div>`;
+              }).join('')}
+            </div>
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+              <div class="font-semibold mb-3">Draft Capital <span class="text-slate-500 font-normal">(future only)</span></div>
+              <div class="grid md:grid-cols-3 gap-4">
+                ${[...new Map(team.picks.map(p=>[p.season,p.season])).keys()].sort((a,b)=>a-b).map(season=>{
+                  const picks = team.picks.filter(p=>p.season===season).sort((a,b)=>a.round-b.round);
+                  return `
+                  <div>
+                    <div class="text-xs uppercase tracking-wide text-slate-400 mb-2">${season}</div>
+                    <div class="space-y-1">
+                      ${picks.map(p=>{
+                        const origName = rosterIdToTeam.get(p.original_roster_id) || '';
+                        const own = p.original_roster_id===team.roster_id;
+                        return `<div class="text-sm flex items-center justify-between bg-slate-950/60 border border-slate-800 rounded-lg px-2 py-1">
+                          <span>${ordinal(p.round)}</span>
+                          <span class="text-xs text-slate-500">${own?'':`from ${origName}`}</span>
+                        </div>`;
+                      }).join('')}
+                    </div>
+                  </div>`;
+                }).join('') || '<div class="text-slate-500 text-sm">No future picks</div>'}
               </div>
-            </div>`;
-          }).join('')}
-        </div>
-        <div class="rounded-xl border border-slate-800 bg-[#0f1320] p-3">
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="text-xs font-semibold tracking-wide text-slate-300">Draft Capital (future only)</h4>
-            <span class="text-[11px] text-slate-500 mono">${fmt(Math.round(t.pickValue))}</span>
+            </div>
           </div>
-          <div class="flex flex-wrap gap-2">
-            ${t.picks.length? t.picks.map(pk=>{
-              const orig = STATE.teams.find(x=>x.roster_id===pk.original_roster_id)?.teamName||`Team ${pk.original_roster_id}`;
-              return `<span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-[11px] mono"> ${pk.season} R${pk.round} <span class="text-slate-500">(${orig.split(' ')[0]})</span></span>`;
-            }).join('') : `<span class="text-slate-600 text-xs">No future picks</span>`}
-          </div>
-          <div class="mt-2 text-[10px] text-slate-500">Filtered out seasons: ${[...STATE.completedSeasons].join(', ')||'none'}</div>
-        </div>
-      </div>
-    </td>`;
-    tbody.appendChild(expTr);
-  }
+        </td>
+      `;
+      tableBody.appendChild(expTr);
 
-  // Expand handlers
-  tbody.querySelectorAll('tr[data-roster]').forEach(tr=>{
-    tr.addEventListener('click', e=>{
-      if(e.target.closest('button')) return;
-      toggleExpand(tr.dataset.roster);
+      tr.addEventListener('click', ()=>{
+        const exp = tableBody.querySelector(`tr[data-exp="${team.roster_id}"]`);
+        const isHidden = exp.classList.contains('hidden');
+        // close others
+        tableBody.querySelectorAll('tr[data-exp]').forEach(r=>r.classList.add('hidden'));
+        if(isHidden) exp.classList.remove('hidden');
+      });
     });
-    tr.querySelector('.expandBtn')?.addEventListener('click',()=> toggleExpand(tr.dataset.roster));
-  });
-}
-
-function toggleExpand(rosterId){
-  const row = document.querySelector(`tr[data-expanded="${rosterId}"]`);
-  if(!row) return;
-  row.classList.toggle('hidden');
-}
-
-// Search
-$('#searchTeams').addEventListener('input', e=> renderTable(e.target.value));
-
-// Load button
-$('#loadBtn').addEventListener('click', ()=>{
-  const id = getLeagueIdFromInput($('#leagueInput').value);
-  if(id) loadLeague(id);
-});
-
-// Auto-load from ?league_id=
-(function init(){
-  const params = new URLSearchParams(location.search);
-  const lid = params.get('league_id') || params.get('league');
-  if(lid){
-    $('#leagueInput').value = lid;
-    loadLeague(lid);
   }
+
+  loadBtn.addEventListener('click', load);
+  leagueIdInput.addEventListener('keydown', e=>{ if(e.key==='Enter') load(); });
+
+  // auto load from URL
+  const params = new URLSearchParams(location.search);
+  const qLeague = params.get('league_id');
+  if(qLeague){ leagueIdInput.value=qLeague; load(); }
 })();
 </script>
 </body>
