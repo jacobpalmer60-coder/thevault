@@ -182,6 +182,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     '1_0.5': '1704393824',
     '1_1': '1708158991'
   };
+  const BASE_VALUES_GID = '2077026411';
 
   const params = new URLSearchParams(location.search);
   const league_id = params.get('league_id') || DEFAULT_LEAGUE;
@@ -211,17 +212,80 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   }
 
   async function loadValues(){
+    setStatus('Loading base values…');
+    const baseUrl = SHEET_BASE + BASE_VALUES_GID + SHEET_TAIL;
+    const baseText = await fetchCSV(baseUrl);
+    state.values.clear();
+    const nameToId = new Map();
+    if(baseText){
+      const lines = baseText.split(/\r?\n/).filter(l=>l.trim());
+      const h = parseCSVLine(lines[0]).map(x=>x.toLowerCase());
+      const idx = {
+        id: h.findIndex(x=>x.includes('sleeper')),
+        value: h.findIndex(x=>x==='value'),
+        ppg: h.findIndex(x=>x==='ppg'),
+        age: h.findIndex(x=>x.includes('age')),
+        pos: h.findIndex(x=>x.includes('pos')),
+        team: h.findIndex(x=>x.includes('team')),
+        name: h.findIndex(x=>x.includes('name'))
+      };
+      for(let i=1;i<lines.length;i++){
+        const c = parseCSVLine(lines[i]);
+        const id = c[idx.id]?.trim();
+        if(!id) continue;
+        const name = c[idx.name]?.trim() || '';
+        const entry = {
+          value: +c[idx.value]||0,
+          ppg: +c[idx.ppg]||0,
+          age: +c[idx.age]||0,
+          pos: c[idx.pos]||'',
+          team: c[idx.team]||'',
+          name: name
+        };
+        state.values.set(id, entry);
+        if(name) nameToId.set(name.toLowerCase(), id);
+      }
+    }
+    // Load scoring-specific PPG
     const key = `${state.scoring.rec}_${state.scoring.tep}`;
     const gid = VALUE_SHEETS[key] || VALUE_SHEETS['0.5_0'];
     const url = SHEET_BASE + gid + SHEET_TAIL;
-    setStatus(`Loading values for PPR ${state.scoring.rec} / TEP ${state.scoring.tep}…`);
-    const text = await fetchCSV(url);
-    if(!text) return;
-    const lines=text.split(/\r?\n/).filter(l=>l.trim());
-    const h=parseCSVLine(lines[0]).map(x=>x.toLowerCase());
-    const idx={id:h.findIndex(x=>x.includes('sleeper')),value:h.findIndex(x=>x==='value'),ppg:h.findIndex(x=>x.includes('ppg')),age:h.findIndex(x=>x.includes('age')),pos:h.findIndex(x=>x.includes('pos')),team:h.findIndex(x=>x.includes('team')),name:h.findIndex(x=>x.includes('name'))};
-    state.values.clear();
-    for(let i=1;i<lines.length;i++){const c=parseCSVLine(lines[i]);const id=c[idx.id]?.trim();if(!id)continue;state.values.set(id,{value:+c[idx.value]||0,ppg:+c[idx.ppg]||0,age:+c[idx.age]||0,pos:c[idx.pos]||'',team:c[idx.team]||'',name:c[idx.name]||''});}
+    setStatus(`Loading PPG for PPR ${state.scoring.rec} / TEP ${state.scoring.tep}…`);
+    const ppgText = await fetchCSV(url);
+    if(ppgText){
+      const lines = ppgText.split(/\r?\n/).filter(l=>l.trim());
+      if(lines.length>1){
+        const h = parseCSVLine(lines[0]).map(x=>x.toLowerCase());
+        const nameIdx = h.findIndex(x=>x.includes('player'));
+        const recIdx = h.findIndex(x=>x.includes('recommended'));
+        const raIdx = h.findIndex(x=>x.includes('rosteraudit'));
+        const ppgIdx = recIdx>=0 ? recIdx : raIdx;
+        if(nameIdx>=0 && ppgIdx>=0){
+          for(let i=1;i<lines.length;i++){
+            const c = parseCSVLine(lines[i]);
+            const name = c[nameIdx]?.trim();
+            const ppg = parseFloat(c[ppgIdx])||0;
+            if(!name) continue;
+            const id = nameToId.get(name.toLowerCase());
+            if(id && state.values.has(id)){
+              state.values.get(id).ppg = ppg;
+            } else {
+              // Create a synthetic entry for players only in PPG sheet (e.g., rookies not in base)
+              // Try to find by name in existing values
+              let foundId = null;
+              for(const [sid, v] of state.values.entries()){
+                if(v.name && v.name.toLowerCase()===name.toLowerCase()){
+                  foundId = sid; break;
+                }
+              }
+              if(foundId){
+                state.values.get(foundId).ppg = ppg;
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   function playerFromId(pid){
