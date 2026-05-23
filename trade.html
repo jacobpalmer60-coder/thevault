@@ -30,6 +30,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-600 flex items-center justify-center"><i class="fa-solid fa-arrows-rotate text-slate-900 text-sm"></i></div>
       <div class="font-semibold">Dynasty Trade Calculator</div>
       <span id="league-name" class="ml-3 text-xs text-slate-400 mono hidden sm:inline"></span>
+      <span id="scoring-badge" class="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 mono hidden sm:inline"></span>
     </div>
     <div class="flex items-center gap-2">
       <select id="team-a-select" class="bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-xs w-40"></select>
@@ -164,13 +165,28 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 <script>
 (() => {
   const DEFAULT_LEAGUE = '1313454100225990656';
-  const PLAYERS_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
-  const PICKS_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=428909643&single=true&output=csv';
+  const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=';
+  const SHEET_TAIL = '&single=true&output=csv';
+
+  // Mapping of PPR_TEP -> gid
+  // Provided gids: std=0_0, stdtep0.5=0_0.5, stdtep1=0_1, halfppr=0.5_0, halfpprtep0.5=0.5_0.5, halfpprtep1=0.5_1
+  // TODO: Add PPR 1.0 variants when available
+  const VALUE_SHEETS = {
+    '0_0': '784503845',
+    '0_0.5': '166650583',
+    '0_1': '1411848482',
+    '0.5_0': '1830939158',
+    '0.5_0.5': '550290281',
+    '0.5_1': '1978372693',
+    '1_0': '335030418',
+    '1_0.5': '1704393824',
+    '1_1': '1708158991'
+  };
 
   const params = new URLSearchParams(location.search);
   const league_id = params.get('league_id') || DEFAULT_LEAGUE;
 
-  const state = { league:null, users:[], rosters:[], players:{}, values:new Map(), pickInventory:new Map(), teamStrength:new Map(), draftedSeasons:new Set(), teamA:null, teamB:null, selectedA:new Set(), selectedB:new Set(), rosterPos:[], tradedPicks:[] };
+  const state = { league:null, users:[], rosters:[], players:{}, values:new Map(), pickInventory:new Map(), teamStrength:new Map(), draftedSeasons:new Set(), teamA:null, teamB:null, selectedA:new Set(), selectedB:new Set(), rosterPos:[], tradedPicks:[], scoring:{rec:0, tep:0} };
   const $ = s => document.querySelector(s);
   const fmt = n => n.toLocaleString();
   const fmt1 = n => (n>=0?'+':'')+n.toFixed(1);
@@ -195,20 +211,17 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   }
 
   async function loadValues(){
-    const [playersText, picksText] = await Promise.all([
-      fetchCSV(PLAYERS_CSV),
-      fetchCSV(PICKS_CSV)
-    ]);
-
-    const parse = (text) => {
-      if(!text) return;
-      const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      const h=parseCSVLine(lines[0]).map(x=>x.toLowerCase());
-      const idx={id:h.findIndex(x=>x.includes('sleeper')),value:h.findIndex(x=>x==='value'),ppg:h.findIndex(x=>x.includes('ppg')),age:h.findIndex(x=>x.includes('age')),pos:h.findIndex(x=>x.includes('pos')),team:h.findIndex(x=>x.includes('team')),name:h.findIndex(x=>x.includes('name'))};
-      for(let i=1;i<lines.length;i++){const c=parseCSVLine(lines[i]);const id=c[idx.id]?.trim();if(!id)continue;state.values.set(id,{value:+c[idx.value]||0,ppg:+c[idx.ppg]||0,age:+c[idx.age]||0,pos:c[idx.pos]||'',team:c[idx.team]||'',name:c[idx.name]||''});}
-    };
-    parse(playersText);
-    parse(picksText);
+    const key = `${state.scoring.rec}_${state.scoring.tep}`;
+    const gid = VALUE_SHEETS[key] || VALUE_SHEETS['0.5_0'];
+    const url = SHEET_BASE + gid + SHEET_TAIL;
+    setStatus(`Loading values for PPR ${state.scoring.rec} / TEP ${state.scoring.tep}…`);
+    const text = await fetchCSV(url);
+    if(!text) return;
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    const h=parseCSVLine(lines[0]).map(x=>x.toLowerCase());
+    const idx={id:h.findIndex(x=>x.includes('sleeper')),value:h.findIndex(x=>x==='value'),ppg:h.findIndex(x=>x.includes('ppg')),age:h.findIndex(x=>x.includes('age')),pos:h.findIndex(x=>x.includes('pos')),team:h.findIndex(x=>x.includes('team')),name:h.findIndex(x=>x.includes('name'))};
+    state.values.clear();
+    for(let i=1;i<lines.length;i++){const c=parseCSVLine(lines[i]);const id=c[idx.id]?.trim();if(!id)continue;state.values.set(id,{value:+c[idx.value]||0,ppg:+c[idx.ppg]||0,age:+c[idx.age]||0,pos:c[idx.pos]||'',team:c[idx.team]||'',name:c[idx.name]||''});}
   }
 
   function playerFromId(pid){
@@ -296,7 +309,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       });
     });
 
-    // Build list of next 3 undrafted years
     const lastDrafted = state.draftedSeasons.size ? Math.max(...state.draftedSeasons) : (state.league.season ? state.league.season - 1 : new Date().getFullYear() - 1);
     const startYear = lastDrafted + 1;
     const years = [];
@@ -477,14 +489,12 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const picksA = selA.filter(x=>x.type==='pick').length;
     const picksB = selB.filter(x=>x.type==='pick').length;
 
-    // Fairness
-    const fairnessScore = A.valueDeltaPct; // positive = A wins
+    const fairnessScore = A.valueDeltaPct;
     const zone = getFairnessZone(fairnessScore);
     const fairnessPct = Math.max(0, Math.min(100, 50 + fairnessScore * 1.2));
     $('#fairness-bar').style.width = fairnessPct + '%';
     $('#fairness-label').textContent = zone.label;
 
-    // Verdict sentence
     const badgesA = getArchetypes('A', selA, selB, A.optPpgDelta, A.valueDeltaPct);
     const badgesB = getArchetypes('B', selB, selA, B.optPpgDelta, B.valueDeltaPct);
     const verdictEl = document.getElementById('fairness-verdict');
@@ -496,10 +506,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       verdictEl.textContent = parts.join(' · ') || 'Fair Market';
     }
 
-    // Roster fit bar
     const fitBar = document.getElementById('fit-bar');
     if(fitBar){
-      const fitScore = A.optPpgDelta; // positive = A more win-now
+      const fitScore = A.optPpgDelta;
       const fitPct = Math.max(0, Math.min(100, 50 + fitScore * 10));
       fitBar.style.width = fitPct + '%';
       const fitLabel = document.getElementById('fit-label');
@@ -513,7 +522,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       }
     }
 
-    // Impact cards
     $('#impact-a').innerHTML = [
       metricCard('Net Value', (A.netValue>=0?'+':'')+fmt(A.netValue)),
       metricCard('Value Δ %', fmtPct(A.valueDeltaPct)),
@@ -550,7 +558,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     $('#warnings-a').innerHTML = renderBadges(badgesA, warn(A,picksA));
     $('#warnings-b').innerHTML = renderBadges(badgesB, warn(B,picksB));
   }
-function updateAll(){
+
+  function updateAll(){
     renderPicks(state.teamA,'#picks-a',state.selectedA);
     renderPicks(state.teamB,'#picks-b',state.selectedB);
     renderRoster(state.teamA,'#roster-a',state.selectedA,'a');
@@ -571,6 +580,16 @@ function updateAll(){
     state.league=league; state.users=users; state.rosters=rosters; state.players=players; state.rosterPos=league.roster_positions||[]; state.tradedPicks=traded;
     drafts.forEach(d=>{if(d.status==='complete' && d.season){state.draftedSeasons.add(Number(d.season));}});
 
+    // Detect scoring
+    const rec = Number(league.scoring_settings?.rec || 0);
+    const tep = Number(league.scoring_settings?.bonus_rec_te || 0);
+    state.scoring = {rec, tep};
+    const badge = document.getElementById('scoring-badge');
+    if(badge){
+      badge.textContent = `PPR ${rec} • TEP ${tep}`;
+      badge.classList.remove('hidden');
+    }
+
     $('#league-name').textContent=league.name;
     setStatus('Loading values…');
     await loadValues();
@@ -578,10 +597,9 @@ function updateAll(){
     buildPickInventory();
     renderSelect();
     setStatus('Ready');
-    // Update nav links with league_id
     const links = {
-      'nav-player-rankings': `https://jacobpalmer60-coder.github.io/thevault/player_rankings.html?league_id=${league_id}`,
-      'nav-league-overview': `https://jacobpalmer60-coder.github.io/thevault/app.html?league_id=${league_id}`,
+      'nav-player-rankings': `player_rankings.html?league_id=${league_id}`,
+      'nav-league-overview': `app.html?league_id=${league_id}`,
       'nav-trade-calculator': '#',
       'nav-roster-audit': `https://rosteraudit.com/`
     };
