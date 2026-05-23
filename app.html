@@ -66,6 +66,7 @@
       </div>
 
       <div class="flex items-center gap-2">
+        <span id="scoringBadge" class="hidden md:inline-flex text-[10px] px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 font-mono"></span>
         <input id="leagueInput" placeholder="League ID" class="w-[200px] md:w-[260px] bg-[#0f1013] border border-white/10 rounded-xl px-3 py-2 text-sm placeholder-zinc-600 focus:outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20"/>
         <button id="loadBtn" class="px-4 py-2 rounded-xl bg-gradient-to-b from-amber-400 to-yellow-600 text-black font-semibold text-sm shadow-lg shadow-amber-900/25 hover:brightness-110 active:scale-[0.98] transition">
           Load
@@ -86,7 +87,7 @@
     <div class="flex flex-wrap items-center gap-3 mb-5">
       <div id="status" class="text-sm text-zinc-400">Ready</div>
       <div class="ml-auto flex items-center gap-2 text-xs text-zinc-500">
-        <span class="hidden md:inline">Rank pills = league rank • Values from CSV exact</span>
+        <span class="hidden md:inline">Rank pills = league rank • Values from CSV exact • Picks strength-adjusted</span>
       </div>
     </div>
 
@@ -116,12 +117,26 @@
     </div>
 
     <div class="mt-6 text-[11px] text-zinc-600">
-      Draft capital = future picks only. Baseline values R1 5,000 • R2 2,500 • R3 1,200 • R4 600 • R5 300 with 0.85/yr discount. Pick ownership = baseline + traded_picks.
+      Draft capital = strength-adjusted pick values from RosterAudit. Pick slot projected by roster strength. Values and PPG are scoring-specific (PPR/TEP).
     </div>
   </main>
 
 <script>
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=2077026411&single=true&output=csv';
+const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRZY-Dra8s3j-ocJ7OK6yTs3BFcj-A_WeiIX35u49fg2xA8Y3Pg-nnOHVOnfZGOEAFWrj1EFBOV6qzi/pub?gid=';
+const SHEET_TAIL = '&single=true&output=csv';
+const BASE_VALUES_GID = '2077026411';
+const PICK_VALUES_GID = '428909643';
+const PPG_SHEETS = {
+  '0_0': '784503845',
+  '0_0.5': '166650583',
+  '0_1': '1411848482',
+  '0.5_0': '1830939158',
+  '0.5_0.5': '550290281',
+  '0.5_1': '1978372693',
+  '1_0': '335030418',
+  '1_0.5': '1704393824',
+  '1_1': '1708158991'
+};
 const SLEEPER = 'https://api.sleeper.app/v1';
 
 const state = {
@@ -131,11 +146,12 @@ const state = {
   picks: [],
   drafts: [],
   players: null,
-  csvMap: new Map(),
+  valuesMap: new Map(),
+  nameToId: new Map(),
   teams: [],
   sortKey: 'overall',
   sortDir: 'desc',
-  expanded: new Set()
+  scoring: {rec:0, tep:0}
 };
 
 const fmt = {
@@ -152,33 +168,11 @@ const leagueNameEl = $('#leagueName');
 const leagueMetaEl = $('#leagueMeta');
 const leagueInput = $('#leagueInput');
 const loadBtn = $('#loadBtn');
+const scoringBadge = $('#scoringBadge');
 
 function setStatus(msg){ statusEl.textContent = msg; }
 
-function parseCSV(text){
-  const lines = text.trim().split(/\r?\n/);
-  if(lines.length < 2) return;
-  const header = lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/"/g,''));
-  const idx = {};
-  header.forEach((h,i)=> idx[h]=i);
-  const get = (row,keys)=> {
-    for(const k of keys){ if(idx[k]!=null) return row[idx[k]]; }
-    return '';
-  };
-  for(let i=1;i<lines.length;i++){
-    const row = splitCSVLine(lines[i]);
-    if(row.length < header.length) continue;
-    const sid = get(row, ['sleeper_id','player_id','id']);
-    if(!sid) continue;
-    const value = parseFloat(get(row, ['value','val']))||0;
-    const ppg = parseFloat(get(row, ['ppg','fantasy_points_per_game']))||0;
-    const name = get(row, ['full_name','player','player_name','name']);
-    const pos = get(row, ['position','pos']);
-    const team = get(row, ['team']);
-    state.csvMap.set(sid, {value, ppg, name, pos, team});
-  }
-}
-function splitCSVLine(line){
+function parseCSVLine(line){
   const out=[]; let cur=''; let inQ=false;
   for(let i=0;i<line.length;i++){
     const c=line[i];
@@ -189,23 +183,109 @@ function splitCSVLine(line){
   out.push(cur);
   return out;
 }
-
-async function fetchJSON(url){
-  const r = await fetch(url);
-  if(!r.ok) throw new Error('Fetch failed '+url);
-  return r.json();
-}
 async function fetchText(url){
   const r = await fetch(url);
   if(!r.ok) throw new Error('Fetch failed '+url);
   return r.text();
 }
+async function fetchJSON(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('Fetch failed '+url);
+  return r.json();
+}
+
+async function loadValues(){
+  // Base player values
+  setStatus('Loading base values...');
+  const baseText = await fetchText(SHEET_BASE + BASE_VALUES_GID + SHEET_TAIL);
+  state.valuesMap.clear();
+  state.nameToId.clear();
+  if(baseText){
+    const lines = baseText.split(/\r?\n/).filter(l=>l.trim());
+    const h = parseCSVLine(lines[0]).map(x=>x.toLowerCase());
+    const idx = {
+      id: h.findIndex(x=>x.includes('sleeper')),
+      value: h.findIndex(x=>x==='value'),
+      ppg: h.findIndex(x=>x==='ppg'),
+      age: h.findIndex(x=>x.includes('age')),
+      pos: h.findIndex(x=>x.includes('pos')),
+      team: h.findIndex(x=>x.includes('team')),
+      name: h.findIndex(x=>x.includes('name'))
+    };
+    for(let i=1;i<lines.length;i++){
+      const c = parseCSVLine(lines[i]);
+      const id = c[idx.id]?.trim();
+      if(!id) continue;
+      const name = c[idx.name]?.trim()||'';
+      const entry = {
+        value: +c[idx.value]||0,
+        ppg: +c[idx.ppg]||0,
+        age: +c[idx.age]||0,
+        pos: c[idx.pos]||'',
+        team: c[idx.team]||'',
+        name
+      };
+      state.valuesMap.set(id, entry);
+      if(name) state.nameToId.set(name.toLowerCase(), id);
+    }
+  }
+  // Pick values
+  setStatus('Loading pick values...');
+  const pickText = await fetchText(SHEET_BASE + PICK_VALUES_GID + SHEET_TAIL);
+  if(pickText){
+    const lines = pickText.split(/\r?\n/).filter(l=>l.trim());
+    const h = parseCSVLine(lines[0]).map(x=>x.toLowerCase());
+    const idx = {
+      id: h.findIndex(x=>x.includes('sleeper')),
+      name: h.findIndex(x=>x.includes('name')),
+      pos: h.findIndex(x=>x.includes('pos')),
+      value: h.findIndex(x=>x==='value')
+    };
+    for(let i=1;i<lines.length;i++){
+      const c = parseCSVLine(lines[i]);
+      const id = c[idx.id]?.trim();
+      if(!id) continue;
+      const entry = {
+        value: +c[idx.value]||0,
+        ppg: 0,
+        age: 0,
+        pos: c[idx.pos]||'PICK',
+        team: '',
+        name: c[idx.name]||id
+      };
+      state.valuesMap.set(id, entry);
+    }
+  }
+  // Scoring-specific PPG
+  const key = `${state.scoring.rec}_${state.scoring.tep}`;
+  const gid = PPG_SHEETS[key] || PPG_SHEETS['0.5_0'];
+  setStatus(`Loading PPG for PPR ${state.scoring.rec} / TEP ${state.scoring.tep}...`);
+  const ppgText = await fetchText(SHEET_BASE + gid + SHEET_TAIL);
+  if(ppgText){
+    const lines = ppgText.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length>1){
+      const h = parseCSVLine(lines[0]).map(x=>x.toLowerCase());
+      const nameIdx = h.findIndex(x=>x.includes('player'));
+      const recIdx = h.findIndex(x=>x.includes('recommended'));
+      const raIdx = h.findIndex(x=>x.includes('rosteraudit'));
+      const ppgIdx = recIdx>=0 ? recIdx : raIdx;
+      if(nameIdx>=0 && ppgIdx>=0){
+        for(let i=1;i<lines.length;i++){
+          const c = parseCSVLine(lines[i]);
+          const name = c[nameIdx]?.trim();
+          const ppg = parseFloat(c[ppgIdx])||0;
+          if(!name) continue;
+          const id = state.nameToId.get(name.toLowerCase());
+          if(id && state.valuesMap.has(id)){
+            state.valuesMap.get(id).ppg = ppg;
+          }
+        }
+      }
+    }
+  }
+}
 
 async function loadAll(leagueId){
-  setStatus('Loading CSV...');
-  const csvText = await fetchText(CSV_URL);
-  parseCSV(csvText);
-
   setStatus('Loading league...');
   const [league, users, rosters, traded, drafts] = await Promise.all([
     fetchJSON(`${SLEEPER}/league/${leagueId}`),
@@ -220,11 +300,21 @@ async function loadAll(leagueId){
   state.picks = traded;
   state.drafts = drafts;
 
-  // Players - lazy, only if needed
+  // Scoring
+  const rec = Number(league.scoring_settings?.rec || 0);
+  const tep = Number(league.scoring_settings?.bonus_rec_te || 0);
+  state.scoring = {rec, tep};
+  if(scoringBadge){
+    scoringBadge.textContent = `PPR ${rec} • TEP ${tep}`;
+    scoringBadge.classList.remove('hidden');
+  }
+
   setStatus('Loading players...');
   try {
     state.players = await fetchJSON(`${SLEEPER}/players/nfl`);
   } catch(e){ state.players = {}; }
+
+  await loadValues();
 
   setStatus('Computing...');
   compute();
@@ -237,112 +327,120 @@ function compute(){
   const completedSeasons = new Set(
     state.drafts.filter(d=>d.status==='complete').map(d=>parseInt(d.season))
   );
-  let futureSeasons = [currentYear, currentYear+1, currentYear+2].filter(y=>!completedSeasons.has(y));
 
-  // rounds
-  let rounds = 4;
-  if(state.drafts.length){
-    const recent = state.drafts.sort((a,b)=> (b.season||0)-(a.season||0))[0];
-    rounds = recent.settings?.rounds || rounds;
-  }
-
-  // baseline picks
-  const baseline = [];
-  for(const roster of state.rosters){
-    for(const season of futureSeasons){
-      for(let r=1;r<=rounds;r++){
-        baseline.push({
-          season,
-          round:r,
-          original_roster_id: roster.roster_id,
-          owner_roster_id: roster.roster_id
-        });
-      }
-    }
-  }
-  // apply traded picks
-  const futureSet = new Set(futureSeasons);
-  for(const tp of state.picks){
-    const season = parseInt(tp.season);
-    if(!futureSet.has(season)) continue;
-    const round = tp.round;
-    const orig = tp.roster_id;
-    const owner = tp.owner_id;
-    const pick = baseline.find(p=>p.season===season && p.round===round && p.original_roster_id===orig);
-    if(pick) pick.owner_roster_id = owner;
-  }
-
-  // map roster_id -> picks
-  const picksByRoster = new Map();
-  for(const r of state.rosters) picksByRoster.set(r.roster_id, []);
-  for(const p of baseline){
-    picksByRoster.get(p.owner_roster_id).push(p);
-  }
-
-  // pick value
-  const baseVals = {1:5000,2:2500,3:1200,4:600,5:300};
-  const pickValue = (season, round)=>{
-    const base = baseVals[round]||200;
-    const yearsOut = season - currentYear;
-    return base * Math.pow(0.85, yearsOut);
-  };
-
-  // user map
-  const userById = new Map(state.users.map(u=>[u.user_id,u]));
-  // team build
-  const teams = state.rosters.map(roster=>{
-    const user = state.users.find(u=>u.user_id===roster.owner_id) || {};
-    const name = user.metadata?.team_name || user.display_name || `Team ${roster.roster_id}`;
-    const avatar = user.avatar ? `https://sleepercdn.com/avatars/thumbs/${user.avatar}` : '';
-
-    const playerIds = roster.players || [];
+  // Build team strength first for pick projection
+  const tempTeams = state.rosters.map(r=>{
+    const playerIds = r.players || [];
     const players = playerIds.map(pid=>{
-      const csv = state.csvMap.get(pid) || {};
+      const v = state.valuesMap.get(pid) || {};
       const p = state.players?.[pid] || {};
       return {
         id: pid,
-        name: csv.name || p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || pid,
-        pos: csv.pos || p.position || 'UNK',
-        team: csv.team || p.team || '',
-        value: csv.value || 0,
-        ppg: csv.ppg || 0
+        name: v.name || p.full_name || pid,
+        pos: v.pos || p.position || 'UNK',
+        value: v.value || 0,
+        ppg: v.ppg || 0
       };
     });
+    return {roster_id: r.roster_id, players};
+  });
 
-    // positional values
+  // Compute strength scores
+  const teamStrength = new Map();
+  tempTeams.forEach(t=>{
+    const starters = getOptimalStarters(league.roster_positions, t.players);
+    const ppg = starters.reduce((s,p)=>s+p.ppg,0);
+    const val = t.players.reduce((s,p)=>s+p.value,0);
+    teamStrength.set(t.roster_id, ppg + val/10000);
+  });
+  const sortedStrength = [...teamStrength.entries()].sort((a,b)=>a[1]-b[1]);
+  const n = sortedStrength.length;
+  const third = Math.ceil(n/3);
+  const slotByRoster = new Map();
+  sortedStrength.forEach(([rid], idx)=>{
+    let slot='mid';
+    if(idx < third) slot='early';
+    else if(idx >= n-third) slot='late';
+    slotByRoster.set(rid, slot);
+  });
+
+  // Build pick inventory with strength-adjusted slots
+  const pickInventory = new Map();
+  state.rosters.forEach(r=> pickInventory.set(r.roster_id, []));
+  // Traded picks
+  state.picks.forEach(tp=>{
+    const season = parseInt(tp.season);
+    if(completedSeasons.has(season)) return;
+    const origRoster = state.rosters.find(r=>r.roster_id===tp.roster_id);
+    const ownerRoster = state.rosters.find(r=>r.owner_id===tp.owner_id);
+    if(!origRoster || !ownerRoster) return;
+    const slot = slotByRoster.get(origRoster.roster_id) || 'mid';
+    const pickId = `pick_${season}_${tp.round}_${slot}`;
+    const v = state.valuesMap.get(pickId);
+    if(!v) return;
+    pickInventory.get(ownerRoster.roster_id).push({
+      season,
+      round: tp.round,
+      slot,
+      value: v.value,
+      name: v.name
+    });
+  });
+  // Add untraded future picks for next 3 years
+  const lastDrafted = completedSeasons.size ? Math.max(...completedSeasons) : currentYear-1;
+  const futureYears = [];
+  for(let y=lastDrafted+1; futureYears.length<3; y++) futureYears.push(y);
+  state.rosters.forEach(r=>{
+    const inv = pickInventory.get(r.roster_id);
+    futureYears.forEach(season=>{
+      for(let round=1; round<=4; round++){
+        const already = state.picks.some(tp=> tp.roster_id===r.roster_id && parseInt(tp.season)===season && tp.round===round);
+        if(already) continue;
+        const slot = slotByRoster.get(r.roster_id) || 'mid';
+        const pickId = `pick_${season}_${round}_${slot}`;
+        const v = state.valuesMap.get(pickId);
+        if(!v) continue;
+        inv.push({season, round, slot, value: v.value, name: v.name});
+      }
+    });
+  });
+
+  // Build teams
+  const userById = new Map(state.users.map(u=>[u.user_id,u]));
+  const teams = state.rosters.map(roster=>{
+    const user = userById.get(roster.owner_id) || {};
+    const name = user.metadata?.team_name || user.display_name || `Team ${roster.roster_id}`;
+    const avatar = user.avatar ? `https://sleepercdn.com/avatars/thumbs/${user.avatar}` : '';
+    const playerIds = roster.players || [];
+    const players = playerIds.map(pid=>{
+      const v = state.valuesMap.get(pid) || {};
+      const p = state.players?.[pid] || {};
+      return {
+        id: pid,
+        name: v.name || p.full_name || `${p.first_name||''} ${p.last_name||''}`.trim() || pid,
+        pos: v.pos || p.position || 'UNK',
+        team: v.team || p.team || '',
+        value: v.value || 0,
+        ppg: v.ppg || 0
+      };
+    });
     const posVals = {QB:0,RB:0,WR:0,TE:0};
     let overallVal = 0;
-    for(const pl of players){
+    players.forEach(pl=>{
       overallVal += pl.value;
       if(posVals[pl.pos]!=null) posVals[pl.pos]+=pl.value;
-    }
-
-    // draft equity
-    const ownedPicks = picksByRoster.get(roster.roster_id) || [];
-    const draftEquity = ownedPicks.reduce((s,p)=> s + pickValue(p.season,p.round), 0);
-
-    // optimal starters
+    });
     const starters = getOptimalStarters(league.roster_positions, players);
-    const ppgTotal = starters.reduce((s,pl)=> s + pl.ppg, 0);
-
-    // group by pos for panels
+    const ppgTotal = starters.reduce((s,pl)=>s+pl.ppg,0);
+    const picks = pickInventory.get(roster.roster_id) || [];
+    const draftEquity = picks.reduce((s,p)=>s+p.value,0);
+    const draftCount = picks.length;
+    const draftChips = picks.sort((a,b)=>a.season-b.season||a.round-b.round).map(p=>`${p.season} R${p.round} ${p.slot}`);
     const byPos = {QB:[],RB:[],WR:[],TE:[]};
-    for(const pl of players){
-      if(byPos[pl.pos]) byPos[pl.pos].push(pl);
-    }
-    Object.values(byPos).forEach(arr=>arr.sort((a,b)=> b.value - a.value));
-
-    // draft chips data
-    const draftChips = ownedPicks
-      .sort((a,b)=> a.season - b.season || a.round - b.round)
-      .map(p=>{
-        const via = p.original_roster_id!==roster.roster_id ? ` (via ${p.original_roster_id})` : '';
-        return `${p.season} R${p.round}${via}`;
-      });
-
+    players.forEach(pl=>{ if(byPos[pl.pos]) byPos[pl.pos].push(pl); });
+    Object.values(byPos).forEach(arr=>arr.sort((a,b)=>b.value-a.value));
     return {
       roster_id: roster.roster_id,
-      owner_id: roster.owner_id,
       name,
       avatar,
       record: `${roster.settings.wins}-${roster.settings.losses}${roster.settings.ties?'-'+roster.settings.ties:''}`,
@@ -351,27 +449,27 @@ function compute(){
       ppgTotal,
       posVals,
       draftEquity,
-      draftCount: ownedPicks.length,
+      draftCount,
       draftChips,
       starters,
       byPos
     };
   });
 
-  // ranks
-  const rank = (key, getter) => {
+  // Ranks
+  const rank = (getter)=>{
     const sorted = [...teams].sort((a,b)=> getter(b)-getter(a));
     const map = new Map();
-    sorted.forEach((t,i)=> map.set(t.roster_id, i+1));
+    sorted.forEach((t,i)=> map.set(t.roster_id,i+1));
     return map;
   };
-  const rOverall = rank('overall', t=>t.overallVal);
-  const rPPG = rank('ppg', t=>t.ppgTotal);
-  const rQB = rank('qb', t=>t.posVals.QB);
-  const rRB = rank('rb', t=>t.posVals.RB);
-  const rWR = rank('wr', t=>t.posVals.WR);
-  const rTE = rank('te', t=>t.posVals.TE);
-  const rDraft = rank('draft', t=>t.draftEquity);
+  const rOverall = rank(t=>t.overallVal);
+  const rPPG = rank(t=>t.ppgTotal);
+  const rQB = rank(t=>t.posVals.QB);
+  const rRB = rank(t=>t.posVals.RB);
+  const rWR = rank(t=>t.posVals.WR);
+  const rTE = rank(t=>t.posVals.TE);
+  const rDraft = rank(t=>t.draftEquity);
 
   teams.forEach(t=>{
     t.ranks = {
@@ -383,18 +481,16 @@ function compute(){
       te: rTE.get(t.roster_id),
       draft: rDraft.get(t.roster_id)
     };
-    // tier
     const ro = t.ranks.overall;
-    let tier='MID', tierClass='tier-pill';
-    if(ro<=2){ tier='ELITE'; }
-    else if(ro<=5){ tier='CONTENDER'; }
-    else if(ro<=8){ tier='MID'; }
-    else if(ro<=10){ tier='REBUILD'; }
-    else { tier='TANK'; }
+    let tier='MID';
+    if(ro<=2) tier='ELITE';
+    else if(ro<=5) tier='CONTENDER';
+    else if(ro<=8) tier='MID';
+    else if(ro<=10) tier='REBUILD';
+    else tier='TANK';
     t.tier = tier;
   });
 
-  // sort initial
   state.teams = teams;
   leagueNameEl.textContent = league.name || 'League';
   leagueMetaEl.textContent = `${state.users.length} managers • Season ${league.season}`;
@@ -413,7 +509,6 @@ function getOptimalStarters(rosterPositions, players){
     else allowed=[pos];
     slots.push({pos, allowed});
   }
-  // sort slots by restrictiveness
   slots.sort((a,b)=> a.allowed.length - b.allowed.length);
   const remaining = [...players].sort((a,b)=> b.ppg - a.ppg);
   const used = new Set();
@@ -451,7 +546,6 @@ function sortAndRender(){
     team: t=> t.name.toLowerCase()
   }[key] || (t=>t.overallVal);
   state.teams.sort((a,b)=> (getter(a)-getter(b))*dir);
-  if(key==='tier' || key==='team') state.teams.sort((a,b)=> getter(a).toString().localeCompare(getter(b).toString()) * (state.sortDir==='asc'?1:-1));
   render();
 }
 
@@ -485,14 +579,12 @@ function render(){
     `;
     tbody.appendChild(tr);
 
-    // expanded row
     const expTr = document.createElement('tr');
     expTr.className = 'hidden bg-[#050507]';
     expTr.dataset.expanded = team.roster_id;
     expTr.innerHTML = `
       <td colspan="10" class="px-5 py-6">
         <div class="space-y-6">
-          <!-- Optimal Starters -->
           <div>
             <div class="text-[11px] uppercase tracking-widest text-zinc-500 mb-2">Optimal Starters</div>
             <div class="flex flex-wrap gap-2">
@@ -506,7 +598,6 @@ function render(){
             </div>
           </div>
           <div class="divider"></div>
-          <!-- Panels -->
           <div class="grid lg:grid-cols-5 md:grid-cols-2 grid-cols-1 gap-4">
             ${['QB','RB','WR','TE'].map(pos=>panelPos(team,pos)).join('')}
             ${panelDraft(team)}
@@ -515,10 +606,8 @@ function render(){
       </td>
     `;
     tbody.appendChild(expTr);
-
     tr.addEventListener('click', ()=>{
       const isOpen = !expTr.classList.contains('hidden');
-      // close all?
       document.querySelectorAll('tr[data-expanded]').forEach(el=> el.classList.add('hidden'));
       if(!isOpen) expTr.classList.remove('hidden');
     });
@@ -558,7 +647,7 @@ function panelDraft(team){
         <div class="display font-bold text-lg">Draft Capital</div>
         <div class="text-xs text-zinc-500">Equity ${fmt.int(team.draftEquity)}</div>
       </div>
-      <div class="text-xs text-zinc-500 mb-2">${team.draftCount} picks owned</div>
+      <div class="text-xs text-zinc-500 mb-2">${team.draftCount} picks owned (strength-adjusted)</div>
       <div class="flex flex-wrap gap-2">
         ${team.draftChips.map(c=>`<span class="draft-chip text-xs px-2.5 py-1 rounded-full">${c}</span>`).join('')}
       </div>
@@ -566,7 +655,6 @@ function panelDraft(team){
   `;
 }
 
-// Sorting
 document.querySelectorAll('th.sortable').forEach(th=>{
   th.addEventListener('click', ()=>{
     const key = th.dataset.sort;
@@ -580,7 +668,6 @@ document.querySelectorAll('th.sortable').forEach(th=>{
   });
 });
 
-// Load button
 loadBtn.addEventListener('click', ()=> doLoad());
 leagueInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doLoad(); });
 
@@ -595,7 +682,6 @@ function doLoad(){
   });
 }
 
-// Auto load from URL
 (function init(){
   const params = new URLSearchParams(location.search);
   const id = params.get('league_id') || params.get('leagueId');
@@ -621,10 +707,6 @@ function doLoad(){
     if(navRank) navRank.href = baseRank + '?league_id=' + encodeURIComponent(lid);
     if(navTrade) navTrade.href = baseTrade + '?league_id=' + encodeURIComponent(lid);
   }
-  const path = location.pathname.toLowerCase();
-  if(path.includes('player_rankings') && navRank) navRank.style.display = 'none';
-  if(path.includes('app.html') && navVault) navVault.style.display = 'none';
-  if(path.includes('trade.html') && navTrade) navTrade.style.display = 'none';
 })();
 </script>
 
