@@ -64,6 +64,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
           <h2 class="font-semibold text-amber-300 text-sm">Team A</h2>
           <select id="team-a-select" class="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm w-56"></select>
         </div>
+      </div>
       <div class="flex-1 overflow-y-auto p-2">
         <div class="text-[10px] uppercase text-slate-500 px-1 mb-1">Picks</div>
         <div id="picks-a" class="space-y-1 mb-3"></div>
@@ -106,6 +107,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   const league_id = params.get('league_id') || DEFAULT_LEAGUE;
 
   const CSV_URLS = {
+    audit: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=0&single=true&output=csv',
     sleeper: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1866730819&single=true&output=csv',
     fp: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=2012227164&single=true&output=csv',
     ra: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1226234680&single=true&output=csv'
@@ -113,7 +115,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   const state = {
     league:null, users:[], rosters:[], players:{},
-    values:new Map(), pickValues:new Map(), pickInventory:new Map(),
+    ppg:new Map(), auditValues:new Map(),
+    pickValues:new Map(), pickInventory:new Map(),
     teamSlots:new Map(), teamA:null, teamB:null,
     selectedA:new Set(), selectedB:new Set(),
     tradedPicks:[],
@@ -138,6 +141,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const lines = text.trim().split(/\r?\n/);
     const headers = lines[0].split(',').map(h=>h.trim());
     return lines.slice(1).map(line=>{
+      // simple split, audit sheet has no commas in names
       const cols = line.split(',');
       const obj = {};
       headers.forEach((h,i)=> obj[h]=cols[i]?.trim());
@@ -145,6 +149,23 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     });
   }
   function toNum(v){ if(v==null||v==='')return NaN; const n=Number(v); return Number.isFinite(n)?n:NaN; }
+
+  async function loadAuditValues(){
+    const txt = await fetchText(CSV_URLS.audit);
+    const rows = parseCSV(txt);
+    // find player and value columns
+    const headers = Object.keys(rows[0]||{});
+    const playerCol = headers.find(h=>/player/i.test(h)) || 'Player';
+    const valueCol = headers.find(h=>/value/i.test(h)) || 'Value';
+    state.auditValues.clear();
+    rows.forEach(r=>{
+      const name = r[playerCol];
+      const val = toNum(r[valueCol]);
+      if(name && Number.isFinite(val)){
+        state.auditValues.set(norm(name), val);
+      }
+    });
+  }
 
   function buildSourceMap(rows){
     const map=new Map();
@@ -167,7 +188,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     return map;
   }
 
-  async function loadConsensusValues(){
+  async function loadPPG(){
     setStatus('Loading projections…');
     const [sTxt,fTxt,rTxt]=await Promise.all([fetchText(CSV_URLS.sleeper),fetchText(CSV_URLS.fp),fetchText(CSV_URLS.ra)]);
     const sMap=buildSourceMap(parseCSV(sTxt));
@@ -196,13 +217,11 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const tepLabel=bonusTe>=1?' TEP':bonusTe>=0.5?' 0.5 TEP':'';
     state.scoringKey=(recLabel+tepLabel).trim();
     $('#scoring-name').textContent=state.scoringKey;
-    state.values.clear();
+    state.ppg.clear();
     consensus.forEach((c,k)=>{
       const pid=nameToId.get(k); if(!pid) return;
       const ppg=c[state.scoringKey];
-      if(Number.isFinite(ppg)){
-        state.values.set(pid,{ppg, value:Math.max(100,ppg*1000)});
-      }
+      if(Number.isFinite(ppg)) state.ppg.set(pid, ppg);
     });
   }
 
@@ -221,15 +240,17 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   function playerFromId(pid){
     const p=state.players[pid]||{};
-    const v=state.values.get(pid)||{ppg:0,value:1000};
+    const name=p.full_name||`${p.first_name||''} ${p.last_name||''}`.trim()||pid;
+    const auditVal = state.auditValues.get(norm(name));
+    const ppg = state.ppg.get(pid)||0;
     return {
       id:pid,
-      name:p.full_name||`${p.first_name||''} ${p.last_name||''}`.trim()||pid,
+      name,
       pos:p.position||'UNK',
       team:p.team||'',
       age:p.age?Number(p.age):null,
-      ppg:v.ppg||0,
-      value:v.value||1000,
+      ppg,
+      value: Number.isFinite(auditVal)? auditVal : 500,
       type:'player'
     };
   }
@@ -457,7 +478,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     state.league=league; state.users=users; state.rosters=rosters; state.players=players; state.tradedPicks=traded;
     $('#league-name').textContent=league.name;
     await loadPickValues();
-    await loadConsensusValues();
+    await loadAuditValues();
+    await loadPPG();
     computeSlots();
     buildPickInventory();
     renderSelect();
