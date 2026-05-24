@@ -25,6 +25,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-600"></div>
       <div class="font-semibold">Dynasty Trade Calculator</div>
       <span id="league-name" class="ml-3 text-xs text-slate-400 mono hidden sm:inline"></span>
+      <span id="scoring-name" class="ml-3 text-xs text-amber-300 mono hidden sm:inline"></span>
     </div>
     <div class="flex items-center gap-2">
       <button id="swap-btn" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm">Swap</button>
@@ -102,31 +103,136 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   const params = new URLSearchParams(location.search);
   const league_id = params.get('league_id') || DEFAULT_LEAGUE;
 
+  // Projection CSVs we fixed earlier
+  const CSV_URLS = {
+    sleeper: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1866730819&single=true&output=csv',
+    fp: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=2012227164&single=true&output=csv',
+    ra: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1226234680&single=true&output=csv'
+  };
+
   const state = {
     league:null, users:[], rosters:[], players:{},
     values:new Map(), pickValues:new Map(), pickInventory:new Map(),
     teamSlots:new Map(), teamA:null, teamB:null,
     selectedA:new Set(), selectedB:new Set(),
-    tradedPicks:[]
+    tradedPicks:[],
+    scoringKey:'ppr',
+    scoringLabel:'PPR'
   };
 
   const $ = s => document.querySelector(s);
-  const fmt = n => n.toLocaleString();
+  const fmt = n => Math.round(n).toLocaleString();
   const setStatus = t => { const el=$('#status-text'); if(el) el.textContent=t; };
   const teamName = r => {
     const u = state.users.find(x=>x.user_id===r.owner_id);
     return u?.metadata?.team_name || u?.display_name || `Team ${r.roster_id}`;
   };
   const ordinal = n => { const s=['th','st','nd','rd']; const v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
-  const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  const norm = s => String(s||'').toLowerCase().replace(/\./g,'').replace(/[^a-z0-9]+/g,' ').trim();
 
-  async function fetchJSON(url){
-    const r = await fetch(url);
-    return r.json();
+  async function fetchJSON(url){ const r=await fetch(url); return r.json(); }
+  async function fetchText(url){ const r=await fetch(url); return r.text(); }
+
+  function parseCSV(text){
+    const lines = text.trim().split(/\r?\n/);
+    const headers = lines[0].split(',').map(h=>h.trim());
+    return lines.slice(1).map(line=>{
+      const cols = line.split(',');
+      const obj = {};
+      headers.forEach((h,i)=> obj[h]=cols[i]?.trim());
+      return obj;
+    });
+  }
+
+  function toNum(v){
+    if(v===null||v===undefined) return NaN;
+    if(typeof v==='string' && v.trim()==='') return NaN;
+    const n = Number(v);
+    return Number.isFinite(n)? n : NaN;
+  }
+
+  function buildSourceMap(rows){
+    const map = new Map();
+    const cols = ['Std','Std 0.5 TEP','Std TEP','Half','Half 0.5 TEP','Half TEP','PPR','PPR 0.5 TEP','PPR TEP'];
+    rows.forEach(r=>{
+      const name = r.Player || r.player;
+      if(!name) return;
+      const pos = (r.Position||r.Pos||'').toUpperCase();
+      const rec = {};
+      cols.forEach(c=>{
+        let v = toNum(r[c]);
+        // synthesize 0.5 TEP if missing
+        if(!Number.isFinite(v) && c.includes('0.5 TEP')){
+          const base = c.replace(' 0.5 TEP','');
+          const full = base+' TEP';
+          const b = toNum(r[base]);
+          const f = toNum(r[full]);
+          if(Number.isFinite(b) && Number.isFinite(f)) v = (b+f)/2;
+          else if(Number.isFinite(b)) v = pos==='TE'? b+0.5 : b;
+        }
+        rec[c]=v;
+      });
+      map.set(norm(name), {name, pos,...rec});
+    });
+    return map;
+  }
+
+  async function loadConsensusValues(){
+    setStatus('Loading projections…');
+    const [sTxt,fTxt,rTxt] = await Promise.all([
+      fetchText(CSV_URLS.sleeper),
+      fetchText(CSV_URLS.fp),
+      fetchText(CSV_URLS.ra)
+    ]);
+    const sMap = buildSourceMap(parseCSV(sTxt));
+    const fMap = buildSourceMap(parseCSV(fTxt));
+    const rMap = buildSourceMap(parseCSV(rTxt));
+
+    const keys = new Set([...sMap.keys(),...fMap.keys(),...rMap.keys()]);
+    const comboKeys = ['Std','Std 0.5 TEP','Std TEP','Half','Half 0.5 TEP','Half TEP','PPR','PPR 0.5 TEP','PPR TEP'];
+    const consensus = new Map();
+
+    keys.forEach(k=>{
+      const s=sMap.get(k)||{}, f=fMap.get(k)||{}, r=rMap.get(k)||{};
+      const out = {name: s.name||f.name||r.name, pos: s.pos||f.pos||r.pos};
+      comboKeys.forEach(c=>{
+        const vals=[s[c],f[c],r[c]].filter(Number.isFinite);
+        out[c]= vals.length? vals.reduce((a,b)=>a+b,0)/vals.length : NaN;
+      });
+      consensus.set(k,out);
+    });
+
+    // map to sleeper player_ids
+    const nameToId = new Map();
+    Object.entries(state.players).forEach(([id,p])=>{
+      const full = norm(p.full_name || `${p.first_name||''} ${p.last_name||''}`);
+      if(full) nameToId.set(full,id);
+    });
+
+    // pick scoring combo from league settings
+    const rec = state.league.scoring_settings?.rec || 0;
+    const bonusTe = state.league.scoring_settings?.bonus_rec_te || 0;
+    const recLabel = rec>=1? 'PPR' : rec>=0.5? 'Half' : 'Std';
+    const tepLabel = bonusTe>=1? ' TEP' : bonusTe>=0.5? ' 0.5 TEP' : '';
+    state.scoringKey = (recLabel+tepLabel).trim();
+    state.scoringLabel = state.scoringKey;
+    $('#scoring-name').textContent = state.scoringKey;
+
+    // build values map
+    state.values.clear();
+    consensus.forEach((c,k)=>{
+      const pid = nameToId.get(k);
+      if(!pid) return;
+      const val = c[state.scoringKey];
+      if(Number.isFinite(val)){
+        // scale to trade value range ~ 1000-10000
+        const scaled = Math.max(100, val*1000);
+        state.values.set(pid,{value:scaled});
+      }
+    });
   }
 
   async function loadPickValues(){
-    // Fallback defaults – guarantees picks show even if sheet fails
     const defaults = [
       ['2026 1st Early',8000],['2026 1st Mid',6000],['2026 1st Late',4000],
       ['2026 2nd Early',3000],['2026 2nd Mid',2000],['2026 2nd Late',1500],
@@ -165,14 +271,12 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   function getPickValue(season,round,slot){
     const key=norm(`${season} ${ordinal(round)} ${slot}`);
     if(state.pickValues.has(key)) return state.pickValues.get(key);
-    // fallback by round
     const base = round===1?5000: round===2?2000: round===3?800:300;
     return slot==='early'?base*1.3: slot==='late'?base*0.7:base;
   }
 
   function buildPickInventory(){
     state.rosters.forEach(r=>state.pickInventory.set(r.roster_id,[]));
-    // traded picks from Sleeper
     state.tradedPicks.forEach(tp=>{
       const owner=state.rosters.find(r=>r.owner_id===tp.owner_id);
       const orig=state.rosters.find(r=>r.roster_id===tp.roster_id);
@@ -186,7 +290,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
         origTeam:teamName(orig),isOwn:owner.roster_id===orig.roster_id
       });
     });
-    // add native future picks for next 3 years
     const start=new Date().getFullYear()+1;
     state.rosters.forEach(r=>{
       const inv=state.pickInventory.get(r.roster_id);
@@ -234,7 +337,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   function renderRoster(teamId,containerId,selSet){
     const r=state.rosters.find(x=>x.roster_id==teamId); if(!r) return;
-    const players=(r.players||[]).map(playerFromId);
+    const players=(r.players||[]).map(playerFromId).sort((a,b)=>b.value-a.value);
     const cont=$(containerId); cont.innerHTML='';
     players.forEach(p=>{
       const sel=selSet.has(p.id);
@@ -280,6 +383,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     state.league=league; state.users=users; state.rosters=rosters; state.players=players; state.tradedPicks=traded;
     $('#league-name').textContent=league.name;
     await loadPickValues();
+    await loadConsensusValues();
     computeSlots();
     buildPickInventory();
     renderSelect();
