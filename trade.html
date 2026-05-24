@@ -12,7 +12,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 .mono{font-family:'JetBrains Mono',monospace}
 .scroll-thin::-webkit-scrollbar{width:6px;height:6px}
 .scroll-thin::-webkit-scrollbar-thumb{background:rgba(148,163,184,.3);border-radius:3px}
-.player-row:hover{background:rgba(255,255,255,.04)}
+.player-row:hover{background:rgba(255,255,.04)}
 .player-row.selected{background:rgba(245,158,11,.12)}
 .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
 @media (max-width:1400px){.grid-4{grid-template-columns:repeat(4,minmax(320px,1fr));overflow-x:auto;padding-bottom:0.5rem}}
@@ -78,7 +78,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
           </div>
         </div>
       </div>
-    </div>
     <div class="bg-slate-900/60 border border-white/10 rounded-xl p-3 text-right">
       <div class="text- uppercase text-slate-500">Team B Sends</div>
       <div id="send-b" class="text-xl font-semibold mono">0</div>
@@ -172,6 +171,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   const CSV_SLEEPER = `https://docs.google.com/spreadsheets/d/e/${PUB_CONSENSUS}/pub?gid=1866730819&single=true&output=csv`;
   const CSV_FP = `https://docs.google.com/spreadsheets/d/e/${PUB_CONSENSUS}/pub?gid=2012227164&single=true&output=csv`;
   const CSV_RA = `https://docs.google.com/spreadsheets/d/e/${PUB_CONSENSUS}/pub?gid=1226234680&single=true&output=csv`;
+  const CSV_PICKS = `https://docs.google.com/spreadsheets/d/e/${PUB_CONSENSUS}/pub?gid=0&single=true&output=csv`;
 
   const params = new URLSearchParams(location.search);
   const league_id = params.get('league_id') || DEFAULT_LEAGUE;
@@ -214,7 +214,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   }
 
   const norm = s => String(s||'').toLowerCase().replace(/\s*\(.*?\)/g,'').replace(/\./g,'').replace(/'/g,'').replace(/-/g,' ').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
-
   const ordinal = n => {const s=['th','st','nd','rd'];const v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);};
 
   async function loadValues(){
@@ -242,19 +241,30 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
         const name = c[idx.name]?.trim() || '';
         const value = +c[idx.value]||0;
         if(id){
-          const entry = {
-            value,
-            ppg: +c[idx.ppg]||0,
-            age: +c[idx.age]||0,
-            pos: c[idx.pos]||'',
-            team: c[idx.team]||'',
-            name
-          };
+          const entry = {value, ppg:+c[idx.ppg]||0, age:+c[idx.age]||0, pos:c[idx.pos]||'', team:c[idx.team]||'', name};
           state.values.set(id, entry);
           if(name) nameToId.set(norm(name), id);
-        } else if(name && /^\d{4}\s+\d/.test(name)){
-          // Pick row without sleeper id
-          state.pickValues.set(norm(name), {name, value});
+        }
+      }
+    }
+
+    // Load pick values from consensus sheet gid=0
+    setStatus('Loading pick values…');
+    const pickText = await fetchCSV(CSV_PICKS);
+    if(pickText){
+      const rows = parseCSV(pickText);
+      if(rows.length>1){
+        const head = rows[0].map(h=>h.trim().toLowerCase());
+        const iPlayer = head.findIndex(h=>h.includes('player'));
+        const iValue = head.findIndex(h=>h==='value');
+        if(iPlayer>=0 && iValue>=0){
+          for(let i=1;i<rows.length;i++){
+            const name = rows[i][iPlayer]?.trim();
+            const val = parseFloat(rows[i][iValue])||0;
+            if(name && /^\d{4}\s+\d/.test(name)){
+              state.pickValues.set(norm(name), {name, value:val});
+            }
+          }
         }
       }
     }
@@ -374,7 +384,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const name = `${season} ${ordinal(round)} ${slot.charAt(0).toUpperCase()+slot.slice(1)}`;
     const entry = state.pickValues.get(norm(name));
     if(entry) return entry.value;
-    // fallback to mid
     const midName = `${season} ${ordinal(round)} Mid`;
     const mid = state.pickValues.get(norm(midName));
     return mid? mid.value : 0;
@@ -382,7 +391,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   function buildPickInventory(){
     state.rosters.forEach(r=>state.pickInventory.set(r.roster_id, []));
-    // Traded picks from Sleeper
     state.tradedPicks.forEach(tp=>{
       const ownerRoster = state.rosters.find(r=>r.owner_id===tp.owner_id);
       const origRoster = state.rosters.find(r=>r.roster_id===tp.roster_id);
@@ -403,12 +411,10 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
         isOwn: ownerRoster.roster_id === origRoster.roster_id
       });
     });
-
     const lastDrafted = state.draftedSeasons.size? Math.max(...state.draftedSeasons) : (state.league.season? state.league.season - 1 : new Date().getFullYear() - 1);
     const startYear = lastDrafted + 1;
     const years = [];
     for(let y = startYear; years.length < 3; y++){ years.push(y); }
-
     state.rosters.forEach(r=>{
       const inv = state.pickInventory.get(r.roster_id);
       years.forEach(y=>{
