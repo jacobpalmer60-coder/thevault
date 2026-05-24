@@ -17,6 +17,10 @@
 .glass-strong { background: linear-gradient(180deg, rgba(15,17,22,.85), rgba(10,12,16,.85)); backdrop-filter: blur(20px); border:1px solid rgba(255,255,255,.08); }
 .scroller::-webkit-scrollbar { width:10px; height:10px; }
 .scroller::-webkit-scrollbar-thumb { background: rgba(255,193,7,.25); border-radius:999px; border:2px solid transparent; background-clip:padding-box; }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: #e4e4e7; }
+.sort-arrow { opacity:.4; }
+th.active.sort-arrow { opacity: 1; }
 </style>
 </head>
 <body class="min-h-screen text-zinc-100 antialiased">
@@ -57,15 +61,15 @@
     <div class="scroller overflow-auto max-h-[70vh]">
       <table class="w-full text-sm">
         <thead class="sticky top-0 bg-zinc-950/90 backdrop-blur border-b border-white/10 text-[11px] uppercase tracking-wider text-zinc-500">
-          <tr>
-            <th class="text-left px-5 py-3 font-medium">Player</th>
-            <th class="text-left px-2 py-3 font-medium">Age</th>
-            <th class="text-left px-2 py-3 font-medium">Value</th>
-            <th class="text-left px-2 py-3 font-medium">Sleeper PPG</th>
-            <th class="text-left px-2 py-3 font-medium">RA PPG</th>
-            <th class="text-left px-2 py-3 font-medium">FP PPG</th>
-            <th class="text-left px-2 py-3 font-medium">Avg PPG</th>
-            <th class="text-left px-5 py-3 font-medium">Value / PPG</th>
+          <tr id="headRow">
+            <th class="text-left px-5 py-3 font-medium sortable" data-key="player">Player <span class="sort-arrow">↕</span></th>
+            <th class="text-left px-2 py-3 font-medium sortable" data-key="age">Age <span class="sort-arrow">↕</span></th>
+            <th class="text-left px-2 py-3 font-medium sortable" data-key="value">Value <span class="sort-arrow">↕</span></th>
+            <th class="text-left px-2 py-3 font-medium sortable" data-key="sPpg">Sleeper PPG <span class="sort-arrow">↕</span></th>
+            <th class="text-left px-2 py-3 font-medium sortable" data-key="rPpg">RA PPG <span class="sort-arrow">↕</span></th>
+            <th class="text-left px-2 py-3 font-medium sortable" data-key="fPpg">FP PPG <span class="sort-arrow">↕</span></th>
+            <th class="text-left px-2 py-3 font-medium sortable" data-key="avgPpg">Avg PPG <span class="sort-arrow">↕</span></th>
+            <th class="text-left px-5 py-3 font-medium sortable" data-key="valPerPpg">Value / PPG <span class="sort-arrow">↕</span></th>
           </tr>
         </thead>
         <tbody id="tbody" class="divide-y divide-white/5"></tbody>
@@ -82,7 +86,7 @@ const CSV_SLEEPER = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=186
 const CSV_FP = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=2012227164&single=true&output=csv`;
 const CSV_RA = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=1226234680&single=true&output=csv`;
 
-const state = { rows: [], filtered: [], scoring: { base:'PPR', tep:0.5 } };
+const state = { rows: [], filtered: [], scoring: { base:'PPR', tep:0.5 }, sort:{ key:'value', dir:'desc' } };
 
 const norm = s => String(s||'')
 .toLowerCase()
@@ -222,9 +226,24 @@ async function load(){
     });
   });
 
-  rows.sort((a,b)=>(b.value||-1e9)-(a.value||-1e9));
   state.rows = rows;
   applyFilters();
+}
+
+function sortData(data){
+  const {key, dir} = state.sort;
+  const mul = dir === 'asc'? 1 : -1;
+  return data.slice().sort((a,b)=>{
+    let av = a[key], bv = b[key];
+    if(key === 'player'){
+      av = String(av||'').toLowerCase();
+      bv = String(bv||'').toLowerCase();
+      return av < bv? -1*mul : av > bv? 1*mul : 0;
+    }
+    av = isFinite(av)? av : dir === 'asc'? Infinity : -Infinity;
+    bv = isFinite(bv)? bv : dir === 'asc'? Infinity : -Infinity;
+    return (av - bv) * mul;
+  });
 }
 
 function applyFilters(){
@@ -233,8 +252,9 @@ function applyFilters(){
   let data = state.rows;
   if(q) data = data.filter(r=>r.player.toLowerCase().includes(q));
   if(pos) data = data.filter(r=>r.pos===pos);
-  state.filtered = data;
+  state.filtered = sortData(data);
   render();
+  updateSortUI();
 }
 
 function render(){
@@ -257,6 +277,18 @@ function render(){
   document.getElementById('count').textContent = `${state.filtered.length.toLocaleString()} players`;
 }
 
+function updateSortUI(){
+  document.querySelectorAll('th.sortable').forEach(th=>{
+    th.classList.toggle('active', th.dataset.key === state.sort.key);
+    const arrow = th.querySelector('.sort-arrow');
+    if(th.dataset.key === state.sort.key){
+      arrow.textContent = state.sort.dir === 'asc'? '↑' : '↓';
+    }else{
+      arrow.textContent = '↕';
+    }
+  });
+}
+
 document.getElementById('search').oninput = applyFilters;
 document.getElementById('posFilter').onchange = applyFilters;
 document.getElementById('refreshBtn').onclick = load;
@@ -270,6 +302,19 @@ document.getElementById('loadLeagueBtn').onclick = ()=>{
     load();
   }
 };
+
+document.getElementById('headRow').addEventListener('click', e=>{
+  const th = e.target.closest('th.sortable');
+  if(!th) return;
+  const key = th.dataset.key;
+  if(state.sort.key === key){
+    state.sort.dir = state.sort.dir === 'asc'? 'desc' : 'asc';
+  }else{
+    state.sort.key = key;
+    state.sort.dir = key === 'player'? 'asc' : 'desc';
+  }
+  applyFilters();
+});
 
 load();
 </script>
