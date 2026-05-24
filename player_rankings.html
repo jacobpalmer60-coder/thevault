@@ -72,29 +72,31 @@
       </table>
     </div>
   </section>
-
-  <footer class="mt-8 text-center text-[11px] text-zinc-600">
-    Scoring auto-detected from Sleeper league • TEP applied to TEs
-  </footer>
 </div>
 
 <script>
-/* === CONFIG: your published CSVs === */
-const CSV_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1226234680&single=true&output=csv';
-const CSV_SLEEPER = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=2012227164&single=true&output=csv';
-const CSV_RA = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1866730819&single=true&output=csv';
-const CSV_FP = ''; // optional: publish FP_Calc as CSV and paste URL here
+/* === PUBLISHED CSVs === */
+const PUB = '2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN';
+const CSV_BASE = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=0&single=true&output=csv`;
+const CSV_SLEEPER = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=1866730819&single=true&output=csv`;
+const CSV_FP = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=2012227164&single=true&output=csv`;
+const CSV_RA = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=1226234680&single=true&output=csv`;
 
-/* If you publish separate CSVs per scoring set, map them here */
-const SCORING_CSV_MAP = {
-  // 'Std': { sleeper: '...', ra: '...', fp: '...' },
-  // 'Half': {... },
-  // 'PPR': {... }
-};
+const state = { rows: [], filtered: [], scoring: { base:'PPR', tep:0.5 } };
 
-const state = { rows: [], filtered: [], league: null, scoring: { base:'PPR', tep:0 } };
-
-const norm = s => String(s||'').toLowerCase().replace(/\./g,'').replace(/\b(jr|sr|ii|iii|iv|v)\b/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const norm = s => String(s||'')
+.toLowerCase()
+.replace(/\s*\(.*?\)/g,'')
+.replace(/\./g,'')
+.replace(/'/g,'')
+.replace(/-/g,' ')
+.replace(/[^a-z0-9 ]/g,' ')
+.replace(/\s+/g,' ')
+.trim()
+.replace(/\s+(?:qb|rb|wr|te|dst|k)\b$/,'')
+.replace(/\s+(?:min|gb|det|chi|ne|nwe|nyj|nyg|phi|was|wsh|dal|ari|atl|car|no|nor|tb|tam|lar|la|sf|sfo|sea|pit|cle|cin|bal|hou|ind|jax|jac|ten|kc|kan|lv|oak|lac|sd|den|mia|buf)\b$/,'')
+.replace(/\s+(?:jr|sr|ii|iii|iv|v)$/,'')
+.trim();
 
 function parseCSV(text){
   const rows=[]; let cur='', row=[], inQ=false;
@@ -116,61 +118,51 @@ function toMap(rows, pick){
   const iPlayer = idx('player');
   const out = new Map();
   rows.slice(1).forEach(r=>{
-    const player = (r[iPlayer]||'').trim();
-    if(!player) return;
-    out.set(norm(player), pick(r, head));
+    const raw = (r[iPlayer]||'').trim().replace(/\s+[A-Z]{2,3}$/,'');
+    if(!raw) return;
+    out.set(norm(raw), pick(r, head));
   });
   return out;
 }
 
-async function getLeague(leagueId){
-  if(!leagueId) return null;
+async function getLeague(id){
+  if(!id) return null;
   try{
-    const res = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`,{cache:'no-store'});
-    if(!res.ok) return null;
-    return await res.json();
-  }catch(e){ return null; }
+    const res = await fetch(`https://api.sleeper.app/v1/league/${id}`,{cache:'no-store'});
+    return res.ok? await res.json() : null;
+  }catch{ return null; }
 }
 
 function detectScoring(league){
-  if(!league) return { base:'PPR', tep:0 };
-  const rec = Number(league.scoring_settings?.rec || 0);
+  if(!league) return { base:'PPR', tep:0.5 };
+  const rec = Number(league.scoring_settings?.rec || 1);
   const tep = Number(league.scoring_settings?.bonus_rec_te || 0);
   const base = rec >= 0.9? 'PPR' : rec >= 0.4? 'Half' : 'Std';
   return { base, tep };
 }
 
-function scoringLabel(s){
-  return s.tep >= 0.9? `${s.base} + TEP 1.0` : s.tep >= 0.4? `${s.base} + TEP 0.5` : s.base;
-}
-
 async function load(){
-  // League
   const params = new URLSearchParams(location.search);
-  let leagueId = params.get('league_id') || localStorage.getItem('ra_league_id') || '';
+  const leagueId = params.get('league_id') || localStorage.getItem('ra_league_id') || '';
   document.getElementById('leagueInput').value = leagueId;
 
   const league = await getLeague(leagueId);
-  state.league = league;
   state.scoring = detectScoring(league);
+  document.getElementById('scoringText').textContent =
+    state.scoring.tep >= 0.9? `${state.scoring.base} + TEP 1.0` :
+    state.scoring.tep >= 0.4? `${state.scoring.base} + TEP 0.5` : state.scoring.base;
 
-  const badge = document.getElementById('scoringBadge');
-  const badgeText = document.getElementById('scoringText');
-  badge.classList.remove('hidden');
-  badgeText.textContent = scoringLabel(state.scoring);
-
-  // Fetch CSVs
-  const [baseTxt, sTxt, raTxt, fpTxt] = await Promise.all([
-    fetch(CSV_BASE).then(r=>r.text()),
-    fetch(CSV_SLEEPER).then(r=>r.text()),
-    fetch(CSV_RA).then(r=>r.text()),
-    CSV_FP? fetch(CSV_FP).then(r=>r.text()) : Promise.resolve('')
+  const [baseTxt, sTxt, fpTxt, raTxt] = await Promise.all([
+    fetch(CSV_BASE,{cache:'no-store'}).then(r=>r.text()),
+    fetch(CSV_SLEEPER,{cache:'no-store'}).then(r=>r.text()),
+    fetch(CSV_FP,{cache:'no-store'}).then(r=>r.text()),
+    fetch(CSV_RA,{cache:'no-store'}).then(r=>r.text())
   ]);
 
   const baseRows = parseCSV(baseTxt);
   const sRows = parseCSV(sTxt);
+  const fpRows = parseCSV(fpTxt);
   const raRows = parseCSV(raTxt);
-  const fpRows = fpTxt? parseCSV(fpTxt) : [];
 
   const baseMap = toMap(baseRows, (r,h)=>{
     const get = n => { const i=h.findIndex(x=>x.includes(n)); return i>-1? r[i]:''; };
@@ -182,48 +174,40 @@ async function load(){
     };
   });
 
-  const sMap = toMap(sRows, (r,h)=>{
+  const calcPick = (r,h)=>{
     const get = n => { const i=h.findIndex(x=>x.includes(n)); return i>-1? r[i]:''; };
+    const ppr = parseFloat(get('ppr'));
+    const pprTep = parseFloat(get('ppr tep')||get('ppr 0.5 tep')||get('ppr 1.0 tep'));
+    const half = parseFloat(get('half'));
+    const std = parseFloat(get('std'));
     return {
-      ppg: parseFloat(get('ppg')||get('pts')),
-      ppgTep: parseFloat(get('ppr tep')||get('tep'))
+      ppg: isFinite(ppr)? ppr : isFinite(half)? half : isFinite(std)? std : NaN,
+      ppgTep: isFinite(pprTep)? pprTep : NaN
     };
-  });
+  };
 
-  const raMap = toMap(raRows, (r,h)=>{
-    const get = n => { const i=h.findIndex(x=>x.includes(n)); return i>-1? r[i]:''; };
-    return {
-      ppg: parseFloat(get('ppg')||get('pts')),
-      ppgTep: parseFloat(get('ppr tep')||get('tep'))
-    };
-  });
+  const sMap = toMap(sRows, calcPick);
+  const fpMap = toMap(fpRows, calcPick);
+  const raMap = toMap(raRows, calcPick);
 
-  const fpMap = fpRows.length? toMap(fpRows, (r,h)=>{
-    const get = n => { const i=h.findIndex(x=>x.includes(n)); return i>-1? r[i]:''; };
-    return {
-      ppg: parseFloat(get('ppg')||get('pts')),
-      ppgTep: parseFloat(get('ppr tep')||get('tep'))
-    };
-  }) : new Map();
-
-  const keys = new Set([...baseMap.keys(),...sMap.keys(),...raMap.keys(),...fpMap.keys()]);
+  const keys = new Set([...baseMap.keys(),...sMap.keys(),...fpMap.keys(),...raMap.keys()]);
   const rows = [];
 
   keys.forEach(k=>{
     const b = baseMap.get(k)||{};
     const s = sMap.get(k)||{};
-    const r = raMap.get(k)||{};
     const f = fpMap.get(k)||{};
+    const r = raMap.get(k)||{};
 
     const pos = (b.pos||'').toUpperCase();
     const isTE = pos==='TE';
     const useTep = state.scoring.tep > 0 && isTE;
 
     const sPpg = useTep && isFinite(s.ppgTep)? s.ppgTep : s.ppg;
-    const rPpg = useTep && isFinite(r.ppgTep)? r.ppgTep : r.ppg;
     const fPpg = useTep && isFinite(f.ppgTep)? f.ppgTep : f.ppg;
+    const rPpg = useTep && isFinite(r.ppgTep)? r.ppgTep : r.ppg;
 
-    const ppgs = [sPpg, rPpg, fPpg].filter(v=>isFinite(v));
+    const ppgs = [sPpg, fPpg, rPpg].filter(v=>isFinite(v));
     const avgPpg = ppgs.length? ppgs.reduce((a,b)=>a+b,0)/ppgs.length : NaN;
     const valPerPpg = isFinite(b.value) && isFinite(avgPpg) && avgPpg>0? b.value/avgPpg : NaN;
 
