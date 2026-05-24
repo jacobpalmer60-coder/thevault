@@ -16,6 +16,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 .badge-pick{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.3);color:#e9d5ff}
 .grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
 @media(max-width:1400px){.grid-4{grid-template-columns:repeat(4,minmax(320px,1fr));overflow-x:auto}}
+.table-head{font-size:10px;text-transform:uppercase;color:#64748b}
+.role-starter{color:#22c55e}
+.role-depth{color:#94a3b8}
 </style>
 </head>
 <body class="min-h-screen">
@@ -61,7 +64,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
           <h2 class="font-semibold text-amber-300 text-sm">Team A</h2>
           <select id="team-a-select" class="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm w-56"></select>
         </div>
-      </div>
       <div class="flex-1 overflow-y-auto p-2">
         <div class="text-[10px] uppercase text-slate-500 px-1 mb-1">Picks</div>
         <div id="picks-a" class="space-y-1 mb-3"></div>
@@ -71,13 +73,13 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     </section>
 
     <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col h-[720px]">
-      <div class="p-3 border-b border-white/10 bg-amber-500/10"><h2 class="font-semibold text-amber-300 text-sm">Impact A</h2></div>
-      <div id="impact-a" class="flex-1 overflow-y-auto p-3 space-y-3"></div>
+      <div class="p-3 border-b border-white/10 bg-amber-500/10"><h2 class="font-semibold text-amber-300 text-sm">Impact A — What You Get</h2></div>
+      <div id="impact-a" class="flex-1 overflow-y-auto p-3"></div>
     </section>
 
     <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col h-[720px]">
-      <div class="p-3 border-b border-white/10 bg-amber-500/10"><h2 class="font-semibold text-amber-300 text-sm">Impact B</h2></div>
-      <div id="impact-b" class="flex-1 overflow-y-auto p-3 space-y-3"></div>
+      <div class="p-3 border-b border-white/10 bg-amber-500/10"><h2 class="font-semibold text-amber-300 text-sm">Impact B — What You Get</h2></div>
+      <div id="impact-b" class="flex-1 overflow-y-auto p-3"></div>
     </section>
 
     <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col h-[720px]">
@@ -115,12 +117,12 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     teamSlots:new Map(), teamA:null, teamB:null,
     selectedA:new Set(), selectedB:new Set(),
     tradedPicks:[],
-    scoringKey:'PPR',
-    scoringLabel:'PPR'
+    scoringKey:'PPR'
   };
 
   const $ = s => document.querySelector(s);
   const fmt = n => Math.round(n).toLocaleString();
+  const fmt1 = n => (Math.round(n*10)/10).toFixed(1);
   const setStatus = t => { const el=$('#status-text'); if(el) el.textContent=t; };
   const teamName = r => {
     const u = state.users.find(x=>x.user_id===r.owner_id);
@@ -142,143 +144,111 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       return obj;
     });
   }
-
-  function toNum(v){
-    if(v===null||v===undefined) return NaN;
-    if(typeof v==='string' && v.trim()==='') return NaN;
-    const n = Number(v);
-    return Number.isFinite(n)? n : NaN;
-  }
+  function toNum(v){ if(v==null||v==='')return NaN; const n=Number(v); return Number.isFinite(n)?n:NaN; }
 
   function buildSourceMap(rows){
-    const map = new Map();
+    const map=new Map();
     rows.forEach(r=>{
-      const name = r.Player || r.player;
-      if(!name) return;
-      const pos = (r.Position||r.Pos||'').toUpperCase();
-      const rec = {};
+      const name=r.Player||r.player; if(!name) return;
+      const pos=(r.Position||'').toUpperCase();
+      const rec={name,pos};
       ['Std','Std 0.5 TEP','Std TEP','Half','Half 0.5 TEP','Half TEP','PPR','PPR 0.5 TEP','PPR TEP'].forEach(c=>{
-        let v = toNum(r[c]);
-        if(!Number.isFinite(v) && c.includes('0.5 TEP')){
-          const base = c.replace(' 0.5 TEP','');
-          const full = base+' TEP';
-          const b = toNum(r[base]);
-          const f = toNum(r[full]);
-          if(Number.isFinite(b) && Number.isFinite(f)) v = (b+f)/2;
-          else if(Number.isFinite(b)) v = pos==='TE'? b+0.5 : b;
+        let v=toNum(r[c]);
+        if(!Number.isFinite(v)&&c.includes('0.5 TEP')){
+          const base=c.replace(' 0.5 TEP',''); const full=base+' TEP';
+          const b=toNum(r[base]), f=toNum(r[full]);
+          if(Number.isFinite(b)&&Number.isFinite(f)) v=(b+f)/2;
+          else if(Number.isFinite(b)) v=pos==='TE'?b+0.5:b;
         }
         rec[c]=v;
       });
-      map.set(norm(name), {name, pos,...rec});
+      map.set(norm(name),rec);
     });
     return map;
   }
 
   async function loadConsensusValues(){
     setStatus('Loading projections…');
-    const [sTxt,fTxt,rTxt] = await Promise.all([
-      fetchText(CSV_URLS.sleeper),
-      fetchText(CSV_URLS.fp),
-      fetchText(CSV_URLS.ra)
-    ]);
-    const sMap = buildSourceMap(parseCSV(sTxt));
-    const fMap = buildSourceMap(parseCSV(fTxt));
-    const rMap = buildSourceMap(parseCSV(rTxt));
-
-    const keys = new Set([...sMap.keys(),...fMap.keys(),...rMap.keys()]);
-    const comboKeys = ['Std','Std 0.5 TEP','Std TEP','Half','Half 0.5 TEP','Half TEP','PPR','PPR 0.5 TEP','PPR TEP'];
-    const consensus = new Map();
-
+    const [sTxt,fTxt,rTxt]=await Promise.all([fetchText(CSV_URLS.sleeper),fetchText(CSV_URLS.fp),fetchText(CSV_URLS.ra)]);
+    const sMap=buildSourceMap(parseCSV(sTxt));
+    const fMap=buildSourceMap(parseCSV(fTxt));
+    const rMap=buildSourceMap(parseCSV(rTxt));
+    const keys=new Set([...sMap.keys(),...fMap.keys(),...rMap.keys()]);
+    const comboKeys=['Std','Std 0.5 TEP','Std TEP','Half','Half 0.5 TEP','Half TEP','PPR','PPR 0.5 TEP','PPR TEP'];
+    const consensus=new Map();
     keys.forEach(k=>{
       const s=sMap.get(k)||{}, f=fMap.get(k)||{}, r=rMap.get(k)||{};
-      const out = {name: s.name||f.name||r.name, pos: s.pos||f.pos||r.pos};
+      const out={name:s.name||f.name||r.name,pos:s.pos||f.pos||r.pos};
       comboKeys.forEach(c=>{
         const vals=[s[c],f[c],r[c]].filter(Number.isFinite);
-        out[c]= vals.length? vals.reduce((a,b)=>a+b,0)/vals.length : NaN;
+        out[c]=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:NaN;
       });
       consensus.set(k,out);
     });
-
-    const nameToId = new Map();
+    const nameToId=new Map();
     Object.entries(state.players).forEach(([id,p])=>{
-      const full = norm(p.full_name || `${p.first_name||''} ${p.last_name||''}`);
+      const full=norm(p.full_name||`${p.first_name||''} ${p.last_name||''}`);
       if(full) nameToId.set(full,id);
     });
-
-    const rec = state.league.scoring_settings?.rec || 0;
-    const bonusTe = state.league.scoring_settings?.bonus_rec_te || 0;
-    const recLabel = rec>=1? 'PPR' : rec>=0.5? 'Half' : 'Std';
-    const tepLabel = bonusTe>=1? ' TEP' : bonusTe>=0.5? ' 0.5 TEP' : '';
-    state.scoringKey = (recLabel+tepLabel).trim();
-    $('#scoring-name').textContent = state.scoringKey;
-
+    const rec=state.league.scoring_settings?.rec||0;
+    const bonusTe=state.league.scoring_settings?.bonus_rec_te||0;
+    const recLabel=rec>=1?'PPR':rec>=0.5?'Half':'Std';
+    const tepLabel=bonusTe>=1?' TEP':bonusTe>=0.5?' 0.5 TEP':'';
+    state.scoringKey=(recLabel+tepLabel).trim();
+    $('#scoring-name').textContent=state.scoringKey;
     state.values.clear();
     consensus.forEach((c,k)=>{
-      const pid = nameToId.get(k);
-      if(!pid) return;
-      const val = c[state.scoringKey];
-      if(Number.isFinite(val)){
-        const scaled = Math.max(100, val*1000);
-        state.values.set(pid,{value:scaled});
+      const pid=nameToId.get(k); if(!pid) return;
+      const ppg=c[state.scoringKey];
+      if(Number.isFinite(ppg)){
+        state.values.set(pid,{ppg, value:Math.max(100,ppg*1000)});
       }
     });
   }
 
   async function loadPickValues(){
-    // base values decay by year
-    const year = new Date().getFullYear()+1;
-    const base = {
-      1:{early:8000,mid:6000,late:4000},
-      2:{early:3000,mid:2000,late:1500},
-      3:{early:1000,mid:800,late:600},
-      4:{early:400,mid:300,late:200}
-    };
-    for(let y=year; y<year+3; y++){
-      const decay = Math.pow(0.85, y-year);
+    const year=new Date().getFullYear()+1;
+    const base={1:{early:8000,mid:6000,late:4000},2:{early:3000,mid:2000,late:1500},3:{early:1000,mid:800,late:600},4:{early:400,mid:300,late:200}};
+    for(let y=year;y<year+3;y++){
+      const decay=Math.pow(0.85,y-year);
       [1,2,3,4].forEach(rd=>{
         ['early','mid','late'].forEach(slot=>{
-          const val = Math.round(base[rd][slot]*decay);
-          const key = norm(`${y} ${ordinal(rd)} ${slot}`);
-          state.pickValues.set(key,val);
+          state.pickValues.set(norm(`${y} ${ordinal(rd)} ${slot}`), Math.round(base[rd][slot]*decay));
         });
       });
     }
   }
 
   function playerFromId(pid){
-    const p = state.players[pid]||{};
-    const v = state.values.get(pid)||{value:1000};
+    const p=state.players[pid]||{};
+    const v=state.values.get(pid)||{ppg:0,value:1000};
     return {
       id:pid,
       name:p.full_name||`${p.first_name||''} ${p.last_name||''}`.trim()||pid,
       pos:p.position||'UNK',
       team:p.team||'',
-      value:v.value||1000
+      age:p.age?Number(p.age):null,
+      ppg:v.ppg||0,
+      value:v.value||1000,
+      type:'player'
     };
   }
 
   function computeSlots(){
-    const scores = state.rosters.map(r=>{
-      const players=(r.players||[]).map(playerFromId);
-      const total=players.reduce((s,p)=>s+p.value,0);
+    const scores=state.rosters.map(r=>{
+      const total=(r.players||[]).map(playerFromId).reduce((s,p)=>s+p.value,0);
       return {id:r.roster_id,total};
     }).sort((a,b)=>b.total-a.total);
     state.teamSlots.clear();
     scores.forEach((s,i)=>{
-      let slot='mid';
-      if(i<3) slot='late';
-      else if(i>=scores.length-3) slot='early';
+      let slot='mid'; if(i<3)slot='late'; else if(i>=scores.length-3)slot='early';
       state.teamSlots.set(s.id,slot);
     });
   }
 
   function getPickValue(season,round,slot){
     const key=norm(`${season} ${ordinal(round)} ${slot}`);
-    if(state.pickValues.has(key)) return state.pickValues.get(key);
-    const base = round===1?5000: round===2?2000: round===3?800:300;
-    const yearDecay = Math.pow(0.85, Math.max(0, season - (new Date().getFullYear()+1)));
-    const slotMult = slot==='early'?1.3: slot==='late'?0.7:1;
-    return Math.round(base*slotMult*yearDecay);
+    return state.pickValues.get(key)||2000;
   }
 
   function buildPickInventory(){
@@ -286,15 +256,14 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     state.tradedPicks.forEach(tp=>{
       const owner=state.rosters.find(r=>r.owner_id===tp.owner_id);
       const orig=state.rosters.find(r=>r.roster_id===tp.roster_id);
-      if(!owner||!orig) return;
+      if(!owner||!orig)return;
       const slot=state.teamSlots.get(orig.roster_id)||'mid';
       const value=getPickValue(tp.season,tp.round,slot);
-      const name=`${tp.season} ${ordinal(tp.round)} ${slot.charAt(0).toUpperCase()+slot.slice(1)}`;
       state.pickInventory.get(owner.roster_id).push({
         id:`${tp.season}-${tp.round}-${slot}-${orig.roster_id}`,
-        name,season:tp.season,round:tp.round,slot,value,
-        origTeam:teamName(orig),isOwn:owner.roster_id===orig.roster_id,
-        type:'pick'
+        name:`${tp.season} ${ordinal(tp.round)} ${slot}`,
+        season:tp.season,round:tp.round,slot,value,
+        origTeam:teamName(orig),isOwn:owner.roster_id===orig.roster_id,type:'pick'
       });
     });
     const start=new Date().getFullYear()+1;
@@ -302,50 +271,92 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       const inv=state.pickInventory.get(r.roster_id);
       for(let y=start;y<start+3;y++){
         [1,2,3,4].forEach(rd=>{
-          if(state.tradedPicks.some(tp=>tp.roster_id===r.roster_id&&tp.season==y&&tp.round==rd)) return;
+          if(state.tradedPicks.some(tp=>tp.roster_id===r.roster_id&&tp.season==y&&tp.round==rd))return;
           const slot=state.teamSlots.get(r.roster_id)||'mid';
-          const value=getPickValue(y,rd,slot);
-          const name=`${y} ${ordinal(rd)} ${slot.charAt(0).toUpperCase()+slot.slice(1)}`;
-          inv.push({id:`${y}-${rd}-${slot}-own`,name,season:y,round:rd,slot,value,origTeam:teamName(r),isOwn:true,type:'pick'});
+          inv.push({
+            id:`${y}-${rd}-${slot}-own`,
+            name:`${y} ${ordinal(rd)} ${slot}`,
+            season:y,round:rd,slot,
+            value:getPickValue(y,rd,slot),
+            origTeam:teamName(r),isOwn:true,type:'pick'
+          });
         });
       }
       inv.sort((a,b)=>b.value-a.value);
     });
   }
 
+  function getStarterSlots(){
+    const pos=state.league.roster_positions||[];
+    return pos.filter(p=>!['BN','TAXI','IR'].includes(p));
+  }
+
+  function computeOptimalLineup(rosterId, addPlayers=[], removeIds=new Set()){
+    const r=state.rosters.find(x=>x.roster_id==rosterId);
+    const base=(r.players||[]).filter(pid=>!removeIds.has(pid)).map(playerFromId);
+    const pool=[...base,...addPlayers];
+    const slots=getStarterSlots();
+    const used=new Set();
+    let total=0;
+    const starters=[];
+    const pickBest=(filter)=>{
+      let best=null;
+      pool.forEach(p=>{
+        if(used.has(p.id))return;
+        if(filter(p)){
+          if(!best||p.ppg>best.ppg) best=p;
+        }
+      });
+      if(best){ used.add(best.id); total+=best.ppg; starters.push(best); }
+    };
+    slots.forEach(s=>{
+      if(s==='FLEX') pickBest(p=>['RB','WR','TE'].includes(p.pos));
+      else if(s==='SUPER_FLEX') pickBest(p=>['QB','RB','WR','TE'].includes(p.pos));
+      else pickBest(p=>p.pos===s);
+    });
+    const ages=starters.map(s=>s.age).filter(a=>Number.isFinite(a));
+    const avgAge=ages.length? ages.reduce((a,b)=>a+b,0)/ages.length : null;
+    return {total, starters, avgAge};
+  }
+
+  function getSelectedAssets(rosterId,selSet){
+    const r=state.rosters.find(x=>x.roster_id==rosterId);
+    const players=(r.players||[]).filter(pid=>selSet.has(pid)).map(playerFromId);
+    const picks=(state.pickInventory.get(rosterId)||[]).filter(p=>selSet.has(p.id));
+    return [...players,...picks];
+  }
+
   function renderSelect(){
     const a=$('#team-a-select'),b=$('#team-b-select');
-    a.innerHTML=''; b.innerHTML='';
+    a.innerHTML='';b.innerHTML='';
     state.rosters.forEach(r=>{
-      const o=document.createElement('option');
-      o.value=r.roster_id; o.textContent=teamName(r);
-      a.appendChild(o.cloneNode(true)); b.appendChild(o.cloneNode(true));
+      const o=document.createElement('option');o.value=r.roster_id;o.textContent=teamName(r);
+      a.appendChild(o.cloneNode(true));b.appendChild(o.cloneNode(true));
     });
     state.teamA=state.rosters[0]?.roster_id;
     state.teamB=state.rosters[1]?.roster_id||state.rosters[0]?.roster_id;
-    a.value=state.teamA; b.value=state.teamB;
+    a.value=state.teamA;b.value=state.teamB;
   }
 
-  function toggle(set,id){ set.has(id)?set.delete(id):set.add(id); updateAll(); }
+  function toggle(set,id){set.has(id)?set.delete(id):set.add(id);updateAll();}
 
   function renderPicks(rosterId,containerId,selSet){
     const inv=state.pickInventory.get(rosterId)||[];
-    const cont=$(containerId); cont.innerHTML='';
-    if(inv.length===0){ cont.innerHTML='<div class="text-xs text-slate-600 px-2 py-2">No picks</div>'; return; }
+    const cont=$(containerId);cont.innerHTML='';
     inv.forEach(p=>{
       const sel=selSet.has(p.id);
       const row=document.createElement('div');
       row.className=`player-row flex items-center gap-2 px-2 py-1.5 rounded-lg ${sel?'selected':''}`;
-      row.innerHTML=`<div class="badge badge-pick">${p.season}</div><div class="badge">R${p.round}</div><div class="badge">${p.slot}</div><div class="flex-1 text-sm truncate">${p.name} ${p.isOwn?'':'<span class="text-[10px] text-slate-500">via '+p.origTeam+'</span>'}</div><div class="text-xs mono">${fmt(p.value)}</div>`;
+      row.innerHTML=`<div class="badge badge-pick">${p.season}</div><div class="badge">R${p.round}</div><div class="badge">${p.slot}</div><div class="flex-1 text-sm truncate">${p.name}</div><div class="text-xs mono">${fmt(p.value)}</div>`;
       row.onclick=()=>toggle(selSet,p.id);
       cont.appendChild(row);
     });
   }
 
   function renderRoster(teamId,containerId,selSet){
-    const r=state.rosters.find(x=>x.roster_id==teamId); if(!r) return;
+    const r=state.rosters.find(x=>x.roster_id==teamId);if(!r)return;
     const players=(r.players||[]).map(playerFromId).sort((a,b)=>b.value-a.value);
-    const cont=$(containerId); cont.innerHTML='';
+    const cont=$(containerId);cont.innerHTML='';
     players.forEach(p=>{
       const sel=selSet.has(p.id);
       const row=document.createElement('div');
@@ -356,52 +367,61 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     });
   }
 
-  function getSelectedAssets(rosterId,selSet){
-    const r=state.rosters.find(x=>x.roster_id==rosterId);
-    const players=(r.players||[]).map(playerFromId).filter(p=>selSet.has(p.id));
-    const picks=(state.pickInventory.get(rosterId)||[]).filter(p=>selSet.has(p.id));
-    return [...players,...picks];
-  }
-
-  function renderImpact(){
-    const aOut = getSelectedAssets(state.teamA, state.selectedA);
-    const bOut = getSelectedAssets(state.teamB, state.selectedB);
-
-    const renderList = (items)=>{
-      if(items.length===0) return '<div class="text-xs text-slate-500">No assets selected</div>';
-      return items.map(it=>{
-        const isPick = it.type==='pick';
-        return `<div class="flex items-center justify-between py-1.5 px-2 rounded-lg bg-white/5">
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] mono px-1.5 py-0.5 rounded bg-slate-800">${isPick?'PICK':it.pos}</span>
-            <span class="text-sm">${it.name}</span>
-          </div>
-          <span class="text-xs mono">${fmt(it.value)}</span>
-        </div>`;
-      }).join('');
-    };
-
-    $('#impact-a').innerHTML = `
-      <div>
-        <div class="text-[10px] uppercase text-slate-500 mb-1">Team A Sends</div>
-        <div class="space-y-1">${renderList(aOut)}</div>
+  function renderImpactPanel(containerId, receivingTeamId, givingTeamId, givingSelSet){
+    const cont=$(containerId);
+    const incoming=getSelectedAssets(givingTeamId,givingSelSet);
+    const addPlayers=incoming.filter(a=>a.type==='player');
+    const before=computeOptimalLineup(receivingTeamId);
+    const after=computeOptimalLineup(receivingTeamId, addPlayers);
+    const starterIds=new Set(after.starters.map(s=>s.id));
+    const ageBefore=before.avgAge?fmt1(before.avgAge):'-';
+    const ageAfter=after.avgAge?fmt1(after.avgAge):'-';
+    const ageDelta=before.avgAge&&after.avgAge?fmt1(after.avgAge-before.avgAge):'0.0';
+    const head=`<div class="mb-3 grid grid-cols-2 gap-3">
+      <div class="p-3 rounded-xl bg-slate-800/60 border border-white/10">
+        <div class="text-[10px] uppercase text-slate-500">Optimal PPG</div>
+        <div class="text-xl mono">${fmt1(before.total)} → <span class="text-amber-300">${fmt1(after.total)}</span></div>
+        <div class="text-xs text-slate-400">${after.total>=before.total?'+':''}${fmt1(after.total-before.total)}</div>
       </div>
-      <div>
-        <div class="text-[10px] uppercase text-slate-500 mb-1">Team A Receives</div>
-        <div class="space-y-1">${renderList(bOut)}</div>
+      <div class="p-3 rounded-xl bg-slate-800/60 border border-white/10">
+        <div class="text-[10px] uppercase text-slate-500">Avg Age Starters</div>
+        <div class="text-xl mono">${ageBefore} → <span class="text-amber-300">${ageAfter}</span></div>
+        <div class="text-xs text-slate-400">${Number(ageDelta)>=0?'+':''}${ageDelta} yrs</div>
       </div>
-    `;
-
-    $('#impact-b').innerHTML = `
-      <div>
-        <div class="text-[10px] uppercase text-slate-500 mb-1">Team B Sends</div>
-        <div class="space-y-1">${renderList(bOut)}</div>
-      </div>
-      <div>
-        <div class="text-[10px] uppercase text-slate-500 mb-1">Team B Receives</div>
-        <div class="space-y-1">${renderList(aOut)}</div>
-      </div>
-    `;
+    </div>`;
+    if(incoming.length===0){
+      cont.innerHTML=head+`<div class="text-xs text-slate-500">No assets selected to receive</div>`;
+      return;
+    }
+    const rows=incoming.map(a=>{
+      if(a.type==='pick'){
+        return `<tr class="border-b border-white/5">
+          <td class="py-2 pr-2">${a.name}</td>
+          <td class="py-2">PICK</td>
+          <td class="py-2">-</td>
+          <td class="py-2">-</td>
+          <td class="py-2 mono">${fmt(a.value)}</td>
+          <td class="py-2">-</td>
+        </tr>`;
+      }else{
+        const role=starterIds.has(a.id)?'<span class="role-starter">Starter</span>':'<span class="role-depth">Depth</span>';
+        return `<tr class="border-b border-white/5">
+          <td class="py-2 pr-2">${a.name}</td>
+          <td class="py-2">${a.pos}</td>
+          <td class="py-2">${a.age||'-'}</td>
+          <td class="py-2 mono">${fmt1(a.ppg)}</td>
+          <td class="py-2 mono">${fmt(a.value)}</td>
+          <td class="py-2">${role}</td>
+        </tr>`;
+      }
+    }).join('');
+    cont.innerHTML=head+`
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="table-head"><tr><th class="text-left pb-2">Player</th><th class="text-left pb-2">Pos</th><th class="text-left pb-2">Age</th><th class="text-left pb-2">PPG</th><th class="text-left pb-2">Value</th><th class="text-left pb-2">Role</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
   }
 
   function sumAssets(rosterId,selSet){
@@ -413,7 +433,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     renderPicks(state.teamB,'#picks-b',state.selectedB);
     renderRoster(state.teamA,'#roster-a',state.selectedA);
     renderRoster(state.teamB,'#roster-b',state.selectedB);
-    renderImpact();
+    renderImpactPanel('#impact-a', state.teamA, state.teamB, state.selectedB);
+    renderImpactPanel('#impact-b', state.teamB, state.teamA, state.selectedA);
     const aVal=sumAssets(state.teamA,state.selectedA);
     const bVal=sumAssets(state.teamB,state.selectedB);
     $('#send-a').textContent=fmt(aVal);
