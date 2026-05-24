@@ -19,6 +19,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 .table-head{font-size:10px;text-transform:uppercase;color:#64748b}
 .role-starter{color:#22c55e}
 .role-depth{color:#94a3b8}
+.lineup-new{color:#22c55e}
+.lineup-out{color:#f87171;text-decoration:line-through;opacity:.7}
 </style>
 </head>
 <body class="min-h-screen">
@@ -64,7 +66,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
           <h2 class="font-semibold text-amber-300 text-sm">Team A</h2>
           <select id="team-a-select" class="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm w-56"></select>
         </div>
-      </div>
       <div class="flex-1 overflow-y-auto p-2">
         <div class="text-[10px] uppercase text-slate-500 px-1 mb-1">Picks</div>
         <div id="picks-a" class="space-y-1 mb-3"></div>
@@ -386,6 +387,20 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     });
   }
 
+  function lineupHTML(title, starters, highlightIds=new Set()){
+    const rows = starters.map(s=>{
+      const cls = highlightIds.has(s.id)? 'lineup-new' : '';
+      return `<div class="flex items-center justify-between text-sm py-0.5 ${cls}">
+        <div class="flex items-center gap-2"><span class="text-[10px] mono w-8">${s.pos}</span><span class="truncate">${s.name}</span></div>
+        <div class="text-xs mono text-slate-400">${s.age||'-'} • ${fmt1(s.ppg)}</div>
+      </div>`;
+    }).join('');
+    return `<div>
+      <div class="text-[10px] uppercase text-slate-500 mb-1">${title}</div>
+      <div class="bg-slate-950/50 rounded-lg border border-white/5 p-2">${rows || '<div class="text-xs text-slate-600">—</div>'}</div>
+    </div>`;
+  }
+
   function renderImpactPanel(containerId, receivingTeamId, givingTeamId, outSelSet, inSelSet){
     const cont=$(containerId);
     const incoming=getSelectedAssets(givingTeamId,inSelSet);
@@ -395,6 +410,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const before=computeOptimalLineup(receivingTeamId);
     const after=computeOptimalLineup(receivingTeamId, addPlayers, removeIds);
     const starterIds=new Set(after.starters.map(s=>s.id));
+    const beforeIds=new Set(before.starters.map(s=>s.id));
+    const newIds=new Set([...starterIds].filter(id=>!beforeIds.has(id)));
     const ageBefore=before.avgAge?fmt1(before.avgAge):'-';
     const ageAfter=after.avgAge?fmt1(after.avgAge):'-';
     const ageDelta=before.avgAge&&after.avgAge?fmt1(after.avgAge-before.avgAge):'0.0';
@@ -418,8 +435,14 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
         <div class="text-xs text-slate-400">${fmt(inVal)} in / ${fmt(outVal)} out</div>
       </div>
     </div>`;
+
+    const lineup = `<div class="grid grid-cols-2 gap-3 mb-4">
+      ${lineupHTML('Before', before.starters)}
+      ${lineupHTML('After', after.starters, newIds)}
+    </div>`;
+
     if(incoming.length===0){
-      cont.innerHTML=head+`<div class="text-xs text-slate-500">No assets selected to receive</div>`;
+      cont.innerHTML=head+lineup+`<div class="text-xs text-slate-500">No assets selected to receive</div>`;
       return;
     }
     const rows=incoming.map(a=>{
@@ -444,7 +467,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
         </tr>`;
       }
     }).join('');
-    cont.innerHTML=head+`
+    cont.innerHTML=head+lineup+`
+      <div class="text-[10px] uppercase text-slate-500 mb-1">Incoming Assets</div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="table-head"><tr><th class="text-left pb-2">Player</th><th class="text-left pb-2">Pos</th><th class="text-left pb-2">Age</th><th class="text-left pb-2">PPG</th><th class="text-left pb-2">Value</th><th class="text-left pb-2">Role</th></tr></thead>
