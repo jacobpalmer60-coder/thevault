@@ -18,7 +18,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 @media (max-width:1400px){.grid-4{grid-template-columns:repeat(4,minmax(320px,1fr));overflow-x:auto;padding-bottom:0.5rem}}
 .badge{font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
 .badge-pick{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.3);color:#e9d5ff}
-.badge-early{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.3);color:#fecaca}
+.badge-early{background:rgba(239,68,.15);border-color:rgba(239,68,68,.3);color:#fecaca}
 .badge-mid{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.3);color:#fde68a}
 .badge-late{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.3);color:#bbf7d0}
 </style>
@@ -168,7 +168,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   const SHEET_TAIL = '&single=true&output=csv';
   const BASE_VALUES_GID = '2077026411';
 
-  // Consensus PPG sources
   const PUB_CONSENSUS = '2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN';
   const CSV_SLEEPER = `https://docs.google.com/spreadsheets/d/e/${PUB_CONSENSUS}/pub?gid=1866730819&single=true&output=csv`;
   const CSV_FP = `https://docs.google.com/spreadsheets/d/e/${PUB_CONSENSUS}/pub?gid=2012227164&single=true&output=csv`;
@@ -177,7 +176,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   const params = new URLSearchParams(location.search);
   const league_id = params.get('league_id') || DEFAULT_LEAGUE;
 
-  const state = { league:null, users:[], rosters:[], players:{}, values:new Map(), pickInventory:new Map(), teamStrength:new Map(), draftedSeasons:new Set(), teamA:null, teamB:null, selectedA:new Set(), selectedB:new Set(), rosterPos:[], tradedPicks:[], scoring:{rec:0, tep:0} };
+  const state = { league:null, users:[], rosters:[], players:{}, values:new Map(), pickValues:new Map(), pickInventory:new Map(), teamStrength:new Map(), draftedSeasons:new Set(), teamA:null, teamB:null, selectedA:new Set(), selectedB:new Set(), rosterPos:[], tradedPicks:[], scoring:{rec:0, tep:0} };
   const $ = s => document.querySelector(s);
   const fmt = n => n.toLocaleString();
   const fmt1 = n => (n>=0?'+':'')+n.toFixed(1);
@@ -216,11 +215,14 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   const norm = s => String(s||'').toLowerCase().replace(/\s*\(.*?\)/g,'').replace(/\./g,'').replace(/'/g,'').replace(/-/g,' ').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
 
+  const ordinal = n => {const s=['th','st','nd','rd'];const v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);};
+
   async function loadValues(){
     setStatus('Loading base values…');
     const baseUrl = SHEET_BASE + BASE_VALUES_GID + SHEET_TAIL;
     const baseText = await fetchCSV(baseUrl);
     state.values.clear();
+    state.pickValues.clear();
     const nameToId = new Map();
     if(baseText){
       const lines = baseText.split(/\r?\n/).filter(l=>l.trim());
@@ -237,27 +239,30 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       for(let i=1;i<lines.length;i++){
         const c = parseCSVLine(lines[i]);
         const id = c[idx.id]?.trim();
-        if(!id) continue;
         const name = c[idx.name]?.trim() || '';
-        const entry = {
-          value: +c[idx.value]||0,
-          ppg: +c[idx.ppg]||0,
-          age: +c[idx.age]||0,
-          pos: c[idx.pos]||'',
-          team: c[idx.team]||'',
-          name: name
-        };
-        state.values.set(id, entry);
-        if(name) nameToId.set(norm(name), id);
+        const value = +c[idx.value]||0;
+        if(id){
+          const entry = {
+            value,
+            ppg: +c[idx.ppg]||0,
+            age: +c[idx.age]||0,
+            pos: c[idx.pos]||'',
+            team: c[idx.team]||'',
+            name
+          };
+          state.values.set(id, entry);
+          if(name) nameToId.set(norm(name), id);
+        } else if(name && /^\d{4}\s+\d/.test(name)){
+          // Pick row without sleeper id
+          state.pickValues.set(norm(name), {name, value});
+        }
       }
     }
 
-    // Load consensus PPG from 3 sources and average
     setStatus('Loading consensus PPG…');
     const sources = [CSV_SLEEPER, CSV_FP, CSV_RA];
     const ppgSum = new Map();
     const ppgCount = new Map();
-
     const rec = state.scoring.rec;
     const tep = state.scoring.tep;
     const baseKey = rec >= 0.9? 'ppr' : rec >= 0.4? 'half' : 'std';
@@ -302,7 +307,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
         ppgCount.set(id, (ppgCount.get(id)||0)+1);
       }
     }
-    // Apply averaged PPG
     for(const [id, entry] of state.values){
       if(ppgCount.has(id)){
         entry.ppg = ppgSum.get(id)/ppgCount.get(id);
@@ -366,8 +370,19 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     return 'late';
   }
 
+  function getPickValue(season, round, slot){
+    const name = `${season} ${ordinal(round)} ${slot.charAt(0).toUpperCase()+slot.slice(1)}`;
+    const entry = state.pickValues.get(norm(name));
+    if(entry) return entry.value;
+    // fallback to mid
+    const midName = `${season} ${ordinal(round)} Mid`;
+    const mid = state.pickValues.get(norm(midName));
+    return mid? mid.value : 0;
+  }
+
   function buildPickInventory(){
     state.rosters.forEach(r=>state.pickInventory.set(r.roster_id, []));
+    // Traded picks from Sleeper
     state.tradedPicks.forEach(tp=>{
       const ownerRoster = state.rosters.find(r=>r.owner_id===tp.owner_id);
       const origRoster = state.rosters.find(r=>r.roster_id===tp.roster_id);
@@ -376,27 +391,24 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       if(state.draftedSeasons.has(Number(season))) return;
       const round = tp.round;
       const slot = getProjectedSlot(origRoster.roster_id);
-      const pickId = `pick_${season}_${round}_${slot}`;
-      const v = state.values.get(pickId) || state.values.get(`pick_${season}_${round}_mid`);
-      if(!v) return;
+      const value = getPickValue(season, round, slot);
+      if(!value) return;
       const inv = state.pickInventory.get(ownerRoster.roster_id);
+      const name = `${season} ${ordinal(round)} ${slot.charAt(0).toUpperCase()+slot.slice(1)}`;
       inv.push({
         id: `pick_${season}_${round}_${slot}_orig${origRoster.roster_id}_owner${ownerRoster.roster_id}`,
-        baseId: pickId,
-        season,
-        round,
-        slot,
-        name: v.name || `${season} ${round}th ${slot}`,
-        value: v.value,
+        season, round, slot, name, value,
         origRosterId: origRoster.roster_id,
         origTeam: teamName(origRoster),
         isOwn: ownerRoster.roster_id === origRoster.roster_id
       });
     });
+
     const lastDrafted = state.draftedSeasons.size? Math.max(...state.draftedSeasons) : (state.league.season? state.league.season - 1 : new Date().getFullYear() - 1);
     const startYear = lastDrafted + 1;
     const years = [];
     for(let y = startYear; years.length < 3; y++){ years.push(y); }
+
     state.rosters.forEach(r=>{
       const inv = state.pickInventory.get(r.roster_id);
       years.forEach(y=>{
@@ -404,18 +416,13 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
           const wasTradedAway = state.tradedPicks.some(tp=>tp.roster_id===r.roster_id && tp.season==y && tp.round==rd);
           if(wasTradedAway) return;
           const slot = getProjectedSlot(r.roster_id);
-          const pickId = `pick_${y}_${rd}_${slot}`;
-          const v = state.values.get(pickId);
-          if(!v) return;
-          if(inv.some(p=>p.baseId===pickId && p.origRosterId===r.roster_id)) return;
+          const value = getPickValue(y, rd, slot);
+          if(!value) return;
+          if(inv.some(p=>p.season===y && p.round===rd && p.origRosterId===r.roster_id)) return;
+          const name = `${y} ${ordinal(rd)} ${slot.charAt(0).toUpperCase()+slot.slice(1)}`;
           inv.push({
             id: `pick_${y}_${rd}_${slot}_own${r.roster_id}`,
-            baseId: pickId,
-            season:y,
-            round:rd,
-            slot,
-            name: v.name || `${y} ${rd}th ${slot}`,
-            value: v.value,
+            season:y, round:rd, slot, name, value,
             origRosterId: r.roster_id,
             origTeam: teamName(r),
             isOwn:true
