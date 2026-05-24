@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Rookie Alchemy • Player Rankings</title>
+<title>The Vault • Player Rankings</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -21,6 +21,8 @@ th.sortable { cursor: pointer; user-select: none; }
 th.sortable:hover { color: #e4e4e7; }
 .sort-arrow { opacity:.4; }
 th.active.sort-arrow { opacity: 1; }
+@keyframes spin { to { transform: rotate(360deg) } }
+.spin { animation: spin 1s linear infinite; }
 </style>
 </head>
 <body class="min-h-screen text-zinc-100 antialiased">
@@ -31,9 +33,9 @@ th.active.sort-arrow { opacity: 1; }
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 h-14 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <div class="size-8 grid place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-600">
-        <span class="display font-bold text-sm text-black">RA</span>
+        <span class="display font-bold text-sm text-black">V</span>
       </div>
-      <span class="display font-semibold">Rookie Alchemy</span>
+      <span class="display font-semibold">The Vault</span>
     </div>
     <div class="flex items-center gap-6 text-sm">
       <a href="league_overview.html" class="text-zinc-300 hover:text-white transition">League Overview</a>
@@ -47,7 +49,7 @@ th.active.sort-arrow { opacity: 1; }
   <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
     <div class="flex items-center gap-4">
       <div class="size-12 grid place-items-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 shadow-[0_0_40px_rgba(245,158,11,.35)]">
-        <span class="display font-bold text-xl text-black">RA</span>
+        <span class="display font-bold text-xl text-black">V</span>
       </div>
       <div>
         <h1 class="display text-[32px] font-bold">Player Rankings</h1>
@@ -61,7 +63,9 @@ th.active.sort-arrow { opacity: 1; }
     <div class="flex items-center gap-2">
       <input id="leagueInput" placeholder="Sleeper League ID" class="px-3 py-2.5 rounded-xl bg-zinc-900/70 border border-white/10 text-sm w-[200px] focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
       <button id="loadLeagueBtn" class="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm">Load</button>
-      <button id="refreshBtn" class="px-3.5 py-2.5 rounded-xl glass hover:bg-white/10 text-sm font-medium">Refresh</button>
+      <button id="refreshBtn" class="px-3.5 py-2.5 rounded-xl glass hover:bg-white/10 text-sm font-medium flex items-center gap-2">
+        <span id="refreshIcon">↻</span><span>Refresh</span>
+      </button>
     </div>
   </header>
 
@@ -71,7 +75,10 @@ th.active.sort-arrow { opacity: 1; }
       <option value="">All Positions</option>
       <option>QB</option><option>RB</option><option>WR</option><option>TE</option>
     </select>
-    <div id="count" class="text-xs text-zinc-500 ml-auto">—</div>
+    <div class="ml-auto text-right">
+      <div id="count" class="text-xs text-zinc-500">—</div>
+      <div id="updated" class="text-[10px] text-zinc-600 mt-0.5">—</div>
+    </div>
   </section>
 
   <section class="glass-strong rounded-2xl overflow-hidden">
@@ -94,7 +101,6 @@ th.active.sort-arrow { opacity: 1; }
     </div>
   </section>
 
-  <!-- Powered by -->
   <div class="mt-6 text-center text-xs text-zinc-500">
     Powered by
     <a href="https://www.rosteraudit.com" target="_blank" rel="noopener" class="text-amber-400 hover:text-amber-300 underline decoration-amber-400/30">Roster Audit</a>,
@@ -111,7 +117,7 @@ const CSV_SLEEPER = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=186
 const CSV_FP = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=2012227164&single=true&output=csv`;
 const CSV_RA = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=1226234680&single=true&output=csv`;
 
-const state = { rows: [], filtered: [], scoring: { base:'PPR', tep:0.5 }, sort:{ key:'value', dir:'desc' } };
+const state = { rows: [], filtered: [], scoring: { base:'PPR', tep:0.5 }, sort:{ key:'value', dir:'desc' }, lastUpdated: null };
 
 const norm = s => String(s||'')
 .toLowerCase()
@@ -171,88 +177,100 @@ function detectScoring(league){
 }
 
 async function load(){
-  const params = new URLSearchParams(location.search);
-  const leagueId = params.get('league_id') || localStorage.getItem('ra_league_id') || '';
-  document.getElementById('leagueInput').value = leagueId;
+  const btn = document.getElementById('refreshBtn');
+  const icon = document.getElementById('refreshIcon');
+  btn.disabled = true;
+  icon.classList.add('spin');
 
-  const league = await getLeague(leagueId);
-  state.scoring = detectScoring(league);
-  document.getElementById('scoringText').textContent =
-    state.scoring.tep >= 0.9? `${state.scoring.base} + TEP 1.0` :
-    state.scoring.tep >= 0.4? `${state.scoring.base} + TEP 0.5` : state.scoring.base;
+  try{
+    const params = new URLSearchParams(location.search);
+    const leagueId = params.get('league_id') || localStorage.getItem('ra_league_id') || '';
+    document.getElementById('leagueInput').value = leagueId;
 
-  const [baseTxt, sTxt, fpTxt, raTxt] = await Promise.all([
-    fetch(CSV_BASE,{cache:'no-store'}).then(r=>r.text()),
-    fetch(CSV_SLEEPER,{cache:'no-store'}).then(r=>r.text()),
-    fetch(CSV_FP,{cache:'no-store'}).then(r=>r.text()),
-    fetch(CSV_RA,{cache:'no-store'}).then(r=>r.text())
-  ]);
+    const league = await getLeague(leagueId);
+    state.scoring = detectScoring(league);
+    document.getElementById('scoringText').textContent =
+      state.scoring.tep >= 0.9? `${state.scoring.base} + TEP 1.0` :
+      state.scoring.tep >= 0.4? `${state.scoring.base} + TEP 0.5` : state.scoring.base;
 
-  const baseRows = parseCSV(baseTxt);
-  const sRows = parseCSV(sTxt);
-  const fpRows = parseCSV(fpTxt);
-  const raRows = parseCSV(raTxt);
+    const [baseTxt, sTxt, fpTxt, raTxt] = await Promise.all([
+      fetch(CSV_BASE,{cache:'no-store'}).then(r=>r.text()),
+      fetch(CSV_SLEEPER,{cache:'no-store'}).then(r=>r.text()),
+      fetch(CSV_FP,{cache:'no-store'}).then(r=>r.text()),
+      fetch(CSV_RA,{cache:'no-store'}).then(r=>r.text())
+    ]);
 
-  const baseMap = toMap(baseRows, (r,h)=>{
-    const get = n => { const i=h.findIndex(x=>x.includes(n)); return i>-1? r[i]:''; };
-    return {
-      player: get('player'),
-      age: parseFloat(get('age')),
-      value: parseFloat(String(get('value')).replace(/[^0-9.]/g,'')),
-      pos: (get('pos')||get('position')||'').toUpperCase()
-    };
-  });
+    const baseRows = parseCSV(baseTxt);
+    const sRows = parseCSV(sTxt);
+    const fpRows = parseCSV(fpTxt);
+    const raRows = parseCSV(raTxt);
 
-  const calcPick = (r,h)=>{
-    const get = n => { const i=h.findIndex(x=>x.includes(n)); return i>-1? r[i]:''; };
-    const ppr = parseFloat(get('ppr'));
-    const pprTep = parseFloat(get('ppr tep')||get('ppr 0.5 tep')||get('ppr 1.0 tep'));
-    const half = parseFloat(get('half'));
-    const std = parseFloat(get('std'));
-    return {
-      ppg: isFinite(ppr)? ppr : isFinite(half)? half : isFinite(std)? std : NaN,
-      ppgTep: isFinite(pprTep)? pprTep : NaN
-    };
-  };
-
-  const sMap = toMap(sRows, calcPick);
-  const fpMap = toMap(fpRows, calcPick);
-  const raMap = toMap(raRows, calcPick);
-
-  const keys = new Set([...baseMap.keys(),...sMap.keys(),...fpMap.keys(),...raMap.keys()]);
-  const rows = [];
-
-  keys.forEach(k=>{
-    const b = baseMap.get(k)||{};
-    const s = sMap.get(k)||{};
-    const f = fpMap.get(k)||{};
-    const r = raMap.get(k)||{};
-
-    const pos = (b.pos||'').toUpperCase();
-    const isTE = pos==='TE';
-    const useTep = state.scoring.tep > 0 && isTE;
-
-    const sPpg = useTep && isFinite(s.ppgTep)? s.ppgTep : s.ppg;
-    const fPpg = useTep && isFinite(f.ppgTep)? f.ppgTep : f.ppg;
-    const rPpg = useTep && isFinite(r.ppgTep)? r.ppgTep : r.ppg;
-
-    const ppgs = [sPpg, fPpg, rPpg].filter(v=>isFinite(v));
-    const avgPpg = ppgs.length? ppgs.reduce((a,b)=>a+b,0)/ppgs.length : NaN;
-    const valPerPpg = isFinite(b.value) && isFinite(avgPpg) && avgPpg>0? b.value/avgPpg : NaN;
-
-    rows.push({
-      player: b.player || '',
-      age: b.age,
-      value: b.value,
-      pos,
-      sPpg, rPpg, fPpg,
-      avgPpg,
-      valPerPpg
+    const baseMap = toMap(baseRows, (r,h)=>{
+      const get = n => { const i=h.findIndex(x=>x.includes(n)); return i>-1? r[i]:''; };
+      return {
+        player: get('player'),
+        age: parseFloat(get('age')),
+        value: parseFloat(String(get('value')).replace(/[^0-9.]/g,'')),
+        pos: (get('pos')||get('position')||'').toUpperCase()
+      };
     });
-  });
 
-  state.rows = rows;
-  applyFilters();
+    const calcPick = (r,h)=>{
+      const get = n => { const i=h.findIndex(x=>x.includes(n)); return i>-1? r[i]:''; };
+      const ppr = parseFloat(get('ppr'));
+      const pprTep = parseFloat(get('ppr tep')||get('ppr 0.5 tep')||get('ppr 1.0 tep'));
+      const half = parseFloat(get('half'));
+      const std = parseFloat(get('std'));
+      return {
+        ppg: isFinite(ppr)? ppr : isFinite(half)? half : isFinite(std)? std : NaN,
+        ppgTep: isFinite(pprTep)? pprTep : NaN
+      };
+    };
+
+    const sMap = toMap(sRows, calcPick);
+    const fpMap = toMap(fpRows, calcPick);
+    const raMap = toMap(raRows, calcPick);
+
+    const keys = new Set([...baseMap.keys(),...sMap.keys(),...fpMap.keys(),...raMap.keys()]);
+    const rows = [];
+
+    keys.forEach(k=>{
+      const b = baseMap.get(k)||{};
+      const s = sMap.get(k)||{};
+      const f = fpMap.get(k)||{};
+      const r = raMap.get(k)||{};
+
+      const pos = (b.pos||'').toUpperCase();
+      const isTE = pos==='TE';
+      const useTep = state.scoring.tep > 0 && isTE;
+
+      const sPpg = useTep && isFinite(s.ppgTep)? s.ppgTep : s.ppg;
+      const fPpg = useTep && isFinite(f.ppgTep)? f.ppgTep : f.ppg;
+      const rPpg = useTep && isFinite(r.ppgTep)? r.ppgTep : r.ppg;
+
+      const ppgs = [sPpg, fPpg, rPpg].filter(v=>isFinite(v));
+      const avgPpg = ppgs.length? ppgs.reduce((a,b)=>a+b,0)/ppgs.length : NaN;
+      const valPerPpg = isFinite(b.value) && isFinite(avgPpg) && avgPpg>0? b.value/avgPpg : NaN;
+
+      rows.push({
+        player: b.player || '',
+        age: b.age,
+        value: b.value,
+        pos,
+        sPpg, rPpg, fPpg,
+        avgPpg,
+        valPerPpg
+      });
+    });
+
+    state.rows = rows;
+    state.lastUpdated = new Date();
+    applyFilters();
+    updateTimestamp();
+  } finally {
+    btn.disabled = false;
+    icon.classList.remove('spin');
+  }
 }
 
 function sortData(data){
@@ -313,6 +331,15 @@ function updateSortUI(){
     }
   });
 }
+
+function updateTimestamp(){
+  const el = document.getElementById('updated');
+  if(!state.lastUpdated){ el.textContent = '—'; return; }
+  const sec = Math.floor((Date.now() - state.lastUpdated.getTime())/1000);
+  const txt = sec < 60? `${sec}s ago` : `${Math.floor(sec/60)}m ago`;
+  el.textContent = `Updated ${txt}`;
+}
+setInterval(updateTimestamp, 15000);
 
 document.getElementById('search').oninput = applyFilters;
 document.getElementById('posFilter').onchange = applyFilters;
