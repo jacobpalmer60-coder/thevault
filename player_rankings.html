@@ -38,8 +38,8 @@ th.active.sort-arrow { opacity: 1; }
       <span class="display font-semibold">The Vault</span>
     </div>
     <div class="flex items-center gap-6 text-sm">
-      <a href="league_overview.html" class="text-zinc-300 hover:text-white transition">League Overview</a>
-      <a href="trade_calculator.html" class="text-zinc-300 hover:text-white transition">Trade Calculator</a>
+      <a id="navOverview" href="https://jacobpalmer60-coder.github.io/thevault/app.html" class="text-zinc-300 hover:text-white transition">League Overview</a>
+      <a id="navTrade" href="https://jacobpalmer60-coder.github.io/thevault/trade.html" class="text-zinc-300 hover:text-white transition">Trade Calculator</a>
       <a href="player_rankings.html" class="text-amber-400 font-medium">Player Rankings</a>
     </div>
   </div>
@@ -117,7 +117,10 @@ const CSV_SLEEPER = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=186
 const CSV_FP = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=2012227164&single=true&output=csv`;
 const CSV_RA = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=1226234680&single=true&output=csv`;
 
-const state = { rows: [], filtered: [], scoring: { base:'PPR', tep:0.5 }, sort:{ key:'value', dir:'desc' }, lastUpdated: null };
+const NAV_OVERVIEW = 'https://jacobpalmer60-coder.github.io/thevault/app.html';
+const NAV_TRADE = 'https://jacobpalmer60-coder.github.io/thevault/trade.html';
+
+const state = { rows: [], filtered: [], scoring: { base:'PPR', tep:0.5 }, sort:{ key:'value', dir:'desc' }, lastUpdated: null, leagueId: '' };
 
 const norm = s => String(s||'')
 .toLowerCase()
@@ -176,6 +179,13 @@ function detectScoring(league){
   return { base, tep };
 }
 
+function updateNavLinks(){
+  const id = state.leagueId;
+  const q = id? `?league_id=${encodeURIComponent(id)}` : '';
+  document.getElementById('navOverview').href = NAV_OVERVIEW + q;
+  document.getElementById('navTrade').href = NAV_TRADE + q;
+}
+
 async function load(){
   const btn = document.getElementById('refreshBtn');
   const icon = document.getElementById('refreshIcon');
@@ -185,7 +195,9 @@ async function load(){
   try{
     const params = new URLSearchParams(location.search);
     const leagueId = params.get('league_id') || localStorage.getItem('ra_league_id') || '';
+    state.leagueId = leagueId;
     document.getElementById('leagueInput').value = leagueId;
+    updateNavLinks();
 
     const league = await getLeague(leagueId);
     state.scoring = detectScoring(league);
@@ -351,6 +363,8 @@ document.getElementById('loadLeagueBtn').onclick = ()=>{
     const url = new URL(location.href);
     url.searchParams.set('league_id', id);
     history.replaceState(null,'',url);
+    state.leagueId = id;
+    updateNavLinks();
     load();
   }
 };
