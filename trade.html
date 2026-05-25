@@ -45,6 +45,16 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 .seg-btn:hover{background:rgba(255,255,255,.04)}
 .seg-btn.active{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4);color:#fcd34d}
 .impact-sticky{position:sticky;top:88px;z-index:10;align-self:start}
+
+/* Searchable Combobox */
+.combo-wrap{position:relative}
+.combo-input{background:#020617}
+.combo-input:focus{outline:none;border-color:rgba(245,158,11,.5);box-shadow:0 0 0 2px rgba(245,158,11,.15)}
+.combo-dropdown{scrollbar-width:thin}
+.combo-dropdown::-webkit-scrollbar{width:8px}
+.combo-dropdown::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:999px}
+.combo-item mark{background:transparent;color:#fcd34d;font-weight:500;padding:0}
+.combo-group{position:sticky;top:0;z-index:1}
 </style>
 </head>
 <body class="min-h-screen">
@@ -117,7 +127,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       </section>
 
       <!-- Impact A -->
-      <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col h-[800px] impact-sticky">
+      <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col" style="height:800px">
         <div class="p-3.5 border-b border-white/10 bg-amber-500/10 sticky top-0 z-[11] bg-slate-900/95 backdrop-blur rounded-t-2xl">
           <h2 class="font-semibold text-amber-300 text-base">Impact A — What You Get</h2>
         </div>
@@ -125,7 +135,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       </section>
 
       <!-- Impact B -->
-      <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col h-[800px] impact-sticky">
+      <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col" style="height:800px">
         <div class="p-3.5 border-b border-white/10 bg-amber-500/10 sticky top-0 z-[11] bg-slate-900/95 backdrop-blur rounded-t-2xl">
           <h2 class="font-semibold text-amber-300 text-base">Impact B — What You Get</h2>
         </div>
@@ -259,16 +269,14 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
           <!-- Acquire Mode UI -->
           <div id="pkg-acquire-wrap" class="mb-4">
             <label class="text-xs uppercase text-slate-500">Target Asset to Acquire</label>
-            <select id="pkg-target-player" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
+            <div id="pkg-target-player-combo" class="combo-wrap mt-1"></div>
             <div class="text-[11px] text-slate-500 mt-1">Pick a player or pick from Partner Team (or Any Team) you want to get</div>
           </div>
 
           <!-- Offload Mode UI -->
           <div id="pkg-offload-wrap" class="mb-4 hidden">
             <label class="text-xs uppercase text-slate-500">My Asset to Move (Optional)</label>
-            <select id="pkg-your-asset" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm">
-              <option value="">— None —</option>
-            </select>
+            <div id="pkg-your-asset-combo" class="combo-wrap mt-1"></div>
             <div class="text-[11px] text-slate-500 mt-1">Pick an asset from Your Team to auto-fill Target Value</div>
           </div>
 
@@ -790,52 +798,195 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     }
   }
 
+  // ---------- Searchable Combobox ----------
+  const combos = { target:null, your:null };
+
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function createSearchCombo(containerId, placeholder, onSelect){
+    const container = document.getElementById(containerId);
+    if(!container) return null;
+    container.innerHTML = `
+      <div class="relative">
+        <input type="text" class="combo-input w-full bg-slate-950 border border-white/10 rounded-lg pl-3 pr-9 py-2 text-sm focus:outline-none focus:border-amber-500/50" placeholder="${placeholder}" autocomplete="off">
+        <button type="button" class="combo-clear absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-md hover:bg-white/10 text-slate-500 hover:text-white hidden">✕</button>
+        <div class="combo-dropdown absolute z-[200] mt-1 w-full bg-slate-900 border border-white/10 rounded-xl shadow-2xl max-h-80 overflow-y-auto hidden"></div>
+      </div>
+    `;
+    const input = container.querySelector('.combo-input');
+    const dropdown = container.querySelector('.combo-dropdown');
+    const clearBtn = container.querySelector('.combo-clear');
+
+    let options = [];
+    let filtered = [];
+    let activeIdx = -1;
+    let selected = null;
+    let isOpen = false;
+
+    function open(){ dropdown.classList.remove('hidden'); isOpen=true; }
+    function close(){ dropdown.classList.add('hidden'); isOpen=false; activeIdx=-1; }
+    function setOptions(opts){
+      options = opts;
+      filtered = opts.slice(0,200);
+      if(selected && !options.find(o=>o.key===selected.key)){
+        setSelected(null,false);
+      }
+      render();
+    }
+    function getSelected(){ return selected; }
+    function setSelected(opt, trigger=true){
+      selected = opt;
+      if(opt){
+        input.value = opt.labelPlain;
+        clearBtn.classList.remove('hidden');
+      }else{
+        input.value = '';
+        clearBtn.classList.add('hidden');
+      }
+      if(trigger && onSelect) onSelect(opt);
+    }
+    function highlight(text, query){
+      if(!query) return escapeHtml(text);
+      const lc = text.toLowerCase();
+      const idx = lc.indexOf(query);
+      if(idx===-1) return escapeHtml(text);
+      return escapeHtml(text.slice(0,idx)) + '<mark>'+escapeHtml(text.slice(idx, idx+query.length))+'</mark>' + escapeHtml(text.slice(idx+query.length));
+    }
+    function render(){
+      if(!isOpen) return;
+      const query = input.value.trim().toLowerCase();
+      const groups = {};
+      filtered.forEach(o=>{ (groups[o.group] ||= []).push(o); });
+      let html='';
+      ['Players','Picks'].forEach(g=>{
+        const arr = groups[g];
+        if(!arr || !arr.length) return;
+        html += `<div class="combo-group sticky top-0 bg-slate-900/95 backdrop-blur px-3 py-1.5 text-[11px] uppercase tracking-wider text-slate-500 border-b border-white/5">${g}</div>`;
+        arr.forEach(o=>{
+          const globalIdx = filtered.indexOf(o);
+          const isActive = globalIdx===activeIdx;
+          html += `<div class="combo-item px-3 py-2 cursor-pointer flex items-center justify-between gap-3 ${isActive?'bg-amber-500/15':'hover:bg-white/5'}" data-idx="${globalIdx}">
+            <div class="min-w-0 flex-1">
+              <div class="text-sm truncate">${highlight(o.labelMain, query)}${o.labelExtra?` <span class="text-slate-400">${highlight(o.labelExtra, query)}</span>`:''}</div>
+              ${o.sub?`<div class="text-xs text-slate-500 truncate">${escapeHtml(o.sub)}</div>`:''}
+            </div>
+            <div class="text-xs mono text-slate-400 shrink-0">${fmt(o.value)}</div>
+          </div>`;
+        });
+      });
+      if(!html) html = `<div class="px-3 py-6 text-center text-slate-500 text-sm">No matches</div>`;
+      dropdown.innerHTML = html;
+    }
+    function filter(q){
+      const query = q.trim().toLowerCase();
+      if(!query){ filtered = options.slice(0,200); }
+      else{
+        filtered = options.filter(o=> o.search.includes(query)).slice(0,200);
+      }
+      activeIdx = filtered.length?0:-1;
+      render();
+    }
+    function scrollActive(){
+      const el = dropdown.querySelector(`[data-idx="${activeIdx}"]`);
+      if(el) el.scrollIntoView({block:'nearest'});
+    }
+
+    input.addEventListener('focus', ()=>{ open(); filter(input.value); });
+    input.addEventListener('input', ()=>{
+      if(selected && input.value !== selected.labelPlain){
+        selected=null;
+        clearBtn.classList.add('hidden');
+        if(onSelect) onSelect(null);
+      }
+      open(); filter(input.value);
+    });
+    input.addEventListener('keydown', e=>{
+      if(!isOpen && (e.key==='ArrowDown'||e.key==='ArrowUp')){ open(); filter(input.value); e.preventDefault(); return; }
+      if(e.key==='ArrowDown'){ activeIdx = Math.min(activeIdx+1, filtered.length-1); render(); scrollActive(); e.preventDefault(); }
+      else if(e.key==='ArrowUp'){ activeIdx = Math.max(activeIdx-1,0); render(); scrollActive(); e.preventDefault(); }
+      else if(e.key==='Enter'){ if(activeIdx>=0){ const opt = filtered[activeIdx]; setSelected(opt); close(); } e.preventDefault(); }
+      else if(e.key==='Escape'){ close(); }
+    });
+    dropdown.addEventListener('mousedown', e=>{
+      const item = e.target.closest('.combo-item');
+      if(item){ const idx = +item.dataset.idx; const opt = filtered[idx]; setSelected(opt); close(); e.preventDefault(); }
+    });
+    clearBtn.addEventListener('click', ()=>{ setSelected(null); input.focus(); filter(''); });
+    document.addEventListener('click', e=>{ if(!container.contains(e.target)) close(); });
+
+    return { setOptions, getSelected, setSelected, filter, open, close };
+  }
+
+  function onTargetSelect(opt){
+    if(opt){
+      $('#pkg-value').value = Math.round(opt.value);
+      state.pkgTargetPlayer = { roster_id: opt.roster_id, id: opt.id, value: opt.value, name: opt.name, type: opt.type };
+    }else{
+      state.pkgTargetPlayer = null;
+      // keep value?
+    }
+    debouncedFind();
+  }
+
+  function onYourSelect(opt){
+    if(opt){
+      $('#pkg-value').value = Math.round(opt.value);
+    }
+    debouncedFind();
+  }
+
   function populateYourAssetSelect(){
     const yourId = +$('#pkg-target-team').value;
-    const sel = $('#pkg-your-asset');
-    if(!sel) return;
-    const prev = sel.value;
-    sel.innerHTML='<option value="">— None —</option>';
     const assets = getAllAssetsForTeam(yourId);
-    const players = assets.filter(a=>a.type==='player').sort((a,b)=>b.value-a.value).slice(0,60);
-    const picks = assets.filter(a=>a.type==='pick').sort((a,b)=>b.value-a.value).slice(0,60);
-
-    if(players.length){
-      const og = document.createElement('optgroup');
-      og.label = 'Players';
-      players.forEach(a=>{
-        const o=document.createElement('option');
-        o.value = a.id;
-        o.textContent = `${a.name} (${a.pos}) • ${fmt(a.value)}`;
-        o.dataset.value = a.value;
-        o.dataset.type = a.type;
-        og.appendChild(o);
+    const players = assets.filter(a=>a.type==='player').sort((a,b)=>b.value-a.value);
+    const picks = assets.filter(a=>a.type==='pick').sort((a,b)=>b.value-a.value);
+    const options = [];
+    players.forEach(a=>{
+      options.push({
+        key:`p-${a.id}`,
+        id:a.id,
+        name:a.name,
+        value:a.value,
+        type:'player',
+        pos:a.pos,
+        roster_id:a.roster_id,
+        group:'Players',
+        labelMain:a.name,
+        labelExtra:`(${a.pos})`,
+        labelPlain:`${a.name} (${a.pos}) • ${fmt(a.value)}`,
+        sub:'',
+        search:`${a.name} ${a.pos}`.toLowerCase()
       });
-      sel.appendChild(og);
-    }
-    if(picks.length){
-      const og = document.createElement('optgroup');
-      og.label = 'Picks';
-      picks.forEach(a=>{
-        const o=document.createElement('option');
-        o.value = a.id;
-        o.textContent = `${a.name} • ${fmt(a.value)}`;
-        o.dataset.value = a.value;
-        o.dataset.type = a.type;
-        og.appendChild(o);
+    });
+    picks.forEach(a=>{
+      options.push({
+        key:`k-${a.id}`,
+        id:a.id,
+        name:a.name,
+        value:a.value,
+        type:'pick',
+        roster_id:a.roster_id,
+        group:'Picks',
+        labelMain:a.name,
+        labelExtra:'',
+        labelPlain:`${a.name} • ${fmt(a.value)}`,
+        sub:'',
+        search:`${a.name}`.toLowerCase()
       });
-      sel.appendChild(og);
+    });
+    if(combos.your){
+      const prev = combos.your.getSelected();
+      combos.your.setOptions(options);
+      if(prev){
+        const found = options.find(o=>o.key===prev.key);
+        if(found) combos.your.setSelected(found,false);
+      }
     }
-    if([...sel.options].some(o=>o.value===prev)) sel.value = prev;
   }
 
   function populateTargetPlayerSelect(){
-    const sel = $('#pkg-target-player');
-    if(!sel) return;
     const yourId = +$('#pkg-target-team').value;
     const partnerVal = $('#pkg-source-team').value;
-    const prev = sel.value;
-    sel.innerHTML='';
     let assets = [];
     if(partnerVal === 'any'){
       state.rosters.forEach(r=>{
@@ -851,57 +1002,53 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
         assets = getAllAssetsForTeam(pid).map(a=>({...a, teamName:teamNm}));
       }
     }
-    const players = assets.filter(a=>a.type==='player').sort((a,b)=>b.value-a.value).slice(0,200);
-    const picks = assets.filter(a=>a.type==='pick').sort((a,b)=>b.value-a.value).slice(0,200);
-
-    if(players.length){
-      const og = document.createElement('optgroup');
-      og.label = 'Players';
-      players.forEach(p=>{
-        const o=document.createElement('option');
-        o.value = `${p.roster_id}|${p.id}`;
-        const prefix = partnerVal==='any' ? `[${p.teamName}] ` : '';
-        o.textContent = `${prefix}${p.name} (${p.pos}) • ${fmt(p.value)}`;
-        o.dataset.value = p.value;
-        o.dataset.roster = p.roster_id;
-        o.dataset.pid = p.id;
-        o.dataset.type = 'player';
-        og.appendChild(o);
+    const players = assets.filter(a=>a.type==='player').sort((a,b)=>b.value-a.value);
+    const picks = assets.filter(a=>a.type==='pick').sort((a,b)=>b.value-a.value);
+    const options = [];
+    players.forEach(a=>{
+      const sub = partnerVal==='any' ? a.teamName : '';
+      options.push({
+        key:`p-${a.roster_id}-${a.id}`,
+        id:a.id,
+        name:a.name,
+        value:a.value,
+        type:'player',
+        pos:a.pos,
+        roster_id:a.roster_id,
+        group:'Players',
+        labelMain:a.name,
+        labelExtra:`(${a.pos})`,
+        labelPlain:`${a.name} (${a.pos}) • ${fmt(a.value)}${sub?` — ${sub}`:''}`,
+        sub,
+        search:`${a.name} ${a.pos} ${a.teamName}`.toLowerCase()
       });
-      sel.appendChild(og);
-    }
-    if(picks.length){
-      const og = document.createElement('optgroup');
-      og.label = 'Picks';
-      picks.forEach(p=>{
-        const o=document.createElement('option');
-        o.value = `${p.roster_id}|${p.id}`;
-        const prefix = partnerVal==='any' ? `[${p.teamName}] ` : '';
-        o.textContent = `${prefix}${p.name} • ${fmt(p.value)}`;
-        o.dataset.value = p.value;
-        o.dataset.roster = p.roster_id;
-        o.dataset.pid = p.id;
-        o.dataset.type = 'pick';
-        og.appendChild(o);
+    });
+    picks.forEach(a=>{
+      const sub = partnerVal==='any' ? a.teamName : (a.origTeam ? `Orig: ${a.origTeam}` : '');
+      options.push({
+        key:`k-${a.roster_id}-${a.id}`,
+        id:a.id,
+        name:a.name,
+        value:a.value,
+        type:'pick',
+        roster_id:a.roster_id,
+        group:'Picks',
+        labelMain:a.name,
+        labelExtra:'',
+        labelPlain:`${a.name} • ${fmt(a.value)}${sub?` — ${sub}`:''}`,
+        sub,
+        search:`${a.name} ${a.teamName}`.toLowerCase()
       });
-      sel.appendChild(og);
-    }
-    if([...sel.options].some(o=>o.value===prev)) sel.value = prev;
-    // Auto-fill value
-    if(sel.value){
-      const opt = sel.selectedOptions[0];
-      if(opt){
-        $('#pkg-value').value = Math.round(Number(opt.dataset.value));
-        state.pkgTargetPlayer = {
-          roster_id: +opt.dataset.roster,
-          id: opt.dataset.pid,
-          value: +opt.dataset.value,
-          name: opt.textContent.split(' (')[0],
-          type: opt.dataset.type
-        };
+    });
+    if(combos.target){
+      const prev = combos.target.getSelected();
+      combos.target.setOptions(options);
+      if(prev){
+        const found = options.find(o=>o.key===prev.key);
+        if(found) combos.target.setSelected(found,false);
+      }else if(options.length && state.pkgMode==='acquire'){
+        // Do not auto-select
       }
-    }else{
-      state.pkgTargetPlayer = null;
     }
   }
 
@@ -959,10 +1106,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     sel.innerHTML='';
     let assets = [];
     if(state.pkgMode === 'acquire'){
-      // Must include from YOUR TEAM (source of package)
       assets = getAllAssetsForTeam(yourId);
     }else{
-      // Offload: must include from PARTNER
       if(partnerVal === 'any'){
         const candidateTeams = state.rosters.map(r=>r.roster_id).filter(id=>id!==yourId);
         candidateTeams.forEach(id=>{
@@ -1371,7 +1516,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
         <td class="py-2.5 px-4"><button class="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs">Add to Trade</button></td>`;
       tr.querySelector('button').addEventListener('click', ()=>{
         if(state.pkgMode === 'acquire'){
-          // Your team sends package, receives target player
           const yourId = targetId;
           const partnerId = state.pkgTargetPlayer?.roster_id;
           if(!partnerId) return;
@@ -1384,17 +1528,15 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
           c.assets.forEach(a=>{ state.selectedA.add(a.id); });
           state.selectedB.add(state.pkgTargetPlayer.id);
         }else{
-          // Offload mode
           state.teamA = targetId;
           state.teamB = c.teamId;
           $('#team-a-select').value = targetId;
           $('#team-b-select').value = c.teamId;
           state.selectedA.clear();
           state.selectedB.clear();
-          // If user selected a player to move, add it to Team A sends
-          const yourAssetSel = $('#pkg-your-asset');
-          if(yourAssetSel && yourAssetSel.value){
-            state.selectedA.add(yourAssetSel.value);
+          const yourSel = combos.your?.getSelected();
+          if(yourSel){
+            state.selectedA.add(yourSel.id);
           }
           c.assets.forEach(a=>{ state.selectedB.add(a.id); });
         }
@@ -1413,10 +1555,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     document.querySelectorAll('#pkg-mode-group .seg-btn').forEach(btn=>{
       btn.classList.toggle('active', btn.dataset.mode === state.pkgMode);
     });
-    // Refresh selects
     populateMustIncludeSelect();
     renderMustChips();
-    // Clear results
     $('#pkg-results').innerHTML = '';
     state.pkgResultsFull = [];
   }
@@ -1435,19 +1575,14 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     warningEl.classList.add('hidden');
 
     if(state.pkgMode === 'acquire'){
-      // Need target asset selected
-      const targetSel = $('#pkg-target-player');
-      if(!targetSel.value){
+      const sel = combos.target?.getSelected();
+      if(!sel){
         tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500">Select a Target Asset to Acquire</td></tr>`;
         return;
       }
-      const opt = targetSel.selectedOptions[0];
-      const targetVal = Number(opt.dataset.value);
-      const partnerRosterId = +opt.dataset.roster;
+      const targetVal = sel.value;
       $('#pkg-value').value = Math.round(targetVal);
-      state.pkgTargetPlayer = { roster_id: partnerRosterId, id: opt.dataset.pid, value: targetVal, name: opt.textContent.split(' (')[0], type: opt.dataset.type };
-
-      const sourceTeamId = targetId; // package comes from your team
+      const sourceTeamId = targetId;
       const sumMust = mustInclude.reduce((s,a)=>s+a.value,0);
       const maxTotal = targetVal*(1+tolPct);
       if(sumMust > maxTotal){
@@ -1572,6 +1707,11 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     computeTeamMetrics();
     renderSelect();
     populateOverrideSelects();
+
+    // init combos
+    combos.target = createSearchCombo('pkg-target-player-combo', 'Search player or pick...', onTargetSelect);
+    combos.your = createSearchCombo('pkg-your-asset-combo', 'Search your assets...', onYourSelect);
+
     populateToolSelects();
     setStatus('Ready • computed on refresh');
     updateAll();
@@ -1627,7 +1767,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       });
     });
 
-    // Package mode toggle
     document.querySelectorAll('#pkg-mode-group .seg-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         state.pkgMode = btn.dataset.mode;
@@ -1655,21 +1794,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     });
     $('#pkg-value').addEventListener('input', debouncedFind);
     $('#pkg-find').addEventListener('click', findCombos);
-    $('#pkg-your-asset').addEventListener('change', (e)=>{
-      const val = e.target.selectedOptions[0]?.dataset.value;
-      if(val){
-        $('#pkg-value').value = Math.round(Number(val));
-        debouncedFind();
-      }
-    });
-    $('#pkg-target-player').addEventListener('change', ()=>{
-      const opt = $('#pkg-target-player').selectedOptions[0];
-      if(opt){
-        $('#pkg-value').value = Math.round(Number(opt.dataset.value));
-        state.pkgTargetPlayer = { roster_id: +opt.dataset.roster, id: opt.dataset.pid, value: +opt.dataset.value, type: opt.dataset.type };
-        debouncedFind();
-      }
-    });
     $('#pkg-must-add').addEventListener('click', ()=>{
       if(state.pkgMustInclude.length>=2) return;
       const sel = $('#pkg-must-select');
