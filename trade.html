@@ -12,6 +12,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 .player-row{cursor:pointer;border:1px solid transparent}
 .player-row:hover{background:rgba(255,255,255,.04)}
 .player-row.selected{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4)}
+.player-row.last-clicked{box-shadow:0 0 0 2px rgba(245,158,11,.70) inset;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.50)}
+.player-row.selected.last-clicked{box-shadow:0 0 0 2px rgba(245,158,11,.90) inset;background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.60)}
 .badge{font-size:12px;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
 .badge-pick{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.3);color:#e9d5ff}
 .badge-need{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.35);color:#fca5a5}
@@ -30,15 +32,20 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 #pill-b .tooltip-card{left:auto;right:0}
 .meter{height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
 .meter-fill{height:100%}
-.tab-btn{padding:8px 14px;border-radius:10px;font-size:14px;border:1px solid transparent;color:#94a3b8}
+.tab-btn{padding:8px 14px;border-radius:10px;font-size:14px;border:1px solid transparent;color:#94a3b8;white-space:nowrap}
 .tab-btn.active{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
+.scrollbar-thin{scrollbar-width:thin}
+.scrollbar-thin::-webkit-scrollbar{width:8px;height:8px}
+.scrollbar-thin::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:999px}
+.quick-btn{padding:4px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.12);color:#fcd34d;white-space:nowrap}
+.quick-btn:hover{background:rgba(245,158,11,.2)}
 </style>
 </head>
 <body class="min-h-screen">
 <header class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur">
-  <div class="max-w-[1800px] mx-auto px-6 h-16 flex items-center justify-between">
+  <div class="max-w-[1920px] mx-auto px-4 h-16 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-600"></div>
       <div class="font-semibold text-lg">Dynasty Trade Calculator</div>
@@ -46,13 +53,14 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       <span id="scoring-name" class="ml-3 text-sm text-amber-300 mono hidden sm:inline"></span>
     </div>
     <div class="flex items-center gap-2">
+      <button id="value-tools-open" class="px-4 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-sm font-medium">Value Tools</button>
       <button id="swap-btn" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm">Swap</button>
       <button id="reset-btn" class="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm">Reset</button>
     </div>
   </div>
 </header>
 
-<main class="max-w-[1800px] mx-auto px-6 py-6">
+<main class="max-w-[1920px] mx-auto px-4 py-6">
   <div id="status" class="mb-4 text-sm text-slate-400"><span id="status-text">Loading…</span></div>
 
   <div class="grid grid-cols-3 gap-4 mb-6">
@@ -73,7 +81,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   </div>
 
   <div class="overflow-x-auto">
-    <div class="grid gap-4 min-w-[1440px]" style="grid-template-columns: 260px 1.3fr 1.3fr 260px;">
+    <div class="grid gap-4 min-w-[1500px]" style="grid-template-columns: 260px 1.3fr 1.3fr 260px;">
 
       <!-- Team A -->
       <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col h-[800px]">
@@ -82,12 +90,17 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
             <h2 class="font-semibold text-amber-300 text-base">Team A</h2>
             <select id="team-a-select" class="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm w-36"></select>
           </div>
+          <div class="mt-2 flex gap-1.5 flex-wrap">
+            <button id="quick-similar-a" class="quick-btn">Similar Value</button>
+            <button id="quick-package-a" class="quick-btn">Package Builder</button>
+          </div>
           <div id="pill-a" class="mt-3"></div>
           <div id="needs-a" class="mt-2 flex flex-wrap gap-1.5"></div>
           <div class="mt-3">
             <label class="text-[10px] uppercase tracking-wider text-slate-500">Window Override</label>
             <select id="override-a" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-sm"></select>
           </div>
+        </div>
         <div class="flex-1 overflow-y-auto p-4 space-y-4">
           <div>
             <div class="text-xs uppercase text-slate-500 px-1 mb-2">Picks</div>
@@ -123,6 +136,10 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
             <h2 class="font-semibold text-amber-300 text-base">Team B</h2>
             <select id="team-b-select" class="bg-slate-900 border border-white/10 rounded-lg px-3 py-2 text-sm w-36"></select>
           </div>
+          <div class="mt-2 flex gap-1.5 flex-wrap">
+            <button id="quick-similar-b" class="quick-btn">Similar Value</button>
+            <button id="quick-package-b" class="quick-btn">Package Builder</button>
+          </div>
           <div id="pill-b" class="mt-3"></div>
           <div id="needs-b" class="mt-2 flex flex-wrap gap-1.5"></div>
           <div class="mt-3">
@@ -144,104 +161,110 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
     </div>
   </div>
-
-  <!-- Value Tools -->
-  <section id="value-tools" class="mt-6 bg-slate-900/60 border border-white/10 rounded-2xl">
-    <div class="p-4 border-b border-white/10 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <h2 class="font-semibold text-lg">Value Tools</h2>
-        <div class="flex items-center gap-2 ml-4">
-          <button data-tab="similar" class="tab-btn active">Similar Value Finder</button>
-          <button data-tab="package" class="tab-btn">Package Builder</button>
-        </div>
-      </div>
-      <button id="tools-toggle" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm">Collapse</button>
-    </div>
-    <div id="tools-body" class="p-5">
-      <!-- Similar -->
-      <div id="tab-similar" class="tab-panel active">
-        <div class="grid lg:grid-cols-4 gap-4 mb-4">
-          <div>
-            <label class="text-xs uppercase text-slate-500">Reference Team</label>
-            <select id="similar-team" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
-          </div>
-          <div class="lg:col-span-2">
-            <label class="text-xs uppercase text-slate-500">Asset</label>
-            <select id="similar-asset" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
-          </div>
-          <div>
-            <label class="text-xs uppercase text-slate-500">Tolerance <span id="similar-tol-val" class="mono text-amber-300">15%</span></label>
-            <input id="similar-tol" type="range" min="5" max="25" step="1" value="15" class="mt-3 w-full">
-          </div>
-        <div class="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
-          <table class="w-full text-sm">
-            <thead class="table-head bg-slate-900/60"><tr>
-              <th class="text-left py-2.5 px-4">Team</th>
-              <th class="text-left py-2.5 px-3">Asset</th>
-              <th class="text-left py-2.5 px-3">Pos</th>
-              <th class="text-left py-2.5 px-3">Age</th>
-              <th class="text-left py-2.5 px-3">PPG</th>
-              <th class="text-left py-2.5 px-3">Value</th>
-              <th class="text-left py-2.5 px-3">Delta</th>
-              <th class="text-left py-2.5 px-4"></th>
-            </tr></thead>
-            <tbody id="similar-results" class="divide-y divide-white/5"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Package -->
-      <div id="tab-package" class="tab-panel">
-        <div class="grid lg:grid-cols-5 gap-4 mb-4">
-          <div>
-            <label class="text-xs uppercase text-slate-500">Target Team</label>
-            <select id="pkg-target-team" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
-          </div>
-          <div>
-            <label class="text-xs uppercase text-slate-500">Source Team</label>
-            <select id="pkg-source-team" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
-          </div>
-          <div>
-            <label class="text-xs uppercase text-slate-500">Target Value</label>
-            <input id="pkg-value" type="number" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm mono" placeholder="e.g. 8000">
-          </div>
-          <div>
-            <label class="text-xs uppercase text-slate-500">Tolerance <span id="pkg-tol-val" class="mono text-amber-300">10%</span></label>
-            <input id="pkg-tol" type="range" min="5" max="25" step="1" value="10" class="mt-3 w-full">
-          </div>
-          <div class="flex items-end">
-            <button id="pkg-find" class="w-full px-4 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-sm font-medium">Find Combos</button>
-          </div>
-        </div>
-
-        <div class="mb-4">
-          <label class="text-xs uppercase text-slate-500">Must Include (0-2)</label>
-          <div class="mt-1 flex gap-2">
-            <select id="pkg-must-select" class="flex-1 bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
-            <button id="pkg-must-add" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm">Add</button>
-          </div>
-          <div id="pkg-must-chips" class="mt-2 flex flex-wrap gap-1.5"></div>
-          <div id="pkg-must-warning" class="mt-2 text-xs text-red-400 hidden">Must-include exceeds target</div>
-        </div>
-
-        <div id="pkg-needs" class="mb-3 flex flex-wrap gap-1.5"></div>
-        <div class="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
-          <table class="w-full text-sm">
-            <thead class="table-head bg-slate-900/60"><tr>
-              <th class="text-left py-2.5 px-4">Combo</th>
-              <th class="text-left py-2.5 px-3">Assets</th>
-              <th class="text-left py-2.5 px-3">Total Value</th>
-              <th class="text-left py-2.5 px-3">Delta</th>
-              <th class="text-left py-2.5 px-3">Need Match</th>
-              <th class="text-left py-2.5 px-4"></th>
-            </tr></thead>
-            <tbody id="pkg-results" class="divide-y divide-white/5"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </section>
 </main>
+
+<!-- Value Tools Modal -->
+<div id="value-tools-modal" class="fixed inset-0 z-[100] hidden">
+  <div id="modal-backdrop" class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+  <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-6xl max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="p-4 border-b border-white/10 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4 flex-wrap">
+          <h2 class="font-semibold text-xl">Value Tools</h2>
+          <div class="flex items-center gap-2">
+            <button data-tab="similar" class="tab-btn active">Similar Value Finder</button>
+            <button data-tab="package" class="tab-btn">Package Builder</button>
+          </div>
+        </div>
+        <button id="modal-close" class="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div class="p-5 overflow-y-auto flex-1 scrollbar-thin">
+        <!-- Similar -->
+        <div id="tab-similar" class="tab-panel active">
+          <div class="grid lg:grid-cols-4 gap-4 mb-4">
+            <div>
+              <label class="text-xs uppercase text-slate-500">Reference Team</label>
+              <select id="similar-team" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
+            </div>
+            <div class="lg:col-span-2">
+              <label class="text-xs uppercase text-slate-500">Asset</label>
+              <select id="similar-asset" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
+            </div>
+            <div>
+              <label class="text-xs uppercase text-slate-500">Tolerance <span id="similar-tol-val" class="mono text-amber-300">15%</span></label>
+              <input id="similar-tol" type="range" min="5" max="25" step="1" value="15" class="mt-3 w-full">
+            </div>
+          </div>
+          <div class="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
+            <table class="w-full text-sm">
+              <thead class="table-head bg-slate-900/60"><tr>
+                <th class="text-left py-2.5 px-4 w-[18%]">Team</th>
+                <th class="text-left py-2.5 px-3 w-[28%]">Asset</th>
+                <th class="text-left py-2.5 px-3 w-[10%]">Pos</th>
+                <th class="text-left py-2.5 px-3 w-[10%]">Age</th>
+                <th class="text-left py-2.5 px-3 w-[12%]">PPG</th>
+                <th class="text-left py-2.5 px-3 w-[12%]">Value</th>
+                <th class="text-left py-2.5 px-3 w-[10%]">Delta</th>
+                <th class="text-left py-2.5 px-4 w-[80px]"></th>
+              </tr></thead>
+              <tbody id="similar-results" class="divide-y divide-white/5"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Package -->
+        <div id="tab-package" class="tab-panel">
+          <div class="grid lg:grid-cols-5 gap-4 mb-4">
+            <div>
+              <label class="text-xs uppercase text-slate-500">Target Team</label>
+              <select id="pkg-target-team" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
+            </div>
+            <div>
+              <label class="text-xs uppercase text-slate-500">Source Team</label>
+              <select id="pkg-source-team" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
+            </div>
+            <div>
+              <label class="text-xs uppercase text-slate-500">Target Value</label>
+              <input id="pkg-value" type="number" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm mono" placeholder="e.g. 8000">
+            </div>
+            <div>
+              <label class="text-xs uppercase text-slate-500">Tolerance <span id="pkg-tol-val" class="mono text-amber-300">10%</span></label>
+              <input id="pkg-tol" type="range" min="5" max="25" step="1" value="10" class="mt-3 w-full">
+            </div>
+            <div class="flex items-end">
+              <button id="pkg-find" class="w-full px-4 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-sm font-medium">Find Combos</button>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="text-xs uppercase text-slate-500">Must Include (0-2)</label>
+            <div class="mt-1 flex gap-2">
+              <select id="pkg-must-select" class="flex-1 bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
+              <button id="pkg-must-add" class="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm">Add</button>
+            </div>
+            <div id="pkg-must-chips" class="mt-2 flex flex-wrap gap-1.5"></div>
+            <div id="pkg-must-warning" class="mt-2 text-xs text-red-400 hidden">Must-include exceeds target</div>
+          </div>
+
+          <div id="pkg-needs" class="mb-3 flex flex-wrap gap-1.5"></div>
+          <div class="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
+            <table class="w-full text-sm">
+              <thead class="table-head bg-slate-900/60"><tr>
+                <th class="text-left py-2.5 px-4 w-[70px]">Combo</th>
+                <th class="text-left py-2.5 px-3">Assets</th>
+                <th class="text-left py-2.5 px-3 w-[130px]">Total Value</th>
+                <th class="text-left py-2.5 px-3 w-[100px]">Delta</th>
+                <th class="text-left py-2.5 px-3 w-[130px]">Need Match</th>
+                <th class="text-left py-2.5 px-4 w-[120px]"></th>
+              </tr></thead>
+              <tbody id="pkg-results" class="divide-y divide-white/5"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -269,7 +292,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     manualTypeA:null,
     manualTypeB:null,
     positionMedians:new Map(),
-    pkgMustInclude:[]
+    pkgMustInclude:[],
+    lastClickedA:null,
+    lastClickedB:null
   };
 
   const TYPE_META = {
@@ -705,26 +730,31 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     $('#similar-team').value = state.teamA;
     $('#pkg-target-team').value = state.teamB;
     $('#pkg-source-team').value = state.teamA;
-    populateSimilarAssets();
+    populateSimilarAssets(null);
     updatePackageNeeds();
     populateMustIncludeSelect();
     renderMustChips();
   }
 
-  function populateSimilarAssets(){
+  function populateSimilarAssets(preselectId=null){
     const teamId = +$('#similar-team').value;
     const sel=$('#similar-asset');
     sel.innerHTML='';
     const assets = getAllAssetsForTeam(teamId).sort((a,b)=>b.value-a.value);
     assets.forEach(a=>{
       const o=document.createElement('option');
-      o.value = a.type==='player'? a.id : a.id;
+      o.value = a.id;
       o.textContent = `${a.name} (${a.type==='player'?a.pos:'PICK'}) • ${fmt(a.value)}`;
       o.dataset.type = a.type;
       o.dataset.value = a.value;
       o.dataset.name = a.name;
       sel.appendChild(o);
     });
+    if(preselectId && [...sel.options].some(o=>o.value===preselectId)){
+      sel.value = preselectId;
+    } else if(sel.options.length){
+      sel.value = sel.options[0].value;
+    }
     renderSimilarFinder();
   }
 
@@ -763,13 +793,14 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   function toggle(set,id){set.has(id)?set.delete(id):set.add(id);updateAll();}
 
-  function renderPicks(rosterId,containerId,selSet){
+  function renderPicks(rosterId,containerId,selSet,side){
     const inv=state.pickInventory.get(rosterId)||[];
     const cont=$(containerId);cont.innerHTML='';
     inv.forEach(p=>{
       const sel=selSet.has(p.id);
+      const isLast = side==='A' ? (state.lastClickedA && state.lastClickedA.id===p.id) : (state.lastClickedB && state.lastClickedB.id===p.id);
       const row=document.createElement('div');
-      row.className=`player-row px-3 py-2 rounded-xl ${sel?'selected':''}`;
+      row.className=`player-row px-3 py-2 rounded-xl ${sel?'selected':''} ${isLast?'last-clicked':''}`;
       row.innerHTML=`<div class="flex items-center gap-2 flex-wrap">
         <span class="badge badge-pick">${p.season}</span>
         <span class="badge">R${p.round}</span>
@@ -777,23 +808,32 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       </div>
       <div class="text-sm mt-1 break-words" title="${p.name}">${p.name}</div>
       <div class="text-xs mono text-slate-400">Val ${fmt(p.value)}</div>`;
-      row.onclick=()=>toggle(selSet,p.id);
+      row.onclick=()=>{
+        if(side==='A') state.lastClickedA = {...p, roster_id:rosterId};
+        else state.lastClickedB = {...p, roster_id:rosterId};
+        toggle(selSet,p.id);
+      };
       cont.appendChild(row);
     });
   }
 
-  function renderRoster(teamId,containerId,selSet){
+  function renderRoster(teamId,containerId,selSet,side){
     const r=state.rosters.find(x=>x.roster_id==teamId);if(!r)return;
     const players=(r.players||[]).map(playerFromId).sort((a,b)=>b.value-a.value);
     const cont=$(containerId);cont.innerHTML='';
     players.forEach(p=>{
       const sel=selSet.has(p.id);
+      const isLast = side==='A' ? (state.lastClickedA && state.lastClickedA.id===p.id) : (state.lastClickedB && state.lastClickedB.id===p.id);
       const row=document.createElement('div');
-      row.className=`player-row px-3 py-2 rounded-xl ${sel?'selected':''}`;
+      row.className=`player-row px-3 py-2 rounded-xl ${sel?'selected':''} ${isLast?'last-clicked':''}`;
       row.title=p.name;
       row.innerHTML=`<div class="text-sm leading-snug break-words">${p.name}</div>
         <div class="text-xs mono text-slate-400">${p.pos} • ${fmt1(p.ppg)} PPG • ${fmt(p.value)}</div>`;
-      row.onclick=()=>toggle(selSet,p.id);
+      row.onclick=()=>{
+        if(side==='A') state.lastClickedA = {...p, roster_id:teamId};
+        else state.lastClickedB = {...p, roster_id:teamId};
+        toggle(selSet,p.id);
+      };
       cont.appendChild(row);
     });
   }
@@ -920,10 +960,10 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     $('#pill-b').innerHTML = pillHTML(state.teamB, state.manualTypeB);
     renderNeeds(state.teamA,'#needs-a');
     renderNeeds(state.teamB,'#needs-b');
-    renderPicks(state.teamA,'#picks-a',state.selectedA);
-    renderPicks(state.teamB,'#picks-b',state.selectedB);
-    renderRoster(state.teamA,'#roster-a',state.selectedA);
-    renderRoster(state.teamB,'#roster-b',state.selectedB);
+    renderPicks(state.teamA,'#picks-a',state.selectedA,'A');
+    renderPicks(state.teamB,'#picks-b',state.selectedB,'B');
+    renderRoster(state.teamA,'#roster-a',state.selectedA,'A');
+    renderRoster(state.teamB,'#roster-b',state.selectedB,'B');
     renderImpactPanel('#impact-a', state.teamA, state.teamB, state.selectedA, state.selectedB);
     renderImpactPanel('#impact-b', state.teamB, state.teamA, state.selectedB, state.selectedA);
     const aVal=sumAssets(state.teamA,state.selectedA);
@@ -981,11 +1021,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   function addAssetToTrade(asset){
     const rosterId = asset.roster_id;
     if(rosterId === state.teamA){
-      const id = asset.type==='player'? asset.id : asset.id;
-      state.selectedA.add(id);
+      state.selectedA.add(asset.id);
     }else if(rosterId === state.teamB){
-      const id = asset.type==='player'? asset.id : asset.id;
-      state.selectedB.add(id);
+      state.selectedB.add(asset.id);
     }else{
       if(state.selectedA.size===0){
         state.teamA = rosterId;
@@ -998,6 +1036,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       }
     }
     updateAll();
+    closeModal();
   }
 
   // Package Builder
@@ -1035,11 +1074,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const needs = computePositionalNeeds(targetId).map(n=>n.pos);
 
     const combos = [];
-    // 0 additional
     combos.push({additional:[]});
-    // 1
     allAssets.forEach(a=> combos.push({additional:[a]}));
-    // 2
     for(let i=0;i<allAssets.length;i++){
       for(let j=i+1;j<allAssets.length;j++){
         combos.push({additional:[allAssets[i],allAssets[j]]});
@@ -1082,16 +1118,49 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
           if(sourceId===state.teamA) state.selectedA.add(a.id);
           else if(sourceId===state.teamB) state.selectedB.add(a.id);
           else {
-            // if source not A/B, set A to source
             state.teamA = sourceId;
             $('#team-a-select').value = sourceId;
             state.selectedA.add(a.id);
           }
         });
         updateAll();
+        closeModal();
       });
       tbody.appendChild(tr);
     });
+  }
+
+  function openModal(){
+    $('#value-tools-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    $('#value-tools-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+  function setActiveTab(tab){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active', p.id==='tab-'+tab));
+  }
+  function openSimilar(teamId){
+    openModal();
+    setActiveTab('similar');
+    $('#similar-team').value = teamId;
+    const last = teamId===state.teamA ? state.lastClickedA : teamId===state.teamB ? state.lastClickedB : null;
+    populateSimilarAssets(last && last.roster_id===teamId ? last.id : null);
+  }
+  function openPackage(teamId){
+    openModal();
+    setActiveTab('package');
+    $('#pkg-source-team').value = teamId;
+    state.pkgMustInclude = [];
+    const last = teamId===state.teamA ? state.lastClickedA : teamId===state.teamB ? state.lastClickedB : null;
+    if(last && last.roster_id===teamId){
+      state.pkgMustInclude.push(last);
+    }
+    populateMustIncludeSelect();
+    renderMustChips();
+    updatePackageNeeds();
   }
 
   async function init(){
@@ -1124,28 +1193,37 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     $('#override-a')?.addEventListener('change',e=>{state.manualTypeA=e.target.value==='Auto'?null:e.target.value;updateAll();});
     $('#override-b')?.addEventListener('change',e=>{state.manualTypeB=e.target.value==='Auto'?null:e.target.value;updateAll();});
     $('#reset-btn')?.addEventListener('click',()=>{state.selectedA.clear();state.selectedB.clear();updateAll();});
-    $('#swap-btn')?.addEventListener('click',()=>{[state.teamA,state.teamB]=[state.teamB,state.teamA];[state.selectedA,state.selectedB]=[state.selectedB,state.selectedA];[state.manualTypeA,state.manualTypeB]=[state.manualTypeB,state.manualTypeA];$('#team-a-select').value=state.teamA;$('#team-b-select').value=state.teamB;$('#override-a').value=state.manualTypeA||'Auto';$('#override-b').value=state.manualTypeB||'Auto';updateAll();});
+    $('#swap-btn')?.addEventListener('click',()=>{
+      [state.teamA,state.teamB]=[state.teamB,state.teamA];
+      [state.selectedA,state.selectedB]=[state.selectedB,state.selectedA];
+      [state.manualTypeA,state.manualTypeB]=[state.manualTypeB,state.manualTypeA];
+      [state.lastClickedA,state.lastClickedB]=[state.lastClickedB,state.lastClickedA];
+      $('#team-a-select').value=state.teamA;
+      $('#team-b-select').value=state.teamB;
+      $('#override-a').value=state.manualTypeA||'Auto';
+      $('#override-b').value=state.manualTypeB||'Auto';
+      updateAll();
+    });
+
+    // Modal
+    $('#value-tools-open').addEventListener('click', openModal);
+    $('#modal-close').addEventListener('click', closeModal);
+    $('#modal-backdrop').addEventListener('click', closeModal);
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !$('#value-tools-modal').classList.contains('hidden')) closeModal(); });
 
     // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        const tab = btn.dataset.tab;
-        document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-        $('#tab-'+tab).classList.add('active');
-      });
+      btn.addEventListener('click',()=> setActiveTab(btn.dataset.tab));
     });
 
-    // Collapse
-    $('#tools-toggle').addEventListener('click',()=>{
-      const body = $('#tools-body');
-      const hidden = body.classList.toggle('hidden');
-      $('#tools-toggle').textContent = hidden ? 'Expand' : 'Collapse';
-    });
+    // Quick access buttons
+    $('#quick-similar-a').addEventListener('click', ()=> openSimilar(state.teamA));
+    $('#quick-package-a').addEventListener('click', ()=> openPackage(state.teamA));
+    $('#quick-similar-b').addEventListener('click', ()=> openSimilar(state.teamB));
+    $('#quick-package-b').addEventListener('click', ()=> openPackage(state.teamB));
 
     // Similar finder events
-    $('#similar-team').addEventListener('change', populateSimilarAssets);
+    $('#similar-team').addEventListener('change', ()=> populateSimilarAssets(null));
     $('#similar-asset').addEventListener('change', renderSimilarFinder);
     $('#similar-tol').addEventListener('input', e=>{
       $('#similar-tol-val').textContent = e.target.value + '%';
