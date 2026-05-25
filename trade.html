@@ -178,6 +178,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
             <button data-tab="similar" class="tab-btn active">Similar Value Finder</button>
             <button data-tab="package" class="tab-btn">Package Builder</button>
           </div>
+        </div>
         <button id="modal-close" class="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white">✕</button>
       </div>
       <div class="p-5 overflow-y-auto flex-1 scrollbar-thin">
@@ -248,7 +249,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
             </div>
           </div>
 
-          <div class="mb-4">
+          <div id="pkg-must-wrap" class="mb-4">
             <label class="text-xs uppercase text-slate-500">Must Include (0-2)</label>
             <div class="mt-1 flex gap-2">
               <select id="pkg-must-select" class="flex-1 bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
@@ -259,10 +260,12 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
           </div>
 
           <div id="pkg-needs" class="mb-3 flex flex-wrap gap-1.5"></div>
+          <div id="pkg-team-filters" class="mb-3 flex flex-wrap gap-1.5 hidden"></div>
           <div class="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
             <table class="w-full text-sm">
               <thead class="table-head bg-slate-900/60"><tr>
                 <th class="text-left py-2.5 px-4 w-[70px]">Combo</th>
+                <th class="text-left py-2.5 px-3 w-[150px]">Team</th>
                 <th class="text-left py-2.5 px-3">Assets</th>
                 <th class="text-left py-2.5 px-3 w-[130px]">Total Value</th>
                 <th class="text-left py-2.5 px-3 w-[100px]">Delta</th>
@@ -305,6 +308,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     manualTypeB:null,
     positionMedians:new Map(),
     pkgMustInclude:[],
+    pkgMustOptions:[],
+    pkgResultsFull:[],
+    pkgTeamFilter:'all',
     lastClickedA:null,
     lastClickedB:null
   };
@@ -734,20 +740,31 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   function populateToolSelects(){
     const teams = state.rosters.map(r=>({id:r.roster_id,name:teamName(r)}));
-    const selects = ['#similar-team','#pkg-target-team','#pkg-source-team'];
-    selects.forEach(selId=>{
-      const sel=$(selId);
-      if(!sel) return;
-      sel.innerHTML='';
-      teams.forEach(t=>{
-        const o=document.createElement('option');
-        o.value=t.id; o.textContent=t.name;
-        sel.appendChild(o);
-      });
+    // Similar & Target
+    const similarSel = $('#similar-team');
+    const targetSel = $('#pkg-target-team');
+    similarSel.innerHTML='';
+    targetSel.innerHTML='';
+    teams.forEach(t=>{
+      const o1=document.createElement('option'); o1.value=t.id; o1.textContent=t.name;
+      similarSel.appendChild(o1);
+      const o2=o1.cloneNode(true);
+      targetSel.appendChild(o2);
     });
-    $('#similar-team').value = state.teamA;
-    $('#pkg-target-team').value = state.teamB;
-    $('#pkg-source-team').value = state.teamA;
+    // Source with Any
+    const srcSel = $('#pkg-source-team');
+    srcSel.innerHTML='';
+    const anyOpt=document.createElement('option');
+    anyOpt.value='any';
+    anyOpt.textContent='Any Team';
+    srcSel.appendChild(anyOpt);
+    teams.forEach(t=>{
+      const o=document.createElement('option'); o.value=t.id; o.textContent=t.name;
+      srcSel.appendChild(o);
+    });
+    similarSel.value = state.teamA;
+    targetSel.value = state.teamB;
+    srcSel.value = 'any';
     populateSimilarAssets(null);
     updatePackageNeeds();
     populateMustIncludeSelect();
@@ -777,15 +794,28 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   }
 
   function populateMustIncludeSelect(){
-    const sourceId = +$('#pkg-source-team').value;
+    const sourceVal = $('#pkg-source-team').value;
+    const targetId = +$('#pkg-target-team').value;
     const sel = $('#pkg-must-select');
     if(!sel) return;
     sel.innerHTML='';
-    const assets = getAllAssetsForTeam(sourceId).sort((a,b)=>b.value-a.value);
-    assets.forEach(a=>{
+    let assets = [];
+    if(sourceVal === 'any'){
+      const candidateTeams = state.rosters.map(r=>r.roster_id).filter(id=>id!==targetId);
+      candidateTeams.forEach(id=>{
+        assets.push(...getAllAssetsForTeam(id));
+      });
+    }else{
+      assets = getAllAssetsForTeam(+sourceVal);
+    }
+    assets.sort((a,b)=>b.value-a.value);
+    assets = assets.slice(0,300);
+    state.pkgMustOptions = assets;
+    assets.forEach((a,idx)=>{
       const o=document.createElement('option');
-      o.value = JSON.stringify({id:a.id,type:a.type});
-      o.textContent = `${a.name} (${a.type==='player'?a.pos:'PICK'}) • ${fmt(a.value)}`;
+      o.value = idx;
+      const teamPrefix = sourceVal==='any' ? `[${teamName(state.rosters.find(r=>r.roster_id===a.roster_id))}] ` : '';
+      o.textContent = `${teamPrefix}${a.name} (${a.type==='player'?a.pos:'PICK'}) • ${fmt(a.value)}`;
       sel.appendChild(o);
     });
   }
@@ -795,9 +825,10 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     if(!cont) return;
     cont.innerHTML='';
     state.pkgMustInclude.forEach((a,i)=>{
+      const team = teamName(state.rosters.find(r=>r.roster_id===a.roster_id));
       const chip=document.createElement('span');
       chip.className='badge flex items-center gap-1.5';
-      chip.innerHTML = `${a.name} <button data-idx="${i}" class="ml-1 text-slate-400 hover:text-white">×</button>`;
+      chip.innerHTML = `${a.name} <span class="text-[10px] opacity-70">(${team})</span> <button data-idx="${i}" class="ml-1 text-slate-400 hover:text-white">×</button>`;
       cont.appendChild(chip);
     });
     cont.querySelectorAll('button').forEach(btn=>{
@@ -1132,58 +1163,56 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     return results.slice(0,20);
   }
 
-  function findCombos(){
-    const sourceId = +$('#pkg-source-team').value;
-    const valueInput = $('#pkg-value');
-    let targetVal = Number(valueInput.value);
-    if(!targetVal || targetVal<=0){
-      const avg = getAverageStarterValue(sourceId);
-      targetVal = Math.round(avg);
-      valueInput.value = targetVal;
-    }
-    const tolPct = getActiveTol('pkg-tol-group');
-    const mustInclude = state.pkgMustInclude.filter(a=> a.roster_id===sourceId);
-    const sumMust = mustInclude.reduce((s,a)=>s+a.value,0);
-    const warningEl = $('#pkg-must-warning');
+  function renderPkgTeamFilters(){
+    const cont = $('#pkg-team-filters');
+    const results = state.pkgResultsFull;
+    if(!results.length){ cont.classList.add('hidden'); return; }
+    cont.classList.remove('hidden');
+    cont.innerHTML='';
+    const counts = new Map();
+    results.forEach(r=>{ counts.set(r.teamId, (counts.get(r.teamId)||0)+1); });
+    const makeBtn = (label, active, onClick)=>{
+      const btn=document.createElement('button');
+      btn.className = `px-3 py-1 rounded-full text-xs border ${active?'bg-amber-500/20 border-amber-500/40 text-amber-200':'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'}`;
+      btn.textContent = label;
+      btn.onclick = onClick;
+      return btn;
+    };
+    cont.appendChild(makeBtn(`All (${results.length})`, state.pkgTeamFilter==='all', ()=>{ state.pkgTeamFilter='all'; renderPkgTeamFilters(); renderPkgResults(); }));
+    [...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12).forEach(([teamId,count])=>{
+      const name = teamName(state.rosters.find(r=>r.roster_id===teamId));
+      cont.appendChild(makeBtn(`${name} (${count})`, state.pkgTeamFilter===teamId, ()=>{ state.pkgTeamFilter=teamId; renderPkgTeamFilters(); renderPkgResults(); }));
+    });
+  }
+
+  function renderPkgResults(){
     const tbody = $('#pkg-results');
     tbody.innerHTML='';
-
-    const maxTotal = targetVal*(1+tolPct);
-    if(sumMust > maxTotal){
-      warningEl.classList.remove('hidden');
-      tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-red-400">Must-include exceeds target</td></tr>`;
-      return;
-    } else {
-      warningEl.classList.add('hidden');
-    }
-
-    const results = findPackages(sourceId, targetVal, 3, tolPct, mustInclude);
-
+    const results = state.pkgResultsFull.filter(r=> state.pkgTeamFilter==='all' || r.teamId===state.pkgTeamFilter);
+    const targetId = +$('#pkg-target-team').value;
     if(results.length===0){
-      tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500">No combos within tolerance. Try increasing tolerance or reducing must-include.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500">No combos within tolerance. Try increasing tolerance or reducing must-include.</td></tr>`;
       return;
     }
-
-    results.forEach((c,i)=>{
+    results.slice(0,50).forEach((c,i)=>{
       const names = c.assets.map(a=>`${a.name}${a.type==='player'?' ('+a.pos+')':''}`).join(' + ');
       const tr = document.createElement('tr');
-      tr.className='border-b border-white/5';
+      tr.className='border-b border-white/5 hover:bg-white/[0.03]';
       tr.innerHTML = `<td class="py-2.5 px-4 mono">#${i+1}</td>
-        <td class="py-2.5 px-3">${names}</td>
+        <td class="py-2.5 px-3">${c.teamName}</td>
+        <td class="py-2.5 px-3 max-w-[300px] truncate" title="${names}">${names}</td>
         <td class="py-2.5 px-3 mono">${fmt(c.sum)}</td>
         <td class="py-2.5 px-3 mono ${c.delta>=0?'text-green-400':'text-red-400'}">${c.delta>=0?'+':''}${fmt(c.delta)}</td>
         <td class="py-2.5 px-3">${c.needMatch>0?`<span class="badge badge-need">${c.needMatch} need</span>`:'-'}</td>
         <td class="py-2.5 px-4"><button class="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs">Add to Trade</button></td>`;
       tr.querySelector('button').addEventListener('click', ()=>{
-        c.assets.forEach(a=>{
-          if(sourceId===state.teamA) state.selectedA.add(a.id);
-          else if(sourceId===state.teamB) state.selectedB.add(a.id);
-          else {
-            state.teamA = sourceId;
-            $('#team-a-select').value = sourceId;
-            state.selectedA.add(a.id);
-          }
-        });
+        state.teamA = targetId;
+        state.teamB = c.teamId;
+        $('#team-a-select').value = targetId;
+        $('#team-b-select').value = c.teamId;
+        state.selectedA.clear();
+        state.selectedB.clear();
+        c.assets.forEach(a=>{ state.selectedB.add(a.id); });
         updateAll();
         closeModal();
       });
@@ -1191,16 +1220,75 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     });
   }
 
+  function findCombos(){
+    const targetId = +$('#pkg-target-team').value;
+    const sourceVal = $('#pkg-source-team').value;
+    const sourceIsAny = sourceVal === 'any';
+    const valueInput = $('#pkg-value');
+    let targetVal = Number(valueInput.value);
+    if(!targetVal || targetVal<=0){
+      const avg = getAverageStarterValue(targetId);
+      targetVal = Math.round(avg);
+      valueInput.value = targetVal;
+    }
+    const tolPct = getActiveTol('pkg-tol-group');
+    const mustInclude = state.pkgMustInclude;
+    const warningEl = $('#pkg-must-warning');
+    const tbody = $('#pkg-results');
+    const filterCont = $('#pkg-team-filters');
+    tbody.innerHTML='';
+    filterCont.classList.add('hidden');
+    filterCont.innerHTML='';
+
+    let candidateTeamIds = [];
+    if(sourceIsAny){
+      candidateTeamIds = state.rosters.map(r=>r.roster_id).filter(id=>id!==targetId);
+    }else{
+      candidateTeamIds = [+sourceVal];
+    }
+    if(mustInclude.length>0){
+      const teamIdsWithAll = candidateTeamIds.filter(teamId=>{
+        return mustInclude.every(m=> m.roster_id===teamId);
+      });
+      candidateTeamIds = teamIdsWithAll;
+      if(candidateTeamIds.length===0){
+        warningEl.classList.remove('hidden');
+        warningEl.textContent = 'Must-include assets not on selected source team(s)';
+        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-red-400">No matching teams</td></tr>`;
+        return;
+      }
+    }
+    const sumMust = mustInclude.reduce((s,a)=>s+a.value,0);
+    const maxTotal = targetVal*(1+tolPct);
+    if(sumMust > maxTotal){
+      warningEl.classList.remove('hidden');
+      warningEl.textContent = 'Must-include exceeds target';
+      tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-red-400">Must-include exceeds target</td></tr>`;
+      return;
+    }else{
+      warningEl.classList.add('hidden');
+    }
+
+    const allResults = [];
+    candidateTeamIds.forEach(teamId=>{
+      const mustForTeam = mustInclude.filter(m=>m.roster_id===teamId);
+      const results = findPackages(teamId, targetVal, 3, tolPct, mustForTeam);
+      results.forEach(r=>{
+        allResults.push({...r, teamId, teamName: teamName(state.rosters.find(ro=>ro.roster_id===teamId))});
+      });
+    });
+    allResults.sort((a,b)=> b.score - a.score || Math.abs(a.delta)-Math.abs(b.delta));
+    state.pkgResultsFull = allResults;
+    state.pkgTeamFilter = 'all';
+    renderPkgTeamFilters();
+    renderPkgResults();
+  }
+
   const debouncedFind = debounce(findCombos, 300);
 
   function openModal(){
     $('#value-tools-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
-    const btn = $('#pkg-find');
-    if(btn && !btn._bound){
-      btn.addEventListener('click', findCombos);
-      btn._bound = true;
-    }
   }
   function closeModal(){
     $('#value-tools-modal').classList.add('hidden');
@@ -1220,12 +1308,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   function openPackage(teamId){
     openModal();
     setActiveTab('package');
-    $('#pkg-source-team').value = teamId;
+    $('#pkg-target-team').value = teamId;
+    $('#pkg-source-team').value = 'any';
     state.pkgMustInclude = [];
-    const last = teamId===state.teamA ? state.lastClickedA : teamId===state.teamB ? state.lastClickedB : null;
-    if(last && last.roster_id===teamId){
-      state.pkgMustInclude.push(last);
-    }
     populateMustIncludeSelect();
     renderMustChips();
     updatePackageNeeds();
@@ -1274,7 +1359,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       updateAll();
     });
 
-    $('#value-tools-open').addEventListener('click', openModal);
+    $('#value-tools-open').addEventListener('click', ()=>{ openModal(); });
     $('#modal-close').addEventListener('click', closeModal);
     $('#modal-backdrop').addEventListener('click', closeModal);
     document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !$('#value-tools-modal').classList.contains('hidden')) closeModal(); });
@@ -1291,7 +1376,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     $('#similar-team').addEventListener('change', ()=> populateSimilarAssets(null));
     $('#similar-asset').addEventListener('change', renderSimilarFinder);
 
-    // Tolerance segmented controls
     document.querySelectorAll('#similar-tol-group .seg-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         document.querySelectorAll('#similar-tol-group .seg-btn').forEach(b=>b.classList.remove('active'));
@@ -1307,7 +1391,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       });
     });
 
-    $('#pkg-target-team').addEventListener('change', ()=>{updatePackageNeeds();debouncedFind();});
+    $('#pkg-target-team').addEventListener('change', ()=>{ updatePackageNeeds(); populateMustIncludeSelect(); debouncedFind(); });
     $('#pkg-source-team').addEventListener('change', ()=>{
       state.pkgMustInclude=[];
       renderMustChips();
@@ -1319,14 +1403,11 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     $('#pkg-must-add').addEventListener('click', ()=>{
       if(state.pkgMustInclude.length>=2) return;
       const sel = $('#pkg-must-select');
-      if(!sel.value) return;
-      let meta;
-      try{ meta = JSON.parse(sel.value); }catch{return;}
-      const sourceId = +$('#pkg-source-team').value;
-      const assets = getAllAssetsForTeam(sourceId);
-      const asset = assets.find(a=> a.id===meta.id && a.type===meta.type);
+      if(sel.selectedIndex<0) return;
+      const idx = +sel.value;
+      const asset = state.pkgMustOptions[idx];
       if(!asset) return;
-      if(state.pkgMustInclude.some(a=> a.id===asset.id && a.type===asset.type)) return;
+      if(state.pkgMustInclude.some(a=> a.id===asset.id && a.type===asset.type && a.roster_id===asset.roster_id)) return;
       state.pkgMustInclude.push(asset);
       renderMustChips();
       debouncedFind();
