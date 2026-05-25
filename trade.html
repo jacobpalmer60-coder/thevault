@@ -149,7 +149,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
             <label class="text-[10px] uppercase tracking-wider text-slate-500">Window Override</label>
             <select id="override-b" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-sm"></select>
           </div>
-        </div>
         <div class="p-4 space-y-4 max-h-[60vh] overflow-y-auto scrollbar-thin">
           <div>
             <div class="text-xs uppercase text-slate-500 px-1 mb-2">Picks</div>
@@ -222,18 +221,29 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
         <!-- Package -->
         <div id="tab-package" class="tab-panel">
-          <div class="grid lg:grid-cols-5 gap-4 mb-4 items-start">
+          <!-- Mode Toggle -->
+          <div class="mb-4 flex items-center justify-between flex-wrap gap-3">
+            <div id="pkg-mode-group" class="flex bg-slate-950 border border-white/10 rounded-lg p-1 gap-1">
+              <button data-mode="acquire" class="seg-btn px-4 py-1.5 rounded-md text-sm active">Acquire Player</button>
+              <button data-mode="offload" class="seg-btn px-4 py-1.5 rounded-md text-sm">Offload Player</button>
+            </div>
+            <div class="text-xs text-slate-500">Toggle to find packages to get a player or move one</div>
+          </div>
+
+          <div class="grid lg:grid-cols-4 gap-4 mb-4 items-start">
             <div>
-              <label class="text-xs uppercase text-slate-500">Target Team</label>
+              <label class="text-xs uppercase text-slate-500">Your Team</label>
               <select id="pkg-target-team" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
+              <div class="text-[11px] text-slate-500 mt-1">Team building the trade</div>
             </div>
             <div>
-              <label class="text-xs uppercase text-slate-500">Source Team</label>
+              <label class="text-xs uppercase text-slate-500">Partner Team</label>
               <select id="pkg-source-team" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
+              <div class="text-[11px] text-slate-500 mt-1">Trade partner (Any Team allowed)</div>
             </div>
             <div>
               <label class="text-xs uppercase text-slate-500">Target Value</label>
-              <input id="pkg-value" type="number" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm mono" placeholder="e.g. 8000">
+              <input id="pkg-value" type="number" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm mono disabled:opacity-60 disabled:cursor-not-allowed" placeholder="e.g. 8000">
             </div>
             <div>
               <label class="text-xs uppercase text-slate-500">Tolerance</label>
@@ -244,9 +254,26 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
               </div>
               <div class="text-[11px] text-slate-500 mt-1">How close values need to match</div>
             </div>
-            <div class="flex items-end">
-              <button id="pkg-find" class="w-full px-4 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-sm font-medium">Find Combos</button>
-            </div>
+          </div>
+
+          <!-- Acquire Mode UI -->
+          <div id="pkg-acquire-wrap" class="mb-4">
+            <label class="text-xs uppercase text-slate-500">Target Asset to Acquire</label>
+            <select id="pkg-target-player" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
+            <div class="text-[11px] text-slate-500 mt-1">Pick a player or pick from Partner Team (or Any Team) you want to get</div>
+          </div>
+
+          <!-- Offload Mode UI -->
+          <div id="pkg-offload-wrap" class="mb-4 hidden">
+            <label class="text-xs uppercase text-slate-500">My Asset to Move (Optional)</label>
+            <select id="pkg-your-asset" class="mt-1 w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm">
+              <option value="">— None —</option>
+            </select>
+            <div class="text-[11px] text-slate-500 mt-1">Pick an asset from Your Team to auto-fill Target Value</div>
+          </div>
+
+          <div class="flex items-end mb-4">
+            <button id="pkg-find" class="px-5 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-sm font-medium">Find Combos</button>
           </div>
 
           <div id="pkg-must-wrap" class="mb-4">
@@ -312,7 +339,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     pkgResultsFull:[],
     pkgTeamFilter:'all',
     lastClickedA:null,
-    lastClickedB:null
+    lastClickedB:null,
+    pkgMode:'acquire',
+    pkgTargetPlayer:null
   };
 
   const TYPE_META = {
@@ -738,9 +767,146 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     return btn ? Number(btn.dataset.val)/100 : 0.10;
   }
 
+  function rebuildPartnerOptions(){
+    const yourId = +$('#pkg-target-team').value;
+    const partnerSel = $('#pkg-source-team');
+    const current = partnerSel.value;
+    partnerSel.innerHTML='';
+    const anyOpt=document.createElement('option');
+    anyOpt.value='any';
+    anyOpt.textContent='Any Team';
+    partnerSel.appendChild(anyOpt);
+    state.rosters.forEach(r=>{
+      if(r.roster_id===yourId) return;
+      const o=document.createElement('option');
+      o.value=r.roster_id;
+      o.textContent=teamName(r);
+      partnerSel.appendChild(o);
+    });
+    if([...partnerSel.options].some(o=>o.value===current)){
+      partnerSel.value=current;
+    }else{
+      partnerSel.value='any';
+    }
+  }
+
+  function populateYourAssetSelect(){
+    const yourId = +$('#pkg-target-team').value;
+    const sel = $('#pkg-your-asset');
+    if(!sel) return;
+    const prev = sel.value;
+    sel.innerHTML='<option value="">— None —</option>';
+    const assets = getAllAssetsForTeam(yourId);
+    const players = assets.filter(a=>a.type==='player').sort((a,b)=>b.value-a.value).slice(0,60);
+    const picks = assets.filter(a=>a.type==='pick').sort((a,b)=>b.value-a.value).slice(0,60);
+
+    if(players.length){
+      const og = document.createElement('optgroup');
+      og.label = 'Players';
+      players.forEach(a=>{
+        const o=document.createElement('option');
+        o.value = a.id;
+        o.textContent = `${a.name} (${a.pos}) • ${fmt(a.value)}`;
+        o.dataset.value = a.value;
+        o.dataset.type = a.type;
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    }
+    if(picks.length){
+      const og = document.createElement('optgroup');
+      og.label = 'Picks';
+      picks.forEach(a=>{
+        const o=document.createElement('option');
+        o.value = a.id;
+        o.textContent = `${a.name} • ${fmt(a.value)}`;
+        o.dataset.value = a.value;
+        o.dataset.type = a.type;
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    }
+    if([...sel.options].some(o=>o.value===prev)) sel.value = prev;
+  }
+
+  function populateTargetPlayerSelect(){
+    const sel = $('#pkg-target-player');
+    if(!sel) return;
+    const yourId = +$('#pkg-target-team').value;
+    const partnerVal = $('#pkg-source-team').value;
+    const prev = sel.value;
+    sel.innerHTML='';
+    let assets = [];
+    if(partnerVal === 'any'){
+      state.rosters.forEach(r=>{
+        if(r.roster_id === yourId) return;
+        const teamAssets = getAllAssetsForTeam(r.roster_id).map(a=>({...a, teamName:teamName(r)}));
+        assets.push(...teamAssets);
+      });
+    }else{
+      const pid = +partnerVal;
+      const r = state.rosters.find(x=>x.roster_id===pid);
+      if(r){
+        const teamNm = teamName(r);
+        assets = getAllAssetsForTeam(pid).map(a=>({...a, teamName:teamNm}));
+      }
+    }
+    const players = assets.filter(a=>a.type==='player').sort((a,b)=>b.value-a.value).slice(0,200);
+    const picks = assets.filter(a=>a.type==='pick').sort((a,b)=>b.value-a.value).slice(0,200);
+
+    if(players.length){
+      const og = document.createElement('optgroup');
+      og.label = 'Players';
+      players.forEach(p=>{
+        const o=document.createElement('option');
+        o.value = `${p.roster_id}|${p.id}`;
+        const prefix = partnerVal==='any' ? `[${p.teamName}] ` : '';
+        o.textContent = `${prefix}${p.name} (${p.pos}) • ${fmt(p.value)}`;
+        o.dataset.value = p.value;
+        o.dataset.roster = p.roster_id;
+        o.dataset.pid = p.id;
+        o.dataset.type = 'player';
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    }
+    if(picks.length){
+      const og = document.createElement('optgroup');
+      og.label = 'Picks';
+      picks.forEach(p=>{
+        const o=document.createElement('option');
+        o.value = `${p.roster_id}|${p.id}`;
+        const prefix = partnerVal==='any' ? `[${p.teamName}] ` : '';
+        o.textContent = `${prefix}${p.name} • ${fmt(p.value)}`;
+        o.dataset.value = p.value;
+        o.dataset.roster = p.roster_id;
+        o.dataset.pid = p.id;
+        o.dataset.type = 'pick';
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    }
+    if([...sel.options].some(o=>o.value===prev)) sel.value = prev;
+    // Auto-fill value
+    if(sel.value){
+      const opt = sel.selectedOptions[0];
+      if(opt){
+        $('#pkg-value').value = Math.round(Number(opt.dataset.value));
+        state.pkgTargetPlayer = {
+          roster_id: +opt.dataset.roster,
+          id: opt.dataset.pid,
+          value: +opt.dataset.value,
+          name: opt.textContent.split(' (')[0],
+          type: opt.dataset.type
+        };
+      }
+    }else{
+      state.pkgTargetPlayer = null;
+    }
+  }
+
   function populateToolSelects(){
     const teams = state.rosters.map(r=>({id:r.roster_id,name:teamName(r)}));
-    // Similar & Target
     const similarSel = $('#similar-team');
     const targetSel = $('#pkg-target-team');
     similarSel.innerHTML='';
@@ -751,24 +917,16 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       const o2=o1.cloneNode(true);
       targetSel.appendChild(o2);
     });
-    // Source with Any
-    const srcSel = $('#pkg-source-team');
-    srcSel.innerHTML='';
-    const anyOpt=document.createElement('option');
-    anyOpt.value='any';
-    anyOpt.textContent='Any Team';
-    srcSel.appendChild(anyOpt);
-    teams.forEach(t=>{
-      const o=document.createElement('option'); o.value=t.id; o.textContent=t.name;
-      srcSel.appendChild(o);
-    });
     similarSel.value = state.teamA;
     targetSel.value = state.teamB;
-    srcSel.value = 'any';
+    rebuildPartnerOptions();
+    populateYourAssetSelect();
+    populateTargetPlayerSelect();
     populateSimilarAssets(null);
     updatePackageNeeds();
     populateMustIncludeSelect();
     renderMustChips();
+    updatePackageModeUI();
   }
 
   function populateSimilarAssets(preselectId=null){
@@ -794,19 +952,25 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   }
 
   function populateMustIncludeSelect(){
-    const sourceVal = $('#pkg-source-team').value;
-    const targetId = +$('#pkg-target-team').value;
+    const yourId = +$('#pkg-target-team').value;
+    const partnerVal = $('#pkg-source-team').value;
     const sel = $('#pkg-must-select');
     if(!sel) return;
     sel.innerHTML='';
     let assets = [];
-    if(sourceVal === 'any'){
-      const candidateTeams = state.rosters.map(r=>r.roster_id).filter(id=>id!==targetId);
-      candidateTeams.forEach(id=>{
-        assets.push(...getAllAssetsForTeam(id));
-      });
+    if(state.pkgMode === 'acquire'){
+      // Must include from YOUR TEAM (source of package)
+      assets = getAllAssetsForTeam(yourId);
     }else{
-      assets = getAllAssetsForTeam(+sourceVal);
+      // Offload: must include from PARTNER
+      if(partnerVal === 'any'){
+        const candidateTeams = state.rosters.map(r=>r.roster_id).filter(id=>id!==yourId);
+        candidateTeams.forEach(id=>{
+          assets.push(...getAllAssetsForTeam(id));
+        });
+      }else{
+        assets = getAllAssetsForTeam(+partnerVal);
+      }
     }
     assets.sort((a,b)=>b.value-a.value);
     assets = assets.slice(0,300);
@@ -814,7 +978,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     assets.forEach((a,idx)=>{
       const o=document.createElement('option');
       o.value = idx;
-      const teamPrefix = sourceVal==='any' ? `[${teamName(state.rosters.find(r=>r.roster_id===a.roster_id))}] ` : '';
+      const teamPrefix = (state.pkgMode==='offload' && partnerVal==='any') ? `[${teamName(state.rosters.find(r=>r.roster_id===a.roster_id))}] ` : '';
       o.textContent = `${teamPrefix}${a.name} (${a.type==='player'?a.pos:'PICK'}) • ${fmt(a.value)}`;
       sel.appendChild(o);
     });
@@ -1206,13 +1370,34 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
         <td class="py-2.5 px-3">${c.needMatch>0?`<span class="badge badge-need">${c.needMatch} need</span>`:'-'}</td>
         <td class="py-2.5 px-4"><button class="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs">Add to Trade</button></td>`;
       tr.querySelector('button').addEventListener('click', ()=>{
-        state.teamA = targetId;
-        state.teamB = c.teamId;
-        $('#team-a-select').value = targetId;
-        $('#team-b-select').value = c.teamId;
-        state.selectedA.clear();
-        state.selectedB.clear();
-        c.assets.forEach(a=>{ state.selectedB.add(a.id); });
+        if(state.pkgMode === 'acquire'){
+          // Your team sends package, receives target player
+          const yourId = targetId;
+          const partnerId = state.pkgTargetPlayer?.roster_id;
+          if(!partnerId) return;
+          state.teamA = yourId;
+          state.teamB = partnerId;
+          $('#team-a-select').value = yourId;
+          $('#team-b-select').value = partnerId;
+          state.selectedA.clear();
+          state.selectedB.clear();
+          c.assets.forEach(a=>{ state.selectedA.add(a.id); });
+          state.selectedB.add(state.pkgTargetPlayer.id);
+        }else{
+          // Offload mode
+          state.teamA = targetId;
+          state.teamB = c.teamId;
+          $('#team-a-select').value = targetId;
+          $('#team-b-select').value = c.teamId;
+          state.selectedA.clear();
+          state.selectedB.clear();
+          // If user selected a player to move, add it to Team A sends
+          const yourAssetSel = $('#pkg-your-asset');
+          if(yourAssetSel && yourAssetSel.value){
+            state.selectedA.add(yourAssetSel.value);
+          }
+          c.assets.forEach(a=>{ state.selectedB.add(a.id); });
+        }
         updateAll();
         closeModal();
       });
@@ -1220,17 +1405,25 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     });
   }
 
+  function updatePackageModeUI(){
+    const isAcquire = state.pkgMode === 'acquire';
+    $('#pkg-acquire-wrap').classList.toggle('hidden', !isAcquire);
+    $('#pkg-offload-wrap').classList.toggle('hidden', isAcquire);
+    $('#pkg-value').disabled = isAcquire;
+    document.querySelectorAll('#pkg-mode-group .seg-btn').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.mode === state.pkgMode);
+    });
+    // Refresh selects
+    populateMustIncludeSelect();
+    renderMustChips();
+    // Clear results
+    $('#pkg-results').innerHTML = '';
+    state.pkgResultsFull = [];
+  }
+
   function findCombos(){
     const targetId = +$('#pkg-target-team').value;
-    const sourceVal = $('#pkg-source-team').value;
-    const sourceIsAny = sourceVal === 'any';
-    const valueInput = $('#pkg-value');
-    let targetVal = Number(valueInput.value);
-    if(!targetVal || targetVal<=0){
-      const avg = getAverageStarterValue(targetId);
-      targetVal = Math.round(avg);
-      valueInput.value = targetVal;
-    }
+    const partnerVal = $('#pkg-source-team').value;
     const tolPct = getActiveTol('pkg-tol-group');
     const mustInclude = state.pkgMustInclude;
     const warningEl = $('#pkg-must-warning');
@@ -1239,12 +1432,53 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     tbody.innerHTML='';
     filterCont.classList.add('hidden');
     filterCont.innerHTML='';
+    warningEl.classList.add('hidden');
+
+    if(state.pkgMode === 'acquire'){
+      // Need target asset selected
+      const targetSel = $('#pkg-target-player');
+      if(!targetSel.value){
+        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500">Select a Target Asset to Acquire</td></tr>`;
+        return;
+      }
+      const opt = targetSel.selectedOptions[0];
+      const targetVal = Number(opt.dataset.value);
+      const partnerRosterId = +opt.dataset.roster;
+      $('#pkg-value').value = Math.round(targetVal);
+      state.pkgTargetPlayer = { roster_id: partnerRosterId, id: opt.dataset.pid, value: targetVal, name: opt.textContent.split(' (')[0], type: opt.dataset.type };
+
+      const sourceTeamId = targetId; // package comes from your team
+      const sumMust = mustInclude.reduce((s,a)=>s+a.value,0);
+      const maxTotal = targetVal*(1+tolPct);
+      if(sumMust > maxTotal){
+        warningEl.classList.remove('hidden');
+        warningEl.textContent = 'Must-include exceeds target';
+        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-red-400">Must-include exceeds target</td></tr>`;
+        return;
+      }
+      const results = findPackages(sourceTeamId, targetVal, 3, tolPct, mustInclude.filter(m=>m.roster_id===sourceTeamId));
+      const enriched = results.map(r=>({...r, teamId: sourceTeamId, teamName: teamName(state.rosters.find(ro=>ro.roster_id===sourceTeamId))}));
+      state.pkgResultsFull = enriched;
+      state.pkgTeamFilter = 'all';
+      renderPkgTeamFilters();
+      renderPkgResults();
+      return;
+    }
+
+    // Offload mode
+    const valueInput = $('#pkg-value');
+    let targetVal = Number(valueInput.value);
+    if(!targetVal || targetVal<=0){
+      const avg = getAverageStarterValue(targetId);
+      targetVal = Math.round(avg);
+      valueInput.value = targetVal;
+    }
 
     let candidateTeamIds = [];
-    if(sourceIsAny){
+    if(partnerVal === 'any'){
       candidateTeamIds = state.rosters.map(r=>r.roster_id).filter(id=>id!==targetId);
     }else{
-      candidateTeamIds = [+sourceVal];
+      candidateTeamIds = [+partnerVal];
     }
     if(mustInclude.length>0){
       const teamIdsWithAll = candidateTeamIds.filter(teamId=>{
@@ -1253,7 +1487,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       candidateTeamIds = teamIdsWithAll;
       if(candidateTeamIds.length===0){
         warningEl.classList.remove('hidden');
-        warningEl.textContent = 'Must-include assets not on selected source team(s)';
+        warningEl.textContent = 'Must-include assets not on selected partner team(s)';
         tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-red-400">No matching teams</td></tr>`;
         return;
       }
@@ -1265,8 +1499,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       warningEl.textContent = 'Must-include exceeds target';
       tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-red-400">Must-include exceeds target</td></tr>`;
       return;
-    }else{
-      warningEl.classList.add('hidden');
     }
 
     const allResults = [];
@@ -1309,11 +1541,15 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     openModal();
     setActiveTab('package');
     $('#pkg-target-team').value = teamId;
+    rebuildPartnerOptions();
     $('#pkg-source-team').value = 'any';
     state.pkgMustInclude = [];
+    populateYourAssetSelect();
+    populateTargetPlayerSelect();
     populateMustIncludeSelect();
     renderMustChips();
     updatePackageNeeds();
+    updatePackageModeUI();
     setTimeout(()=>{ debouncedFind(); }, 50);
   }
 
@@ -1391,8 +1627,27 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       });
     });
 
-    $('#pkg-target-team').addEventListener('change', ()=>{ updatePackageNeeds(); populateMustIncludeSelect(); debouncedFind(); });
+    // Package mode toggle
+    document.querySelectorAll('#pkg-mode-group .seg-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        state.pkgMode = btn.dataset.mode;
+        updatePackageModeUI();
+        debouncedFind();
+      });
+    });
+
+    $('#pkg-target-team').addEventListener('change', ()=>{
+      rebuildPartnerOptions();
+      populateYourAssetSelect();
+      populateTargetPlayerSelect();
+      state.pkgMustInclude=[];
+      renderMustChips();
+      updatePackageNeeds();
+      populateMustIncludeSelect();
+      debouncedFind();
+    });
     $('#pkg-source-team').addEventListener('change', ()=>{
+      populateTargetPlayerSelect();
       state.pkgMustInclude=[];
       renderMustChips();
       populateMustIncludeSelect();
@@ -1400,6 +1655,21 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     });
     $('#pkg-value').addEventListener('input', debouncedFind);
     $('#pkg-find').addEventListener('click', findCombos);
+    $('#pkg-your-asset').addEventListener('change', (e)=>{
+      const val = e.target.selectedOptions[0]?.dataset.value;
+      if(val){
+        $('#pkg-value').value = Math.round(Number(val));
+        debouncedFind();
+      }
+    });
+    $('#pkg-target-player').addEventListener('change', ()=>{
+      const opt = $('#pkg-target-player').selectedOptions[0];
+      if(opt){
+        $('#pkg-value').value = Math.round(Number(opt.dataset.value));
+        state.pkgTargetPlayer = { roster_id: +opt.dataset.roster, id: opt.dataset.pid, value: +opt.dataset.value, type: opt.dataset.type };
+        debouncedFind();
+      }
+    });
     $('#pkg-must-add').addEventListener('click', ()=>{
       if(state.pkgMustInclude.length>=2) return;
       const sel = $('#pkg-must-select');
