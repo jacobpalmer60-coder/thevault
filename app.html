@@ -372,11 +372,16 @@ function buildPickInventory(rosters,traded,pickVals,league){
   const inv = new Map();
   rosters.forEach(r=>inv.set(r.roster_id,[]));
   // project slot from current strength (temp using roster value)
-  const proj = [...rosters].sort((a,b)=>{
-    const av = (a.settings?.fpts||0)+(a.settings?.fpts_decimal||0)/100;
-    const bv = (b.settings?.fpts||0)+(b.settings?.fpts_decimal||0)/100;
-    return av-bv;
-  });
+  const getPPG = r => {
+    const ids = r.players || [];
+    let sum = 0;
+    for(const pid of ids){
+      const p = state.playerMap.get(pid);
+      if(p) sum += p.ppg || 0;
+    }
+    return sum;
+  };
+  const proj = [...rosters].sort((a,b)=> getPPG(a)-getPPG(b));
   const slotOf = new Map();
   proj.forEach((r,idx)=>{
     const total=proj.length;
@@ -388,7 +393,7 @@ function buildPickInventory(rosters,traded,pickVals,league){
   // seed future picks
   for(const r of rosters){
     const arr = inv.get(r.roster_id);
-    for(const y of [2026,2027,2028]){
+    for(const y of [2026,2027,2028,2029]){
       for(let rd=1;rd<=4;rd++){
         if(state.completedSeasons && state.completedSeasons.has(y)) continue;
         const slot = slotOf.get(r.roster_id);
