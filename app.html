@@ -225,7 +225,7 @@ async function loadAll(leagueId){
       fetchJSON(`https://api.sleeper.app/v1/league/${leagueId}/traded_picks`).catch(()=>[]),
       fetchJSON(`https://api.sleeper.app/v1/league/${leagueId}/drafts`).catch(()=>[])
     ]);
-    state.league=league; state.users=users; state.rosters=rosters;
+    state.league=league; state.users=users; state.rosters=rosters; state.completedSeasons = new Set(drafts.filter(d=>d.status==='complete').map(d=>Number(d.season)));
 
     // scoring
     const rec = Number(league.scoring_settings?.rec||0);
@@ -390,6 +390,7 @@ function buildPickInventory(rosters,traded,pickVals,league){
     const arr = inv.get(r.roster_id);
     for(const y of [2026,2027,2028]){
       for(let rd=1;rd<=4;rd++){
+        if(state.completedSeasons && state.completedSeasons.has(y)) continue;
         const slot = slotOf.get(r.roster_id);
         const key = `${y}-${rd}-${slot}`;
         const val = pickVals.map.get(key)||0;
