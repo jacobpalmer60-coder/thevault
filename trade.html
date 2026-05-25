@@ -716,15 +716,21 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const z = arr => {
       const mean=arr.reduce((a,b)=>a+b,0)/arr.length;
       const sd=Math.sqrt(arr.reduce((a,b)=>a+(b-mean)**2,0)/arr.length)||1;
-      return arr.map(v=>(v-mean)/sd);
+      return {mean,sd,arr:arr.map(v=>(v-mean)/sd)};
     };
     const ppgZ=z(metrics.map(m=>m.ppg));
     const valZ=z(metrics.map(m=>m.rosterValue));
     const pickZ=z(metrics.map(m=>m.pickCapital));
     const ageZ=z(metrics.map(m=>-m.avgAge));
+    state.metricStats = {
+      ppg:{mean:ppgZ.mean,sd:ppgZ.sd},
+      val:{mean:valZ.mean,sd:valZ.sd},
+      pick:{mean:pickZ.mean,sd:pickZ.sd},
+      age:{mean:-ageZ.mean,sd:ageZ.sd}
+    };
     const weights={ppg:0.5,val:0.3,pick:0.1,age:0.1};
     metrics.forEach((m,i)=>{
-      const score=ppgZ[i]*weights.ppg + valZ[i]*weights.val + pickZ[i]*weights.pick + ageZ[i]*weights.age;
+      const score=ppgZ.arr[i]*weights.ppg + valZ.arr[i]*weights.val + pickZ.arr[i]*weights.pick + ageZ.arr[i]*weights.age;
       m.score=score;
     });
     const sorted=[...metrics].sort((a,b)=>a.score-b.score);
@@ -747,7 +753,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     state.refreshTime=new Date();
   }
 
-  function pillHTML(rosterId, manualType){
+function pillHTML(rosterId, manualType){
     const m=state.teamMetrics.get(rosterId);
     if(!m) return '';
     let bucket=m.bucket, cls=m.cls;
@@ -1273,7 +1279,42 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const inVal=incoming.reduce((s,a)=>s+a.value,0);
     const outVal=outgoing.reduce((s,a)=>s+a.value,0);
     const netVal=inVal-outVal;
-    const head=`<div class="mb-4 grid grid-cols-3 gap-3">
+
+    // Projected window pill
+    let projPill = '';
+    const m = state.teamMetrics.get(receivingTeamId);
+    const stats = state.metricStats;
+    if(m && stats){
+      const inPlayers = incoming.filter(a=>a.type==='player');
+      const outPlayers = outgoing.filter(a=>a.type==='player');
+      const deltaRosterVal = inPlayers.reduce((s,a)=>s+a.value,0) - outPlayers.reduce((s,a)=>s+a.value,0);
+      const deltaPick = incoming.filter(a=>a.type==='pick').reduce((s,a)=>s+a.value,0) - outgoing.filter(a=>a.type==='pick').reduce((s,a)=>s+a.value,0);
+      const newRosterVal = m.rosterValue + deltaRosterVal;
+      const newPickCap = m.pickCapital + deltaPick;
+      const newPpg = after.total;
+      const newAge = after.avgAge || m.avgAge;
+      const ppgZ = (newPpg - stats.ppg.mean)/stats.ppg.sd;
+      const valZ = (newRosterVal - stats.val.mean)/stats.val.sd;
+      const pickZ = (newPickCap - stats.pick.mean)/stats.pick.sd;
+      const ageZ = (-newAge - (-stats.age.mean))/stats.age.sd;
+      const weights={ppg:0.5,val:0.3,pick:0.1,age:0.1};
+      const newScore = ppgZ*weights.ppg + valZ*weights.val + pickZ*weights.pick + ageZ*weights.age;
+      // compute percentile vs existing scores
+      const scores = [...state.teamMetrics.values()].map(v=>v.score);
+      const less = scores.filter(sc=> sc < newScore).length;
+      const percentile = Math.round((less/(scores.length-1))*100);
+      let bucket='Mid', cls='pill-mid';
+      if(percentile<30){bucket='Rebuild';cls='pill-rebuild';}
+      else if(percentile<55){bucket='Mid';cls='pill-mid';}
+      else if(percentile<75){bucket='Fringe';cls='pill-fringe';}
+      else {bucket='Contender';cls='pill-contender';}
+      const deltaPct = percentile - m.percentile;
+      const deltaTxt = deltaPct>0?`+${deltaPct}%` : `${deltaPct}%`;
+      projPill = `<span class="pill ${cls}">${bucket} ${percentile}% <span class="text-xs opacity-70">(${deltaTxt})</span></span>`;
+    }
+
+    const head=`<div class="flex items-center justify-between mb-3"><div class="text-xs uppercase text-slate-500">Projected Window</div><div>${projPill}</div></div>
+    <div class="mb-4 grid grid-cols-3 gap-3">
       <div class="p-3.5 rounded-xl bg-slate-800/60 border border-white/10">
         <div class="text-xs uppercase text-slate-500">Optimal PPG</div>
         <div class="text-xl mono">${fmt1(before.total)} → <span class="text-amber-300">${fmt1(after.total)}</span></div>
@@ -1310,22 +1351,22 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const rows=incoming.map((a,i)=>{
       if(a.type==='pick'){
         return `<tr class="border-b border-white/5 odd:bg-white/[0.02]">
-          <td class="py-1.5 px-2 font-medium truncate max-w-[260px]" title="${a.name}">${a.name}</td>
-          <td class="py-1.5 px-2">PICK</td>
-          <td class="py-1.5 px-2">-</td>
-          <td class="py-1.5 px-2">-</td>
-          <td class="py-1.5 px-2 mono tabular-nums">${fmt(a.value)}</td>
-          <td class="py-1.5 px-2">-</td>
+          <td class="py-2 px-2 font-medium">${a.name}</td>
+          <td class="py-2 px-2">PICK</td>
+          <td class="py-2 px-2">-</td>
+          <td class="py-2 px-2">-</td>
+          <td class="py-2 px-2 mono tabular-nums">${fmt(a.value)}</td>
+          <td class="py-2 px-2">-</td>
         </tr>`;
       }else{
         const role=starterIds.has(a.id)?'<span class="role-starter">Starter</span>':'<span class="role-depth">Depth</span>';
         return `<tr class="border-b border-white/5 odd:bg-white/[0.02]">
-          <td class="py-1.5 px-2 font-medium truncate max-w-[260px]" title="${a.name}">${a.name}</td>
-          <td class="py-1.5 px-2 w-[48px]">${a.pos}</td>
-          <td class="py-1.5 px-2 w-[48px] mono tabular-nums">${a.age||'-'}</td>
-          <td class="py-1.5 px-2 w-[64px] mono tabular-nums">${fmt1(a.ppg)}</td>
-          <td class="py-1.5 px-2 w-[80px] mono tabular-nums">${fmt(a.value)}</td>
-          <td class="py-1.5 px-2 w-[80px]">${role}</td>
+          <td class="py-2 px-2 font-medium">${a.name}</td>
+          <td class="py-2 px-2 w-[48px]">${a.pos}</td>
+          <td class="py-2 px-2 w-[48px] mono tabular-nums">${a.age||'-'}</td>
+          <td class="py-2 px-2 w-[64px] mono tabular-nums">${fmt1(a.ppg)}</td>
+          <td class="py-2 px-2 w-[80px] mono tabular-nums">${fmt(a.value)}</td>
+          <td class="py-2 px-2 w-[80px]">${role}</td>
         </tr>`;
       }
     }).join('');
@@ -1348,7 +1389,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     cont.innerHTML = head + assetsHeader + assetsTable + lineup;
   }
 
-  function sumAssets(rosterId,selSet){
+function sumAssets(rosterId,selSet){
     return getSelectedAssets(rosterId,selSet).reduce((s,x)=>s+x.value,0);
   }
 
