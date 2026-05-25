@@ -27,6 +27,13 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 .pill-mid{background:rgba(100,116,139,.12);border-color:rgba(100,116,139,.35);color:#cbd5e1}
 .pill-fringe{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
 .pill-contender{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#86efac}
+
+.pill-rebuild-deep{background:rgba(37,99,235,.18);border-color:rgba(37,99,235,.45);color:#93c5fd}
+.pill-retool{background:rgba(100,116,139,.18);border-color:rgba(100,116,139,.45);color:#cbd5e1}
+.pill-hopeful{background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.45);color:#fde68a}
+.pill-elite{background:rgba(16,185,129,.20);border-color:rgba(16,185,129,.50);color:#6ee7b7}
+.pill-juggernaut{background:rgba(16,185,129,.28);border-color:rgba(16,185,129,.60);color:#a7f3d0;box-shadow:0 0 12px rgba(16,185,129,.35)}
+
 .tooltip{position:relative}
 .tooltip:hover .tooltip-card{display:block}
 .tooltip-card{display:none;position:absolute;top:100%;left:0;margin-top:8px;z-index:50;width:320px;max-width:min(320px,calc(100vw - 24px));background:#0f172a;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px}
@@ -738,17 +745,20 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       m.percentile=Math.round((i/(sorted.length-1))*100);
     });
     state.teamMetrics.clear();
+    const getTier = (pct)=>{
+      if(pct<8) return {bucket:'Full Rebuild',cls:'pill-rebuild-deep', narrative:'Bottom 10% PPG. Roster value in bottom quartile. Target 1sts and age <24.'};
+      if(pct<20) return {bucket:'Rebuilding',cls:'pill-rebuild', narrative:'Developing core, pick capital >15k. Avoid win-now overpays.'};
+      if(pct<35) return {bucket:'Retooling',cls:'pill-retool', narrative:'1-2 starters away. Can pivot either direction.'};
+      if(pct<50) return {bucket:'Middle of Pack',cls:'pill-mid', narrative:'Median profile. Trade to define window.'};
+      if(pct<65) return {bucket:'Playoff Hopeful',cls:'pill-hopeful', narrative:'Playoff odds ~60%. Add a WR2/RB2 and you’re in.'};
+      if(pct<78) return {bucket:'Fringe Contender',cls:'pill-fringe', narrative:'Top half PPG, age risk 27+. Push chips in.'};
+      if(pct<88) return {bucket:'Contender',cls:'pill-contender', narrative:'Top 25% PPG and value. Window open 1-2 years.'};
+      if(pct<96) return {bucket:'Elite Contender',cls:'pill-elite', narrative:'Top 12% in both PPG and value. Go all-in.'};
+      return {bucket:'Juggernaut',cls:'pill-juggernaut', narrative:'#1 overall score. Depth + youth. Everyone’s target.'};
+    };
     metrics.forEach(m=>{
-      let bucket='Mid', cls='pill-mid';
-      if(m.percentile<30){bucket='Rebuild';cls='pill-rebuild';}
-      else if(m.percentile<55){bucket='Mid';cls='pill-mid';}
-      else if(m.percentile<75){bucket='Fringe';cls='pill-fringe';}
-      else {bucket='Contender';cls='pill-contender';}
-      const narrative = bucket==='Contender' ? `Top PPG, strong starters${m.pickCapital>15000?' • good picks':''}` :
-                        bucket==='Fringe' ? `Mid PPG, mixed age` :
-                        bucket==='Mid' ? `Average profile` :
-                        `Developing, pick heavy`;
-      state.teamMetrics.set(m.rosterId,{...m,bucket,cls,narrative});
+      const t=getTier(m.percentile);
+      state.teamMetrics.set(m.rosterId,{...m,bucket:t.bucket,cls:t.cls,narrative:t.narrative});
     });
     state.refreshTime=new Date();
   }
@@ -1304,10 +1314,15 @@ function pillHTML(rosterId, manualType){
       const less = scores.filter(sc=> sc < newScore).length;
       const percentile = Math.round((less/(scores.length-1))*100);
       let bucket='Mid', cls='pill-mid';
-      if(percentile<30){bucket='Rebuild';cls='pill-rebuild';}
-      else if(percentile<55){bucket='Mid';cls='pill-mid';}
-      else if(percentile<75){bucket='Fringe';cls='pill-fringe';}
-      else {bucket='Contender';cls='pill-contender';}
+      if(percentile<8){bucket='Full Rebuild';cls='pill-rebuild-deep';}
+      else if(percentile<20){bucket='Rebuilding';cls='pill-rebuild';}
+      else if(percentile<35){bucket='Retooling';cls='pill-retool';}
+      else if(percentile<50){bucket='Middle of Pack';cls='pill-mid';}
+      else if(percentile<65){bucket='Playoff Hopeful';cls='pill-hopeful';}
+      else if(percentile<78){bucket='Fringe Contender';cls='pill-fringe';}
+      else if(percentile<88){bucket='Contender';cls='pill-contender';}
+      else if(percentile<96){bucket='Elite Contender';cls='pill-elite';}
+      else {bucket='Juggernaut';cls='pill-juggernaut';}
       const deltaPct = percentile - m.percentile;
       const deltaTxt = deltaPct>0?`+${deltaPct}%` : `${deltaPct}%`;
       projPill = `<span class="pill ${cls}">${bucket} ${percentile}% <span class="text-xs opacity-70">(${deltaTxt})</span></span>`;
