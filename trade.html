@@ -401,46 +401,71 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     return {total, starters, avgAge};
   }
 
-  function computePositionMedians(){
-    const posVals={QB:[],RB:[],WR:[],TE:[]};
-    state.rosters.forEach(r=>{
-      (r.players||[]).forEach(pid=>{
-        const p=playerFromId(pid);
-        if(posVals[p.pos]) posVals[p.pos].push(p.value);
-      });
+  function getStarterCounts(){
+    const pos = state.league.roster_positions||[];
+    const counts={QB:0,RB:0,WR:0,TE:0,FLEX:0,SFLEX:0};
+    pos.forEach(p=>{
+      if(p==='SUPER_FLEX') counts.SFLEX++;
+      else if(counts.hasOwnProperty(p)) counts[p]++;
     });
-    state.positionMedians.clear();
-    Object.entries(posVals).forEach(([pos,arr])=>{
-      if(!arr.length) return;
-      arr.sort((a,b)=>a-b);
-      const mid=Math.floor(arr.length/2);
-      const med=arr.length%2?arr[mid]:(arr[mid-1]+arr[mid])/2;
-      state.positionMedians.set(pos,med);
-    });
+    return counts;
+  }
+
+  function getTeamPosStrength(rosterId, pos, K){
+    const r = state.rosters.find(x=>x.roster_id==rosterId);
+    const players = (r.players||[]).map(playerFromId).filter(p=>p.pos===pos).sort((a,b)=>b.value-a.value);
+    const top = players.slice(0,K);
+    const strength = top.reduce((s,p)=>s+p.value,0);
+    const avgAge = top.length? top.reduce((s,p)=>s+(p.age||0),0)/top.length : null;
+    return {strength, avgAge, count:players.length};
   }
 
   function computePositionalNeeds(rosterId){
-    const r=state.rosters.find(x=>x.roster_id==rosterId);
-    const allPlayers=(r.players||[]).map(playerFromId);
-    const opt=computeOptimalLineup(rosterId);
-    const positions=['QB','RB','WR','TE'];
-    const needs=[];
-    positions.forEach(pos=>{
-      const starters=opt.starters.filter(s=>s.pos===pos);
-      const totalAtPos=allPlayers.filter(p=>p.pos===pos);
-      const avgAge=starters.length? starters.reduce((s,p)=>s+(p.age||0),0)/starters.length : null;
-      const avgValue=starters.length? starters.reduce((s,p)=>s+p.value,0)/starters.length : 0;
-      const depth= totalAtPos.length - starters.length;
-      const median=state.positionMedians.get(pos)||0;
-      let score=0;
-      if(starters.length===0) score+=2;
-      if(avgAge && avgAge>28) score+=1;
-      if(avgValue && avgValue < median) score+=1;
-      if(depth <2) score+=1;
-      needs.push({pos,score,avgAge,avgValue,depth});
+    const counts = getStarterCounts();
+    const posList = ['QB','RB','WR','TE'];
+    const Kmap = {
+      QB: Math.max(1, counts.QB + counts.SFLEX),
+      RB: Math.max(1, counts.RB),
+      WR: Math.max(1, counts.WR),
+      TE: Math.max(1, counts.TE)
+    };
+    const flexAdd = Math.ceil(counts.FLEX / 3);
+    Kmap.RB += flexAdd;
+    Kmap.WR += flexAdd;
+    Kmap.TE += flexAdd;
+
+    const teamStrengths = {};
+    posList.forEach(pos=>{
+      const {strength, avgAge} = getTeamPosStrength(rosterId, pos, Kmap[pos]);
+      teamStrengths[pos] = {strength, avgAge, K:Kmap[pos]};
     });
-    needs.sort((a,b)=>b.score-a.score);
-    return needs.filter(n=>n.score>0).slice(0,2);
+
+    const leagueAvg = {};
+    posList.forEach(pos=>{
+      const strengths = state.rosters.map(r=>{
+        const {strength} = getTeamPosStrength(r.roster_id, pos, Kmap[pos]);
+        return strength;
+      });
+      const avg = strengths.reduce((a,b)=>a+b,0)/strengths.length;
+      leagueAvg[pos] = avg;
+    });
+
+    const needs = posList.map(pos=>{
+      const team = teamStrengths[pos];
+      let needScore = leagueAvg[pos] - team.strength;
+      if(team.avgAge && team.avgAge > 29) needScore *= 1.2;
+      return {
+        pos,
+        needScore,
+        teamStrength: team.strength,
+        leagueAvg: leagueAvg[pos],
+        avgAge: team.avgAge
+      };
+    }).filter(n=> n.needScore > 0 && n.teamStrength < 0.9 * n.leagueAvg)
+      .sort((a,b)=>b.needScore - a.needScore)
+      .slice(0,2);
+
+    return needs;
   }
 
   function computeTeamMetrics(){
@@ -746,7 +771,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     await loadPPG();
     computeSlots();
     buildPickInventory();
-    computePositionMedians();
     computeTeamMetrics();
     renderSelect();
     populateOverrideSelects();
