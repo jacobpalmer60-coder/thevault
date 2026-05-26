@@ -297,8 +297,28 @@ function detectColumns(headers, candidates){
 async function fetchCSV(url){
   const res = await fetch(url);
   const text = await res.text();
+  // Fix lines where player name is split across two lines
+  const lines = text.split(/
+?
+/);
+  const cleaned = [];
+  for(let i=0;i<lines.length;i++){
+    let line = lines[i].trim();
+    if(!line) continue;
+    const commaCount = (line.match(/,/g)||[]).length;
+    if(commaCount < 3 && i+1 < lines.length){
+      const next = lines[i+1].trim();
+      if(next && next.includes(',')){
+        line = line + ' ' + next;
+        i++;
+      }
+    }
+    cleaned.push(line);
+  }
+  const cleanText = cleaned.join('
+');
   return new Promise(resolve=>{
-    Papa.parse(text, {
+    Papa.parse(cleanText, {
       header:true,
       skipEmptyLines:true,
       complete: res => resolve(res.data)
@@ -674,4 +694,4 @@ if(urlId){
 }
 </script>
 </body>
-</html
+</html>
