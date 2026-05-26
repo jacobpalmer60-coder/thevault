@@ -2,198 +2,328 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dynasty Lab • Fantasy League Overview</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dynasty Lab • League of Gold</title>
 <style>
-:root { color-scheme: dark; }
-html { font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
-.font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
-.glass { backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); }
-.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 999px; }
-.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+:root{
+  --bg:#0a0f1c;
+  --bg-soft:#0f1629;
+  --card:#111827;
+  --card-2:#0e1424;
+  --border:#1f2937;
+  --muted:#94a3b8;
+  --text:#e2e8f0;
+  --text-dim:#cbd5e1;
+  --accent:#a855f7;
+  --accent-2:#ec4899;
+  --good:#10b981;
+  --warn:#f59e0b;
+  --bad:#ef4444;
+  --info:#06b6d4;
+  --radius:16px;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(168,85,247,.15), transparent 60%),
+    radial-gradient(1000px 500px at 110% 10%, rgba(236,72,153,.12), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+a{color:inherit}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+header{
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between;
+  padding:20px 24px;
+  background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(8px);
+}
+.brand{
+  display:flex;align-items:center;gap:14px;
+}
+.logo{
+  width:44px;height:44px;border-radius:12px;
+  background:conic-gradient(from 210deg, var(--accent), var(--accent-2));
+  display:grid;place-items:center;
+  box-shadow:inset 0 0 20px rgba(255,255,255,.15), 0 8px 24px rgba(168,85,247,.35);
+  font-weight:800;color:white;letter-spacing:.5px;
+}
+.title{
+  line-height:1.1;
+}
+.title h1{
+  margin:0;font-size:20px;font-weight:800;letter-spacing:.2px;
+}
+.title .sub{
+  font-size:12px;color:var(--muted);margin-top:2px;
+}
+.badges{display:flex;gap:8px;flex-wrap:wrap}
+.badge{
+  font-size:12px;font-weight:600;padding:6px 10px;border-radius:999px;
+  background:#1a2030;border:1px solid var(--border);color:var(--text-dim);
+}
+.badge.accent{
+  background:linear-gradient(90deg, rgba(168,85,247,.2), rgba(236,72,153,.2));
+  border-color:rgba(168,85,247,.4);
+  color:#f5d0fe;
+}
+main{margin-top:24px}
+.panel{
+  background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+.panel.pad{padding:18px 20px}
+.method{
+  margin-bottom:20px;
+}
+.method summary{
+  cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;
+  font-weight:700;
+}
+.method summary::-webkit-details-marker{display:none}
+.method .chev{transition:transform .2s}
+.method[open] .chev{transform:rotate(90deg)}
+.method .content{
+  margin-top:14px;color:var(--text-dim);font-size:14px;line-height:1.6;
+}
+.grid{
+  display:grid;gap:16px;
+}
+.grid.cards{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+@media (max-width:1000px){.grid.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.grid.cards{grid-template-columns:1fr}}
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+  position:relative;
+  overflow:hidden;
+}
+.card h3{margin:0 0 6px 0;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.card .big{font-size:24px;font-weight:800}
+.card .sub{font-size:12px;color:var(--muted);margin-top:4px}
+.toolbar{
+  display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  margin:20px 0 12px;
+}
+.search{
+  flex:1;min-width:240px;position:relative;
+}
+.search input{
+  width:100%;padding:12px 14px 12px 38px;border-radius:12px;
+  background:var(--card-2);border:1px solid var(--border);color:var(--text);
+  outline:none;font-size:14px;
+}
+.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(168,85,247,.2)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.6}
+.table-wrap{
+  overflow:auto;border-radius:var(--radius);
+  border:1px solid var(--border);
+  background:var(--card);
+}
+table{
+  width:100%;border-collapse:separate;border-spacing:0;min-width:900px;
+}
+thead th{
+  position:sticky;top:0;background:#0f1526;z-index:2;
+  text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);font-weight:700;padding:14px 16px;border-bottom:1px solid var(--border);
+  user-select:none;cursor:pointer;white-space:nowrap;
+}
+thead th:hover{color:var(--text)}
+th .sort{opacity:.5;margin-left:6px}
+th.active .sort{opacity:1;color:var(--accent)}
+tbody td{
+  padding:14px 16px;border-bottom:1px solid rgba(31,41,55,.7);
+  vertical-align:middle;font-size:14px;
+}
+tbody tr.main-row:hover{background:rgba(255,255,255,.02);cursor:pointer}
+.team-cell{display:flex;align-items:center;gap:12px}
+.avatar{
+  width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+  background:#1c2335;border:1px solid var(--border);font-weight:800;font-size:13px;color:#d8b4fe;
+}
+.team-meta{display:flex;flex-direction:column}
+.team-name{font-weight:700}
+.team-record{font-size:12px;color:var(--muted)}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;
+  border:1px solid transparent;white-space:nowrap;
+}
+.pill.elite{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.4);color:#e9d5ff}
+.pill.aging{background:rgba(249,115,22,.15);border-color:rgba(249,115,22,.4);color:#fed7aa}
+.pill.fringe{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4);color:#fde68a}
+.pill.riser{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:#a7f3d0}
+.pill.pickrich{background:rgba(6,182,212,.15);border-color:rgba(6,182,212,.4);color:#a5f3fc}
+.pill.volatile{background:rgba(234,179,8,.15);border-color:rgba(234,179,8,.4);color:#fef08a}
+.pill.stripped{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:#fecaca}
+.pill.stuck{background:rgba(100,116,139,.2);border-color:rgba(100,116,139,.4);color:#cbd5e1}
+.pill.balanced{background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.4);color:#ddd6fe}
+.bar{
+  height:8px;background:#1a2234;border-radius:999px;overflow:hidden;position:relative;
+  width:120px;
+}
+.bar > i{
+  display:block;height:100%;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  border-radius:999px;
+}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{
+  font-size:11px;padding:4px 8px;border-radius:999px;background:#1a2030;border:1px solid var(--border);color:var(--muted);font-weight:600;
+}
+.tag.good{border-color:rgba(16,185,129,.4);color:#a7f3d0}
+.tag.warn{border-color:rgba(245,158,11,.4);color:#fde68a}
+.tag.bad{border-color:rgba(239,68,68,.4);color:#fecaca}
+.detail-row td{
+  padding:0;background:#0b1222;border-bottom:1px solid var(--border);
+}
+.detail{
+  padding:18px;display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:18px;
+}
+@media (max-width:900px){.detail{grid-template-columns:1fr}}
+.subcard{
+  background:#0e1528;border:1px solid var(--border);border-radius:12px;padding:14px;
+}
+.subcard h4{margin:0 0 10px 0;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.list{
+  display:flex;flex-direction:column;gap:8px;
+}
+.rowline{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:8px 10px;background:#0a1120;border:1px solid var(--border);border-radius:10px;
+}
+.rowline .left{display:flex;align-items:center;gap:10px;min-width:0}
+.pos{
+  font-size:11px;font-weight:800;padding:3px 6px;border-radius:6px;background:#1e293b;color:#cbd5e1;
+  min-width:34px;text-align:center;
+}
+.pos.QB{background:rgba(56,189,248,.2);color:#bae6fd}
+.pos.RB{background:rgba(16,185,129,.2);color:#a7f3d0}
+.pos.WR{background:rgba(168,85,247,.2);color:#e9d5ff}
+.pos.TE{background:rgba(236,72,153,.2);color:#fbcfe8}
+.muted{color:var(--muted);font-size:12px}
+.small{font-size:12px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;font-size:13px}
+.kv b{color:var(--text-dim);font-weight:600}
+hr.sep{border:none;border-top:1px dashed var(--border);margin:10px 0}
+.loading{
+  display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px;padding:20px;
+}
+.spinner{
+  width:18px;height:18px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+footer{margin:28px 0;color:var(--muted);font-size:12px;text-align:center}
+.hidden{display:none}
 </style>
 </head>
-<body class="min-h-screen bg-[#020617] text-slate-100 antialiased selection:bg-fuchsia-500/30">
-<!-- Background -->
-<div class="fixed inset-0 -z-10 overflow-hidden">
-  <div class="absolute inset-0 bg-[#020617]"></div>
-  <div class="absolute -top-1/2 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] rounded-full opacity-[0.15] blur-3xl" style="background:radial-gradient(closest-side, #d946ef, transparent)"></div>
-  <div class="absolute top-1/3 -left-1/4 w-[800px] h-[800px] rounded-full opacity-[0.12] blur-3xl" style="background:radial-gradient(closest-side, #8b5cf6, transparent)"></div>
-  <div class="absolute bottom-0 right-0 w-[700px] h-[700px] rounded-full opacity-[0.10] blur-3xl" style="background:radial-gradient(closest-side, #22d3ee, transparent)"></div>
-  <div class="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,.04)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20"></div>
-</div>
+<body>
+<div class="container">
+  <header>
+    <div class="brand">
+      <div class="logo">DL</div>
+      <div class="title">
+        <h1>Dynasty Lab • The League of Gold</h1>
+        <div class="sub" id="leagueSub">Loading league…</div>
+      </div>
+    <div class="badges" id="badges">
+      <span class="badge">10 members</span>
+    </div>
+  </header>
 
-<header class="sticky top-0 z-40 border-b border-white/10">
-  <div class="glass bg-slate-950/60">
-    <div class="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16 gap-4">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="size-9 rounded-xl bg-gradient-to-br from-fuchsia-500 to-violet-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/25">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5v14" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>
-          </div>
-          <div class="min-w-0">
-            <div class="flex items-baseline gap-2">
-              <h1 class="text-[22px] font-extrabold tracking-tight">Dynasty Lab</h1>
-              <span class="hidden sm:inline text-xs font-medium px-2 py-0.5 rounded-full bg-white/10 text-slate-300">ALPHA</span>
-            </div>
-          </div>
-        <div class="flex items-center gap-2 flex-wrap justify-end">
-          <span id="badge-league" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-slate-300">
-            <span class="size-1.5 rounded-full bg-violet-400"></span><span>—</span>
-          </span>
-          <span id="badge-scoring" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-slate-300">
-            <span class="size-1.5 rounded-full bg-amber-400"></span><span>—</span>
-          </span>
-          <span id="badge-tep" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-xs font-semibold text-cyan-200">TEP OFF</span>
-          <span id="badge-members" class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-slate-300">— members</span>
-        </div>
+  <main>
+    <details class="panel pad method" open>
+      <summary>
+        <span>Methodology & Archetypes</span>
+        <span class="chev">›</span>
+      </summary>
+      <div class="content">
+        <p><b>Window Length</b> blends roster value (50%), discounted pick capital (30%) and youth (20%). <b>Production</b> is optimal starter PPG for the league's scoring.</p>
+        <p>Archetypes (evaluated in order):</p>
+        <ul>
+          <li><b>Elite Contender</b>: Prod ≥70th, Win ≥70th, Age ≤26.5</li>
+          <li><b>Aging Contender</b>: Prod ≥70th, Win ≤30th, Age ≥27.5, Picks ≤30th</li>
+          <li><b>Win-Now Fringe</b>: Prod ≥70th, 30th ≤ Win <70th, Age ≥26.5</li>
+          <li><b>Young Riser</b>: 40th ≤ Prod <70th, Win ≥70th, Age ≤25.5</li>
+          <li><b>Pick-Rich Rebuilder</b>: Prod ≤40th, Win ≥70th, Picks ≥70th</li>
+          <li><b>Volatile / High-Variance</b>: 40th ≤ Prod <70th, Win ≤30th</li>
+          <li><b>Stripped Rebuilder</b>: Prod ≤40th, Win ≤30th</li>
+          <li><b>Stuck in Middle</b>: Prod ≤40th, 30th ≤ Win <70th</li>
+          <li><b>Balanced Core</b>: 40th ≤ Prod <70th, 30th ≤ Win <70th</li>
+        </ul>
+        <p class="muted">Tags highlight build tendencies: TE Premium, QB need, RB depth, WR core, pick concentration, age cliff.</p>
+      </div>
+    </details>
+
+    <div class="grid cards" id="summaryCards">
+      <div class="card"><h3>Avg Age</h3><div class="big mono" id="sumAge">—</div><div class="sub">League wide</div></div>
+      <div class="card"><h3>Highest PPG</h3><div class="big mono" id="sumPPG">—</div><div class="sub" id="sumPPGSub"></div></div>
+      <div class="card"><h3>Most Valuable</h3><div class="big mono" id="sumVal">—</div><div class="sub" id="sumValSub"></div></div>
+      <div class="card"><h3>Pick Capital</h3><div class="big mono" id="sumPicks">—</div><div class="sub">Total weighted</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="search" placeholder="Search team…" />
       </div>
     </div>
-  </div>
-</header>
 
-<main class="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-  <!-- Status -->
-  <div id="status" class="hidden"></div>
-
-  <!-- Controls -->
-  <div class="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-4 sm:p-5">
-    <div class="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end">
-      <div class="flex-1 min-w-0">
-        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Sleeper League ID</label>
-        <div class="flex gap-2">
-          <input id="league-input" type="text" placeholder="e.g. 123456789012345678" class="w-full bg-slate-950/70 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-fuchsia-500/50 focus:ring-4 focus:ring-fuchsia-500/10 placeholder-slate-500 font-mono" />
-          <button id="load-btn" class="px-4 py-2.5 rounded-xl bg-gradient-to-br from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 active:scale-[0.98] transition text-sm font-semibold shadow-lg shadow-fuchsia-600/25">Load</button>
-        </div>
-        <p class="mt-2 text-xs text-slate-500">Auto-loads from <span class="font-mono">?league_id=</span>. We never store your ID.</p>
-      </div>
-      <div class="flex gap-3">
-        <div class="min-w-[180px]">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">TE Premium</label>
-          <button id="tep-toggle" class="group relative w-full flex items-center justify-between bg-slate-950/70 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm transition hover:border-white/20">
-            <span class="font-medium">Auto Detect</span>
-            <span class="size-5 rounded-full bg-white/10 flex items-center justify-center">
-              <span class="size-2 rounded-full bg-slate-400 group-[.on]:bg-cyan-400 transition"></span>
-            </span>
-          </button>
-        </div>
-        <div class="flex-1 min-w-[200px]">
-          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Search Teams</label>
-          <div class="relative">
-            <input id="search-input" type="text" placeholder="Team name, manager..." class="w-full bg-slate-950/70 border border-white/10 rounded-xl pl-9 pr-3.5 py-2.5 text-sm outline-none focus:border-fuchsia-500/50 focus:ring-4 focus:ring-fuchsia-500/10 placeholder-slate-500" />
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Summary -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-    <div class="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent p-4">
-      <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Avg Roster Age</div>
-      <div id="stat-age" class="mt-2 text-3xl font-bold font-mono">—</div>
-      <div class="text-xs text-slate-500 mt-1">younger = upside</div>
-    </div>
-    <div class="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent p-4">
-      <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Highest PPG Team</div>
-      <div id="stat-ppg" class="mt-2 text-3xl font-bold font-mono truncate">—</div>
-      <div id="stat-ppg-sub" class="text-xs text-slate-500 mt-1">—</div>
-    </div>
-    <div class="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent p-4">
-      <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Most Valuable Roster</div>
-      <div id="stat-val" class="mt-2 text-3xl font-bold font-mono truncate">—</div>
-      <div id="stat-val-sub" class="text-xs text-slate-500 mt-1">—</div>
-    </div>
-    <div class="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-transparent p-4">
-      <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Pick Capital</div>
-      <div id="stat-picks" class="mt-2 text-3xl font-bold font-mono">—</div>
-      <div class="text-xs text-slate-500 mt-1">1st=100 · 2nd=50 · 3rd=25 · 4th=12</div>
-    </div>
-  </div>
-
-  <!-- Table -->
-  <div class="rounded-2xl border border-white/10 bg-slate-950/40 overflow-hidden">
-    <div class="overflow-x-auto scrollbar-thin">
-      <table class="w-full min-w-[1100px]">
-        <thead class="sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-white/10">
-          <tr class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-            <th class="px-4 py-3 w-[260px]">Team</th>
-            <th class="px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="tier">Tier</th>
-            <th class="px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="scorePct">Score %</th>
-            <th class="px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="ppg">PPG</th>
-            <th class="px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="value">Roster Value</th>
-            <th class="px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="picks">Pick Capital</th>
-            <th class="px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="age">Avg Age</th>
-            <th class="px-4 py-3">Narrative</th>
+    <div class="table-wrap panel">
+      <div id="loading" class="loading"><div class="spinner"></div><div id="loadMsg">Initializing…</div></div>
+      <table id="table" class="hidden">
+        <thead>
+          <tr>
+            <th data-k="team">Team <span class="sort">↕</span></th>
+            <th data-k="archetype">Archetype <span class="sort">↕</span></th>
+            <th data-k="winPct">Window Length <span class="sort">↕</span></th>
+            <th data-k="prod">Production PPG <span class="sort">↕</span></th>
+            <th data-k="value">Roster Value <span class="sort">↕</span></th>
+            <th data-k="pickScore">Pick Capital <span class="sort">↕</span></th>
+            <th data-k="avgAge">Avg Age <span class="sort">↕</span></th>
           </tr>
         </thead>
-        <tbody id="tbody" class="divide-y divide-white/5"></tbody>
+        <tbody id="tbody"></tbody>
       </table>
     </div>
-    <div id="empty-state" class="hidden py-24 text-center">
-      <div class="text-slate-500 text-sm">Load a league to see team breakdowns. We’ll compute tiers, optimal lineups, and narratives automatically.</div>
-    </div>
-  </div>
 
-  <footer class="pt-8 pb-16 text-center text-xs text-slate-600">
-    Built for dynasty sickos. Data via Sleeper API & community sheets. Not affiliated with Sleeper.
-  </footer>
-</main>
+    <footer>Dynasty Lab • Data from Sleeper API & public sheets • Not affiliated with Sleeper</footer>
+  </main>
+</div>
 
 <script type="module">
+const LEAGUE_ID = '1313454100225990656';
 const AGE_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=0&single=true&output=csv';
 const PPG_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1865143681&single=true&output=csv';
 
-const state = {
-  leagueId: null,
-  league: null,
-  users: [],
-  rosters: [],
-  playersMap: {},
-  tradedPicks: [],
-  ageValueMap: new Map(),
-  ppgMap: new Map(),
-  teams: [],
-  filtered: [],
-  sortKey: 'scorePct',
-  sortDir: 'desc',
-  expanded: new Set(),
-  search: '',
-  scoring: { type:'PPR', key:'ppr', isTEP:false, rec:1 },
-  tepOverride: 'auto', // auto | on | off
-};
+const loadMsg = document.getElementById('loadMsg');
+const loadingEl = document.getElementById('loading');
+const tableEl = document.getElementById('table');
+const tbody = document.getElementById('tbody');
+const searchInput = document.getElementById('search');
 
-const $ = sel => document.querySelector(sel);
-const fmt = n => n==null||isNaN(n)?'—':Number(n).toLocaleString(undefined,{maximumFractionDigits:1});
-const fmt1 = n => n==null||isNaN(n)?'—':Number(n).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+function setStatus(s){ loadMsg.textContent = s; }
 
-function showStatus(msg, kind='info'){
-  const el = $('#status');
-  el.className = 'rounded-2xl border px-4 py-3 text-sm flex items-center gap-2 ' + (kind==='error'?'border-red-500/30 bg-red-500/10 text-red-200':'border-cyan-500/30 bg-cyan-500/10 text-cyan-200');
-  el.innerHTML = `<span class="size-2 rounded-full ${kind==='error'?'bg-red-400':'bg-cyan-400'} animate-pulse"></span><span>${msg}</span>`;
-  el.classList.remove('hidden');
-}
-function hideStatus(){ $('#status').classList.add('hidden'); }
-
-function normalizeName(str=''){
-  let s = String(str).toLowerCase();
-  s = s.replace(/\./g,'').replace(/'/g,'').replace(/,/g,'');
-  s = s.replace(/\s+(jr|sr|ii|iii|iv|v)\b/g,'');
-  s = s.replace(/\s+/g,' ').trim();
-  return s;
-}
-
-// fetchCSV with line merge fix
 async function fetchCSV(url){
   const res = await fetch(url);
-  if(!res.ok) throw new Error('CSV fetch failed');
   let text = await res.text();
   text = text.replaceAll('\r','');
   const rawLines = text.split('\n');
@@ -201,517 +331,497 @@ async function fetchCSV(url){
   for(let i=0;i<rawLines.length;i++){
     let line = rawLines[i].trim();
     if(!line) continue;
-    const commaCount = line.split(',').length - 1;
-    if(commaCount < 3 && i+1 < rawLines.length && rawLines[i+1].includes(',')){
+    const commas = line.split(',').length -1;
+    if(commas < 3 && i+1 < rawLines.length && rawLines[i+1].includes(',')){
       line = line + ' ' + rawLines[i+1].trim();
       i++;
     }
     cleaned.push(line);
   }
   const finalText = cleaned.join('\n');
-  const parsed = Papa.parse(finalText, { header:true, skipEmptyLines:true });
-  return parsed.data;
-}
-
-function getScoringType(league){
-  const s = league.scoring_settings || {};
-  const rec = Number(s.rec || 0);
-  const rec_te = Number(s.rec_te || rec);
-  const bonus_rec_te = Number(s.bonus_rec_te || 0);
-  let type='STD', key='std';
-  if(rec >= 0.9){ type='PPR'; key='ppr'; }
-  else if(rec >= 0.4){ type='HALF'; key='half'; }
-  const isTEP = bonus_rec_te>0 || rec_te>rec;
-  return { type, key, isTEP, rec };
-}
-
-function buildAgeValueMap(rows){
-  const map = new Map();
-  for(const r of rows){
-    const nameKey = normalizeName(r.Player || r.player || r.Name || r.name || '');
-    if(!nameKey) continue;
-    const value = Number(r.Value || r.value || r['Dynasty Value'] || 0);
-    const age = Number(r.Age || r.age || 0);
-    map.set(nameKey, { value: isNaN(value)?0:value, age: isNaN(age)?0:age });
-  }
-  return map;
-}
-
-function buildPpgMap(rows){
-  const map = new Map();
-  if(!rows.length) return map;
-  const headers = Object.keys(rows[0]).map(h=>h.toLowerCase());
-  const findCol = (inc, exc) => headers.find(h=> h.includes(inc) && (!exc || !h.includes(exc)));
-  const playerCol = headers.find(h=> h.includes('player') || h.includes('name')) || headers[0];
-  const col_ppr = findCol('ppr', 'tep');
-  const col_half = findCol('half', 'tep');
-  const col_std = findCol('std', 'tep') || findCol('standard','tep');
-  const col_ppr_tep = headers.find(h=> h.includes('ppr') && h.includes('tep'));
-  const col_half_tep = headers.find(h=> h.includes('half') && h.includes('tep'));
-  const col_std_tep = headers.find(h=> (h.includes('std')||h.includes('standard')) && h.includes('tep'));
-  for(const r of rows){
-    const name = r[playerCol];
-    const key = normalizeName(name);
-    if(!key) continue;
-    const get = c => c? Number(r[Object.keys(r).find(k=>k.toLowerCase()===c)] || 0) : 0;
-    map.set(key, {
-      ppr: get(col_ppr),
-      half: get(col_half),
-      std: get(col_std),
-      ppr_tep: get(col_ppr_tep),
-      half_tep: get(col_half_tep),
-      std_tep: get(col_std_tep),
-    });
-  }
-  return map;
-}
-
-function getPpgFor(player, scoring){
-  const entry = state.ppgMap.get(normalizeName(player.full_name || `${player.first_name} ${player.last_name}`));
-  if(!entry) return 0;
-  const isTE = player.position === 'TE';
-  const useTEP = scoring.isTEP && isTE;
-  const key = scoring.key;
-  if(useTEP){
-    return entry[`${key}_tep`] || entry[key] || 0;
-  }
-  return entry[key] || 0;
-}
-
-function computeOptimalStarters(roster, scoring){
-  const rosterPositions = state.league.roster_positions || [];
-  const slotCounts = {};
-  for(const p of rosterPositions) slotCounts[p] = (slotCounts[p]||0)+1;
-
-  const pool = [];
-  const playerIds = roster.players || [];
-  for(const pid of playerIds){
-    const p = state.playersMap[pid];
-    if(!p) continue;
-    const name = p.full_name || `${p.first_name} ${p.last_name}`;
-    const norm = normalizeName(name);
-    const av = state.ageValueMap.get(norm) || {value:0,age:0};
-    const ppg = getPpgFor(p, scoring);
-    pool.push({
-      id: pid,
-      name,
-      pos: p.position,
-      team: p.team || 'FA',
-      age: av.age,
-      value: av.value,
-      ppg,
-    });
-  }
-  // sort descending ppg
-  pool.sort((a,b)=>b.ppg-a.ppg);
-
-  const slots = [];
-  // Order by restrictiveness
-  const order = ['QB','RB','WR','TE','FLEX','SUPER_FLEX','WRRB_FLEX','REC_FLEX','DEF','K','BN','IR','TAXI'];
-  for(const pos of order){
-    const cnt = slotCounts[pos]||0;
-    for(let i=0;i<cnt;i++) slots.push(pos);
-  }
-
-  const eligibility = {
-    QB: s=>s==='QB',
-    RB: s=>s==='RB',
-    WR: s=>s==='WR',
-    TE: s=>s==='TE',
-    FLEX: s=>['RB','WR','TE'].includes(s),
-    WRRB_FLEX: s=>['RB','WR'].includes(s),
-    REC_FLEX: s=>['WR','TE'].includes(s),
-    SUPER_FLEX: s=>['QB','RB','WR','TE'].includes(s),
-    DEF: s=>s==='DEF',
-    K: s=>s==='K',
-  };
-
-  const used = new Set();
-  const starters = [];
-
-  for(const slot of slots){
-    if(['BN','IR','TAXI'].includes(slot)) continue;
-    const can = eligibility[slot];
-    if(!can) continue;
-    const pick = pool.find(pl=> !used.has(pl.id) && can(pl.pos));
-    if(pick){
-      used.add(pick.id);
-      starters.push({...pick, slot});
+  const lines = finalText.split('\n').filter(l=>l.trim());
+  const header = lines[0].split(',').map(h=>h.trim());
+  const out = [];
+  for(let i=1;i<lines.length;i++){
+    const values = lines[i].split(',');
+    while(values.length < header.length) values.push('');
+    const obj = {};
+    for(let j=0;j<header.length;j++){
+      obj[header[j]] = values[j]?.trim() ?? '';
     }
+    out.push(obj);
   }
-
-  const bench = pool.filter(pl=>!used.has(pl.id)).sort((a,b)=>b.ppg-a.ppg).slice(0,12);
-  const teamPPG = starters.reduce((s,p)=>s+p.ppg,0);
-  const rosterValue = pool.reduce((s,p)=>s+p.value,0);
-  const avgAge = pool.filter(p=>p.age>0).reduce((a,p,i,arr)=>a + p.age/arr.length,0);
-
-  return { starters, bench, teamPPG, rosterValue, avgAge, allPlayers: pool };
+  return out;
 }
 
-function computePickCapital(roster){
-  // Base picks for next 3 seasons
-  const seasons = [...new Set(state.tradedPicks.map(p=>Number(p.season)))];
-  const baseSeasons = seasons.length? seasons.sort() : [2025,2026,2027];
-  const pickWorth = {1:100,2:50,3:25,4:12};
-  const owned = new Map(); // key season-round -> owner roster_id
+function normalizeName(str){
+  if(!str) return '';
+  let s = str.toLowerCase();
+  s = s.replace(/[.'’]/g,'');
+  s = s.replace(/[^a-z0-9]+/g,' ');
+  s = s.replace(/\b(jr|sr|ii|iii|iv|v)\b/g,'');
+  s = s.replace(/\s+/g,' ').trim();
+  return s;
+}
 
-  // initialize each roster owns its own picks
-  for(const r of state.rosters){
-    for(const season of baseSeasons){
-      for(let round=1; round<=4; round++){
-        owned.set(`${season}-${round}-${r.roster_id}`, r.roster_id);
+function initials(name){
+  const parts = name.split(/\s+/).filter(Boolean).slice(0,2);
+  return parts.map(p=>p[0]?.toUpperCase()||'').join('');
+}
+
+function mean(arr){ return arr.reduce((a,b)=>a+b,0)/ (arr.length||1); }
+function std(arr){ const m = mean(arr); return Math.sqrt(mean(arr.map(v=>(v-m)*(v-m))))||1; }
+function zscore(v,m,s){ return (v-m)/s; }
+function percentileRank(val, arr){
+  const sorted = [...arr].sort((a,b)=>a-b);
+  let rank = sorted.filter(v=>v<val).length + 0.5*sorted.filter(v=>v===val).length;
+  return sorted.length>1? rank/(sorted.length-1) : 0.5;
+}
+
+function formatNum(n,dec=1){ return Number(n).toLocaleString(undefined,{minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+
+const slotEligibility = {
+  QB:['QB'],
+  RB:['RB'],
+  WR:['WR'],
+  TE:['TE'],
+  FLEX:['RB','WR','TE'],
+  WRRB_FLEX:['RB','WR'],
+  REC_FLEX:['WR','TE'],
+  SUPER_FLEX:['QB','RB','WR','TE']
+};
+
+function buildSlots(rosterPositions){
+  const counts = {};
+  for(const p of rosterPositions) counts[p]=(counts[p]||0)+1;
+  const priority = ['QB','RB','WR','TE','FLEX','SUPER_FLEX','WRRB_FLEX','REC_FLEX'];
+  const slots=[];
+  for(const type of priority){
+    const c = counts[type]||0;
+    for(let i=0;i<c;i++) slots.push({type, eligible:slotEligibility[type]||[]});
+  }
+  // BN ignored for starters
+  return slots;
+}
+
+function assignOptimalStarters(pool, slots){
+  const remaining = pool.map(p=>({...p}));
+  const starters=[];
+  for(const slot of slots){
+    let bestIdx=-1, bestScore=-Infinity;
+    for(let i=0;i<remaining.length;i++){
+      const pl = remaining[i];
+      if(slot.eligible.includes(pl.pos)){
+        if(pl.ppg > bestScore){ bestScore=pl.ppg; bestIdx=i; }
       }
     }
+    if(bestIdx>=0){
+      const pl = remaining.splice(bestIdx,1)[0];
+      starters.push({...pl, slot:slot.type});
+    }
   }
-  // apply trades
-  for(const tp of state.tradedPicks){
-    const key = `${tp.season}-${tp.round}-${tp.roster_id}`;
-    // owner_id is current owner
-    owned.set(key, tp.owner_id);
-  }
-
-  let capital = 0;
-  const picksDetail = [];
-  for(const [key, owner] of owned){
-    if(owner !== roster.roster_id) continue;
-    const [season, round] = key.split('-').map(Number);
-    const worth = pickWorth[round]||0;
-    capital += worth;
-    picksDetail.push({ season, round, worth });
-  }
-  picksDetail.sort((a,b)=> a.season-b.season || a.round-b.round);
-  return { capital, picksDetail };
+  const bench = remaining.sort((a,b)=>b.ppg-a.ppg);
+  return {starters, bench};
 }
 
-function zScores(arr){
-  const n = arr.length;
-  const mean = arr.reduce((a,b)=>a+b,0)/n;
-  const std = Math.sqrt(arr.reduce((a,b)=>a+Math.pow(b-mean,2),0)/n) || 1;
-  return arr.map(v=> (v-mean)/std);
-}
+let state = {
+  teams:[],
+  sortKey:'winPct',
+  sortDir:'desc',
+  filter:''
+};
 
-function buildTeams(){
-  const scoring = {...state.scoring};
-  if(state.tepOverride!=='auto'){
-    scoring.isTEP = state.tepOverride==='on';
-  }
-  const userMap = new Map(state.users.map(u=>[u.user_id,u]));
-  const teams = [];
-
-  for(const roster of state.rosters){
-    const user = userMap.get(roster.owner_id) || {};
-    const { starters, bench, teamPPG, rosterValue, avgAge, allPlayers } = computeOptimalStarters(roster, scoring);
-    const { capital, picksDetail } = computePickCapital(roster);
-    const record = `${roster.settings?.wins||0}-${roster.settings?.losses||0}${roster.settings?.ties?'-'+roster.settings.ties:''}`;
-    const teamName = user.metadata?.team_name || user.display_name || `Team ${roster.roster_id}`;
-    teams.push({
-      roster_id: roster.roster_id,
-      owner_id: roster.owner_id,
-      teamName,
-      avatar: user.avatar,
-      record,
-      starters,
-      bench,
-      allPlayers,
-      ppg: teamPPG,
-      value: rosterValue,
-      picks: capital,
-      picksDetail,
-      age: avgAge,
-    });
-  }
-
-  // z scores
-  const values = teams.map(t=>t.value);
-  const ppgs = teams.map(t=>t.ppg);
-  const picks = teams.map(t=>t.picks);
-  const ages = teams.map(t=>t.age||0);
-  const zVal = zScores(values);
-  const zPpg = zScores(ppgs);
-  const zPick = zScores(picks);
-  const zAge = zScores(ages.map(a=> -a)); // invert age
-
-  teams.forEach((t,i)=>{
-    const composite = 0.35*zVal[i] + 0.35*zPpg[i] + 0.20*zPick[i] + 0.10*zAge[i];
-    let pct = 50 + 15*composite;
-    pct = Math.max(0, Math.min(100, pct));
-    t.scorePct = pct;
-    t.tier = pct>=85?1: pct>=70?2: pct>=55?3: pct>=40?4: pct>=25?5:6;
-    // narrative
-    const strengths = [];
-    if(zVal[i]>0.5) strengths.push('elite assets');
-    if(zPpg[i]>0.5) strengths.push('strong weekly ceiling');
-    if(zPick[i]>0.5) strengths.push('loaded pick capital');
-    if(zAge[i]>0.5) strengths.push('youth upside');
-    let narr = '';
-    if(t.tier<=2) narr = `Contender with ${strengths.slice(0,2).join(' & ')||'balance'}.`;
-    else if(t.tier<=4) narr = `Mid-pack, ${strengths[0]||'needs consolidation'}.`;
-    else narr = `Rebuild focus: ${strengths[0]||'accumulate picks & youth'}.`;
-    t.narrative = narr;
-  });
-
-  state.teams = teams;
-  applyFilterSort();
-}
-
-function applyFilterSort(){
-  const q = state.search.toLowerCase();
-  let arr = [...state.teams];
-  if(q){
-    arr = arr.filter(t=> t.teamName.toLowerCase().includes(q));
-  }
-  arr.sort((a,b)=>{
+function render(){
+  const filtered = state.teams.filter(t=>t.teamName.toLowerCase().includes(state.filter.toLowerCase()));
+  const sorted = [...filtered].sort((a,b)=>{
     const k = state.sortKey;
-    const dir = state.sortDir==='asc'?1:-1;
-    if(a[k] < b[k]) return 1*dir;
-    if(a[k] > b[k]) return -1*dir;
-    return 0;
+    let av = a[k], bv = b[k];
+    if(k==='team') { av=a.teamName; bv=b.teamName; }
+    if(k==='archetype'){ av=a.archetype; bv=b.archetype; }
+    if(typeof av === 'string') return state.sortDir==='asc'? av.localeCompare(bv) : bv.localeCompare(av);
+    return state.sortDir==='asc'? av-bv : bv-av;
   });
-  state.filtered = arr;
-  renderTable();
-  renderSummary();
-}
-
-function renderSummary(){
-  if(!state.teams.length) return;
-  const avgAge = state.teams.reduce((s,t)=>s+(t.age||0),0)/state.teams.length;
-  $('#stat-age').textContent = fmt1(avgAge);
-  const topPpg = [...state.teams].sort((a,b)=>b.ppg-a.ppg)[0];
-  $('#stat-ppg').textContent = topPpg.teamName;
-  $('#stat-ppg-sub').textContent = `${fmt1(topPpg.ppg)} PPG · Tier ${topPpg.tier}`;
-  const topVal = [...state.teams].sort((a,b)=>b.value-a.value)[0];
-  $('#stat-val').textContent = topVal.teamName;
-  $('#stat-val-sub').textContent = `${fmt(topVal.value)} value`;
-  const totalPicks = state.teams.reduce((s,t)=>s+t.picks,0);
-  $('#stat-picks').textContent = fmt(totalPicks);
-}
-
-function tierPill(tier){
-  const map = {
-    1:{bg:'bg-fuchsia-500/20',text:'text-fuchsia-200',border:'border-fuchsia-500/30',label:'S'},
-    2:{bg:'bg-violet-500/20',text:'text-violet-200',border:'border-violet-500/30',label:'A'},
-    3:{bg:'bg-indigo-500/20',text:'text-indigo-200',border:'border-indigo-500/30',label:'B'},
-    4:{bg:'bg-slate-500/20',text:'text-slate-200',border:'border-slate-500/30',label:'C'},
-    5:{bg:'bg-amber-500/15',text:'text-amber-200',border:'border-amber-500/30',label:'D'},
-    6:{bg:'bg-red-500/15',text:'text-red-200',border:'border-red-500/30',label:'F'},
-  };
-  const m = map[tier]||map[4];
-  return `<span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border ${m.bg} ${m.text} ${m.border}">T${tier} • ${m.label}</span>`;
-}
-
-function avatarUrl(id){
-  if(!id) return 'https://sleepercdn.com/images/v2/icons/player_default.webp';
-  return `https://sleepercdn.com/avatars/thumbs/${id}`;
-}
-
-function renderTable(){
-  const tbody = $('#tbody');
-  tbody.innerHTML = '';
-  if(!state.filtered.length){
-    $('#empty-state').classList.remove('hidden');
-    return;
-  }
-  $('#empty-state').classList.add('hidden');
-  for(const t of state.filtered){
+  tbody.innerHTML='';
+  for(const t of sorted){
     const tr = document.createElement('tr');
-    tr.className = 'group cursor-pointer hover:bg-white/[0.03] transition';
-    tr.dataset.id = t.roster_id;
+    tr.className='main-row';
+    tr.dataset.id=t.rosterId;
     tr.innerHTML = `
-      <td class="px-4 py-3">
-        <div class="flex items-center gap-3 min-w-0">
-          <img src="${avatarUrl(t.avatar)}" class="size-9 rounded-xl border border-white/10 bg-slate-800 object-cover" loading="lazy"/>
-          <div class="min-w-0">
-            <div class="font-semibold truncate leading-tight">${t.teamName}</div>
-            <div class="text-xs text-slate-500 font-mono">${t.record}</div>
+      <td>
+        <div class="team-cell">
+          <div class="avatar">${initials(t.teamName)}</div>
+          <div class="team-meta">
+            <div class="team-name">${t.teamName}</div>
+            <div class="team-record">${t.record}</div>
           </div>
         </div>
       </td>
-      <td class="px-3 py-3">${tierPill(t.tier)}</td>
-      <td class="px-3 py-3">
-        <div class="flex items-center gap-2">
-          <div class="w-16 h-1.5 rounded-full bg-white/10 overflow-hidden">
-            <div class="h-full bg-gradient-to-r from-amber-400 to-fuchsia-500" style="width:${t.scorePct}%"></div>
-          </div>
-          <span class="font-mono text-sm font-semibold">${fmt1(t.scorePct)}</span>
+      <td><span class="pill ${t.pillClass}">${t.archetype}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="bar"><i style="width:${(t.winPct*100).toFixed(0)}%"></i></div>
+          <span class="mono small">${Math.round(t.winPct*100)}%</span>
         </div>
       </td>
-      <td class="px-3 py-3 font-mono text-sm">${fmt1(t.ppg)}</td>
-      <td class="px-3 py-3 font-mono text-sm">${fmt(t.value)}</td>
-      <td class="px-3 py-3 font-mono text-sm">${fmt(t.picks)}</td>
-      <td class="px-3 py-3 font-mono text-sm">${fmt1(t.age)}</td>
-      <td class="px-4 py-3 text-sm text-slate-300 max-w-[320px] truncate">${t.narrative}</td>
+      <td class="mono">${formatNum(t.prod,1)}</td>
+      <td class="mono">${formatNum(t.value,0)}</td>
+      <td class="mono">${formatNum(t.pickScore,0)}</td>
+      <td class="mono">${formatNum(t.avgAge,1)}</td>
     `;
     tbody.appendChild(tr);
 
-    if(state.expanded.has(t.roster_id)){
-      const trDetail = document.createElement('tr');
-      trDetail.className = 'bg-slate-950/60';
-      trDetail.innerHTML = `
-        <td colspan="8" class="px-4 py-5">
-          <div class="grid lg:grid-cols-3 gap-5">
-            <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Optimal Starters</h4>
-              <div class="space-y-1.5 max-h-[340px] overflow-auto pr-1 scrollbar-thin">
-                ${t.starters.map(s=>`
-                  <div class="flex items-center justify-between text-sm py-1 border-b border-white/5 last:border-0">
-                    <div class="min-w-0">
-                      <div class="font-medium truncate">${s.name}</div>
-                      <div class="text-xs text-slate-500 font-mono">${s.slot} • ${s.pos} • ${s.team}</div>
+    const dtr = document.createElement('tr');
+    dtr.className='detail-row hidden';
+    dtr.dataset.id=t.rosterId;
+    dtr.innerHTML = `
+      <td colspan="7">
+        <div class="detail">
+          <div class="subcard">
+            <h4>Optimal Starters</h4>
+            <div class="list">
+              ${t.starters.map(s=>`
+                <div class="rowline">
+                  <div class="left">
+                    <span class="pos ${s.pos}">${s.slot}</span>
+                    <div>
+                      <div style="font-weight:700">${s.name}</div>
+                      <div class="muted small">${s.pos} • ${s.team||'FA'} • Age ${s.age? s.age.toFixed(1):'—'}</div>
                     </div>
-                    <div class="font-mono text-amber-300 font-semibold">${fmt1(s.ppg)}</div>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-            <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Bench Top 12</h4>
-              <div class="space-y-1.5 max-h-[340px] overflow-auto pr-1 scrollbar-thin">
-                ${t.bench.map(s=>`
-                  <div class="flex items-center justify-between text-sm py-1 border-b border-white/5 last:border-0">
-                    <div class="min-w-0">
-                      <div class="font-medium truncate">${s.name}</div>
-                      <div class="text-xs text-slate-500 font-mono">${s.pos} • ${s.team} · age ${s.age||'—'}</div>
-                    </div>
-                    <div class="font-mono text-slate-300">${fmt1(s.ppg)}</div>
-                  </div>
-                `).join('')}
-              </div>
-            <div class="space-y-4">
-              <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Metrics</h4>
-                <div class="grid grid-cols-2 gap-3 text-sm">
-                  <div class="rounded-xl bg-white/5 p-3">
-                    <div class="text-slate-500 text-xs">Roster Value</div>
-                    <div class="font-mono text-lg font-bold">${fmt(t.value)}</div>
-                  </div>
-                  <div class="rounded-xl bg-white/5 p-3">
-                    <div class="text-slate-500 text-xs">PPG</div>
-                    <div class="font-mono text-lg font-bold">${fmt1(t.ppg)}</div>
-                  </div>
-                  <div class="rounded-xl bg-white/5 p-3">
-                    <div class="text-slate-500 text-xs">Pick Capital</div>
-                    <div class="font-mono text-lg font-bold">${fmt(t.picks)}</div>
-                  </div>
-                  <div class="rounded-xl bg-white/5 p-3">
-                    <div class="text-slate-500 text-xs">Avg Age</div>
-                    <div class="font-mono text-lg font-bold">${fmt1(t.age)}</div>
-                  </div>
+                  <div class="mono" style="font-weight:700">${formatNum(s.ppg,1)}</div>
                 </div>
-              </div>
-              <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Traded Picks Owned</h4>
-                <div class="text-xs font-mono text-slate-400 space-y-1 max-h-[120px] overflow-auto scrollbar-thin">
-                  ${t.picksDetail.length? t.picksDetail.map(p=>`<div>${p.season} R${p.round} • +${p.worth}</div>`).join('') : '<div class="text-slate-600">No extra picks data</div>'}
-                </div>
-              </div>
+              `).join('')}
             </div>
           </div>
-        </td>
-      `;
-      tbody.appendChild(trDetail);
-    }
+          <div class="subcard">
+            <h4>Bench Top 12</h4>
+            <div class="list">
+              ${t.bench.slice(0,12).map(s=>`
+                <div class="rowline">
+                  <div class="left">
+                    <span class="pos ${s.pos}">${s.pos}</span>
+                    <div>
+                      <div style="font-weight:600">${s.name}</div>
+                      <div class="muted small">${s.team||'FA'} • Val ${formatNum(s.value,0)}</div>
+                    </div>
+                  </div>
+                  <div class="mono">${formatNum(s.ppg,1)}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="subcard">
+            <h4>Details</h4>
+            <div class="kv">
+              <b>Narrative</b><span>${t.narrative}</span>
+              <b>Window Z</b><span class="mono">${formatNum(t.windowZ,2)}</span>
+              <b>Production Z</b><span class="mono">${formatNum(t.prodZ,2)}</span>
+              <b>Picks</b><span class="mono">${formatNum(t.pickScore,0)}</span>
+            </div>
+            <hr class="sep"/>
+            <div class="tags">${t.tags.map(tag=>`<span class="tag ${tag.cls}">${tag.label}</span>`).join('')}</div>
+            <hr class="sep"/>
+            <div class="small muted" style="margin-bottom:6px">Pick Capital Details</div>
+            <div class="list">
+              ${t.pickList.length? t.pickList.map(p=>`
+                <div class="rowline">
+                  <div class="left">
+                    <span class="pos">${p.round}</span>
+                    <div>${p.season} • R${p.round} <span class="muted">from ${p.originalName||'?'}</span></div>
+                  </div>
+                  <div class="mono">${formatNum(p.weighted,0)}</div>
+                </div>
+              `).join(''): `<div class="muted small">No traded picks tracked</div>`}
+            </div>
+          </div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(dtr);
   }
+
+  // toggle
+  tbody.querySelectorAll('tr.main-row').forEach(tr=>{
+    tr.addEventListener('click',()=>{
+      const id = tr.dataset.id;
+      const detail = tbody.querySelector(`tr.detail-row[data-id="${id}"]`);
+      detail.classList.toggle('hidden');
+    });
+  });
 }
 
-// Events
-$('#tbody').addEventListener('click', e=>{
-  const tr = e.target.closest('tr[data-id]');
-  if(!tr) return;
-  const id = Number(tr.dataset.id);
-  if(state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id);
-  renderTable();
-});
+function updateSortHeaders(){
+  document.querySelectorAll('thead th').forEach(th=>{
+    th.classList.toggle('active', th.dataset.k===state.sortKey);
+  });
+}
 
-document.querySelectorAll('th[data-sort]').forEach(th=>{
-  th.addEventListener('click', ()=>{
-    const key = th.dataset.sort;
-    if(state.sortKey===key){
-      state.sortDir = state.sortDir==='desc'?'asc':'desc';
+document.querySelectorAll('thead th').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const k = th.dataset.k;
+    if(state.sortKey===k){
+      state.sortDir = state.sortDir==='asc'?'desc':'asc';
     }else{
-      state.sortKey = key;
-      state.sortDir = 'desc';
+      state.sortKey=k;
+      state.sortDir='desc';
     }
-    applyFilterSort();
+    updateSortHeaders();
+    render();
   });
 });
 
-$('#search-input').addEventListener('input', e=>{
-  state.search = e.target.value;
-  applyFilterSort();
+searchInput.addEventListener('input',e=>{
+  state.filter = e.target.value;
+  render();
 });
 
-$('#tep-toggle').addEventListener('click', ()=>{
-  const order = ['auto','on','off'];
-  const idx = order.indexOf(state.tepOverride);
-  state.tepOverride = order[(idx+1)%3];
-  const btn = $('#tep-toggle');
-  btn.querySelector('span').textContent = state.tepOverride==='auto'?'Auto Detect': state.tepOverride==='on'?'TEP On':'TEP Off';
-  btn.classList.toggle('on', state.tepOverride==='on' || (state.tepOverride==='auto' && state.scoring.isTEP));
-  if(state.teams.length){
-    buildTeams();
-  }
-  updateBadges();
-});
-
-$('#load-btn').addEventListener('click', ()=> loadLeague($('#league-input').value.trim()));
-$('#league-input').addEventListener('keydown', e=>{ if(e.key==='Enter') loadLeague($('#league-input').value.trim()); });
-
-function updateBadges(){
-  $('#badge-league').querySelector('span:last-child').textContent = state.league?.name || '—';
-  $('#badge-scoring').querySelector('span:last-child').textContent = state.scoring?.type || '—';
-  const tepActive = state.tepOverride==='auto'? state.scoring.isTEP : state.tepOverride==='on';
-  const tepEl = $('#badge-tep');
-  tepEl.textContent = tepActive? 'TEP ON' : 'TEP OFF';
-  tepEl.className = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold ${tepActive?'bg-cyan-500/15 border-cyan-400/30 text-cyan-200':'bg-white/5 border-white/10 text-slate-400'}`;
-  $('#badge-members').textContent = state.users.length? `${state.users.length} members` : '— members';
-}
-
-async function loadLeague(id){
-  if(!id) return;
-  state.leagueId = id;
+async function main(){
   try{
-    showStatus('Loading league from Sleeper…');
-    state.league = await fetch(`https://api.sleeper.app/v1/league/${id}`).then(r=>r.json());
-    if(!state.league || state.league.status===404){ throw new Error('League not found'); }
-    const [users, rosters, players, traded] = await Promise.all([
-      fetch(`https://api.sleeper.app/v1/league/${id}/users`).then(r=>r.json()),
-      fetch(`https://api.sleeper.app/v1/league/${id}/rosters`).then(r=>r.json()),
-      fetch(`https://api.sleeper.app/v1/players/nfl`).then(r=>r.json()),
-      fetch(`https://api.sleeper.app/v1/league/${id}/traded_picks`).then(r=>r.json()).catch(()=>[]),
-    ]);
-    state.users = users;
-    state.rosters = rosters;
-    state.playersMap = players;
-    state.tradedPicks = traded || [];
-    state.scoring = getScoringType(state.league);
-    updateBadges();
-    $('#league-input').value = id;
-    history.replaceState(null,'',`?league_id=${id}`);
+    setStatus('Fetching league...');
+    const league = await fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}`).then(r=>r.json());
+    setStatus('Fetching users...');
+    const users = await fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/users`).then(r=>r.json());
+    setStatus('Fetching rosters...');
+    const rosters = await fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/rosters`).then(r=>r.json());
+    setStatus('Fetching picks...');
+    const tradedPicks = await fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/traded_picks`).then(r=>r.json());
+    setStatus('Fetching players (large)...');
+    const players = await fetch(`https://api.sleeper.app/v1/players/nfl`).then(r=>r.json());
+    setStatus('Fetching age values...');
+    const ageRows = await fetchCSV(AGE_CSV);
+    setStatus('Fetching PPG...');
+    const ppgRows = await fetchCSV(PPG_CSV);
 
-    showStatus('Loading player values & projections…');
-    const [ageRows,ppgRows] = await Promise.all([fetchCSV(AGE_CSV), fetchCSV(PPG_CSV)]);
-    state.ageValueMap = buildAgeValueMap(ageRows);
-    state.ppgMap = buildPpgMap(ppgRows);
+    const rec = league.scoring_settings.rec || 0;
+    const bonus_rec_te = league.scoring_settings.bonus_rec_te || 0;
+    const isTEP = bonus_rec_te > 0;
+    const scoringKey = rec >= 0.9 ? 'PPR' : rec >= 0.4 ? 'Half' : 'Std';
+    const tepSuffix = bonus_rec_te === 0.5 ? '0.5_TEP' : bonus_rec_te >= 1 ? 'TEP' : '';
 
-    showStatus('Computing tiers & optimal lineups…');
-    buildTeams();
-    hideStatus();
+    document.getElementById('leagueSub').textContent = `${league.name} • Season ${league.season}`;
+    const badgeContainer = document.getElementById('badges');
+    badgeContainer.innerHTML = `
+      <span class="badge accent">${scoringKey}${isTEP? ` +${bonus_rec_te} TEP`:''}</span>
+      <span class="badge">${rosters.length} teams</span>
+      <span class="badge">${league.roster_positions.includes('SUPER_FLEX')? 'Superflex': '1QB'}</span>
+    `;
+
+    // Build maps
+    const ageValueMap = new Map();
+    for(const r of ageRows){
+      const key = normalizeName(r.Player || r.player || r.Name);
+      if(!key) continue;
+      ageValueMap.set(key,{
+        age: parseFloat(r.Age)||0,
+        value: parseFloat(r.Value)||0,
+        pos: (r.Pos||r.Position||'').toUpperCase()
+      });
+    }
+    const ppgMap = new Map();
+    for(const r of ppgRows){
+      const key = normalizeName(r.Player||r.player);
+      if(!key) continue;
+      const obj={};
+      for(const k in r){
+        const v=r[k];
+        const num = parseFloat(v);
+        obj[k]= isNaN(num)? v : num;
+      }
+      ppgMap.set(key,obj);
+    }
+
+    function getPpg(player){
+      const full = player.full_name || `${player.first_name||''} ${player.last_name||''}`.trim();
+      const entry = ppgMap.get(normalizeName(full));
+      if(!entry) return 0;
+      const baseCol = `Avg_${scoringKey}`;
+      if(player.position==='TE' && isTEP){
+        const col = `Avg_${scoringKey}_${tepSuffix}`;
+        return entry[col] || entry[baseCol] || 0;
+      }
+      return entry[baseCol] || 0;
+    }
+
+    const rosterIdToName = new Map();
+    for(const r of rosters){
+      const owner = users.find(u=>u.user_id===r.owner_id);
+      const name = owner?.metadata?.team_name || owner?.display_name || `Team ${r.roster_id}`;
+      rosterIdToName.set(r.roster_id, name);
+    }
+
+    const currentYear = new Date().getFullYear();
+    const slots = buildSlots(league.roster_positions);
+
+    const teamsData = [];
+    for(const roster of rosters){
+      const owner = users.find(u=>u.user_id===roster.owner_id);
+      const teamName = owner?.metadata?.team_name || owner?.display_name || `Team ${roster.roster_id}`;
+      const record = `${roster.settings.wins||0}-${roster.settings.losses||0}${roster.settings.ties?'-'+roster.settings.ties:''}`;
+
+      const pool=[];
+      const playerIds = roster.players||[];
+      for(const pid of playerIds){
+        const p = players[pid];
+        if(!p) continue;
+        const pos = p.position;
+        if(pos==='DEF' || pos==='K') continue;
+        const key = normalizeName(p.full_name);
+        const ageRec = ageValueMap.get(key);
+        const age = ageRec?.age || 0;
+        const value = ageRec?.value || 0;
+        const ppg = getPpg(p);
+        pool.push({
+          id:pid,
+          name:p.full_name,
+          pos,
+          team:p.team,
+          age,
+          value,
+          ppg
+        });
+      }
+
+      const {starters, bench} = assignOptimalStarters(pool, slots);
+      const teamPPG = starters.reduce((s,x)=>s+x.ppg,0);
+      const rosterValue = pool.reduce((s,x)=>s+x.value,0);
+      const ages = pool.map(p=>p.age).filter(a=>a>0);
+      const avgAge = ages.length? mean(ages):0;
+
+      const picks = tradedPicks.filter(p=>p.owner_id===roster.roster_id);
+      const pickList=[];
+      let pickScore=0;
+      for(const p of picks){
+        const round = p.round;
+        const base = round===1?100: round===2?50: round===3?25: round===4?12: round===5?6:3;
+        const season = parseInt(p.season);
+        const yearsOut = Math.max(0, season - currentYear);
+        const discount = Math.pow(0.85, yearsOut);
+        const weighted = base*discount;
+        pickScore += weighted;
+        pickList.push({
+          season,
+          round,
+          original: p.previous_owner_id,
+          originalName: rosterIdToName.get(p.previous_owner_id) || `Team ${p.previous_owner_id}`,
+          weighted
+        });
+      }
+      pickList.sort((a,b)=>a.season-b.season||a.round-b.round);
+
+      teamsData.push({
+        rosterId: roster.roster_id,
+        teamName,
+        record,
+        pool,
+        starters,
+        bench,
+        prod: teamPPG,
+        value: rosterValue,
+        avgAge,
+        pickScore,
+        pickList
+      });
+    }
+
+    // Z scores
+    const values = teamsData.map(t=>t.value);
+    const prods = teamsData.map(t=>t.prod);
+    const picksArr = teamsData.map(t=>t.pickScore);
+    const youthArr = teamsData.map(t=> -t.avgAge );
+
+    const vM = mean(values), vS = std(values);
+    const pM = mean(prods), pS = std(prods);
+    const pkM = mean(picksArr), pkS = std(picksArr);
+    const yM = mean(youthArr), yS = std(youthArr);
+
+    for(const t of teamsData){
+      const valueZ = zscore(t.value, vM, vS);
+      const ppgZ = zscore(t.prod, pM, pS);
+      const picksZ = zscore(t.pickScore, pkM, pkS);
+      const youthZ = zscore(-t.avgAge, yM, yS);
+      const windowZ = 0.5*valueZ + 0.3*picksZ + 0.2*youthZ;
+      t.valueZ = valueZ;
+      t.prodZ = ppgZ;
+      t.picksZ = picksZ;
+      t.youthZ = youthZ;
+      t.windowZ = windowZ;
+    }
+
+    // percentiles
+    const winZs = teamsData.map(t=>t.windowZ);
+    const prodZs = teamsData.map(t=>t.prodZ);
+    const pickZs = teamsData.map(t=>t.picksZ);
+    for(const t of teamsData){
+      t.winPct = percentileRank(t.windowZ, winZs);
+      t.prodPct = percentileRank(t.prodZ, prodZs);
+      t.picksPct = percentileRank(t.picksZ, pickZs);
+    }
+
+    // Archetypes
+    const archetypeDefs = [
+      {key:'Elite Contender', cls:'elite', test:t=> t.prodPct>=0.70 && t.winPct>=0.70 && t.avgAge<=26.5, narrative:'Young elite core with top production and long window.'},
+      {key:'Aging Contender', cls:'aging', test:t=> t.prodPct>=0.70 && t.winPct<=0.30 && t.avgAge>=27.5 && t.picksPct<=0.30, narrative:'Win now before age cliff; low future capital.'},
+      {key:'Win-Now Fringe', cls:'fringe', test:t=> t.prodPct>=0.70 && t.winPct>=0.30 && t.winPct<0.70 && t.avgAge>=26.5, narrative:'Productive now but window is middling.'},
+      {key:'Young Riser', cls:'riser', test:t=> t.prodPct>=0.40 && t.prodPct<0.70 && t.winPct>=0.70 && t.avgAge<=25.5, narrative:'Ascending youth with strong capital.'},
+      {key:'Pick-Rich Rebuilder', cls:'pickrich', test:t=> t.prodPct<=0.40 && t.winPct>=0.70 && t.picksPct>=0.70, narrative:'Tore down for picks; long-term upside.'},
+      {key:'Volatile / High-Variance', cls:'volatile', test:t=> t.prodPct>=0.40 && t.prodPct<0.70 && t.winPct<=0.30, narrative:'Middling production with poor window; boom/bust.'},
+      {key:'Stripped Rebuilder', cls:'stripped', test:t=> t.prodPct<=0.40 && t.winPct<=0.30, narrative:'Bottomed out; needs full reset.'},
+      {key:'Stuck in Middle', cls:'stuck', test:t=> t.prodPct<=0.40 && t.winPct>=0.30 && t.winPct<0.70, narrative:'Not good enough to win, not bad enough to rebuild.'},
+      {key:'Balanced Core', cls:'balanced', test:t=> t.prodPct>=0.40 && t.prodPct<0.70 && t.winPct>=0.30 && t.winPct<0.70, narrative:'Solid core with flexibility.'},
+    ];
+
+    for(const t of teamsData){
+      let assigned = null;
+      for(const a of archetypeDefs){
+        if(a.test(t)){ assigned=a; break; }
+      }
+      if(!assigned) assigned = archetypeDefs.find(a=>a.key==='Balanced Core');
+      t.archetype = assigned.key;
+      t.pillClass = assigned.cls;
+      t.narrative = assigned.narrative;
+
+      // Tags
+      const tags=[];
+      const startingTE = t.starters.find(s=>s.slot==='TE');
+      if(startingTE && startingTE.ppg >=15) tags.push({label:'TE Premium Built', cls:'good'});
+      const isSF = league.roster_positions.includes('SUPER_FLEX');
+      const qbs = t.pool.filter(p=>p.pos==='QB').sort((a,b)=>b.ppg-a.ppg);
+      if(isSF && (qbs.length<2 || (qbs[0]?.ppg||0)<18)) tags.push({label:'QB Desperate', cls:'bad'});
+      const rbs = t.pool.filter(p=>p.pos==='RB').sort((a,b)=>b.ppg-a.ppg);
+      if((rbs[1]?.ppg||0)<12) tags.push({label:'RB Room Issue', cls:'warn'});
+      const wrs = t.pool.filter(p=>p.pos==='WR').sort((a,b)=>b.ppg-a.ppg).slice(0,3);
+      if(wrs.length===3 && mean(wrs.map(w=>w.ppg))>=16) tags.push({label:'WR Core', cls:'good'});
+      const firstsNext2 = t.pickList.filter(p=>p.round===1 && p.season<=currentYear+1).length;
+      if(firstsNext2>=2) tags.push({label:'Pick Concentration', cls:'good'});
+      const startersAge28 = t.starters.filter(s=>s.age>=28).length;
+      if(startersAge28>=4) tags.push({label:'Age Cliff', cls:'bad'});
+      t.tags = tags;
+    }
+
+    state.teams = teamsData;
+
+    // Summary cards
+    document.getElementById('sumAge').textContent = formatNum(mean(teamsData.map(t=>t.avgAge)),1);
+    const topPPG = [...teamsData].sort((a,b)=>b.prod-a.prod)[0];
+    document.getElementById('sumPPG').textContent = formatNum(topPPG.prod,1);
+    document.getElementById('sumPPGSub').textContent = topPPG.teamName;
+    const topVal = [...teamsData].sort((a,b)=>b.value-a.value)[0];
+    document.getElementById('sumVal').textContent = formatNum(topVal.value,0);
+    document.getElementById('sumValSub').textContent = topVal.teamName;
+    document.getElementById('sumPicks').textContent = formatNum(teamsData.reduce((s,t)=>s+t.pickScore,0),0);
+
+    loadingEl.classList.add('hidden');
+    tableEl.classList.remove('hidden');
+    updateSortHeaders();
+    render();
+    setStatus('Done');
   }catch(err){
     console.error(err);
-    showStatus(err.message || 'Failed to load league', 'error');
+    setStatus('Error: '+err.message);
+    loadingEl.innerHTML = `<div style="color:#fca5a5;padding:20px">Failed to load: ${err.message}</div>`;
   }
 }
 
-// Auto load from URL
-const params = new URLSearchParams(location.search);
-const paramId = params.get('league_id');
-if(paramId){
-  $('#league-input').value = paramId;
-  loadLeague(paramId);
-}else{
-  $('#empty-state').classList.remove('hidden');
-}
-
+main();
 </script>
 </body>
 </html>
