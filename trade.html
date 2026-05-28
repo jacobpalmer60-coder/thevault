@@ -1336,7 +1336,10 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const tol = getActiveTol('pkg-tol-group')/100;
     let targetVal = targetValInput;
     if(!targetVal){
-      alert('Enter Target Value');
+      console.error('Enter Target Value in the Target Value field');
+      setStatus('Enter Target Value');
+      const tbody = $('#pkg-results');
+      if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-amber-400">Enter a Target Value above, then click Find Combos</td></tr>`;
       return;
     }
     const min = targetVal*(1-tol);
@@ -1469,39 +1472,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
     init();
   });
-})();
-</script>
-<div id="debug-panel" style="position:fixed;bottom:10px;right:10px;width:360px;max-height:40vh;background:#0b0f19ee;border:1px solid #334155;border-radius:8px;padding:8px;font:12px monospace;color:#e2e8f0;z-index:9999;overflow:auto;display:none;">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-    <strong>Debug Log</strong>
-    <button id="debug-toggle" style="background:#1e293b;border:none;color:#94a3b8;padding:2px 6px;border-radius:4px;cursor:pointer;">Hide</button>
-  </div>
-  <div id="debug-log"></div>
-</div>
-<script>
-(function(){
-  const panel = document.getElementById('debug-panel');
-  const logEl = document.getElementById('debug-log');
-  const toggle = document.getElementById('debug-toggle');
-  let visible = true;
-  function show(){ panel.style.display='block'; }
-  function log(msg, type='info'){
-    show();
-    const line = document.createElement('div');
-    line.style.padding='2px 0';
-    line.style.borderBottom='1px solid #1e293b';
-    line.style.color = type==='error' ? '#f87171' : type==='warn' ? '#fbbf24' : '#94a3b8';
-    line.textContent = '['+new Date().toLocaleTimeString()+'] '+msg;
-    logEl.prepend(line);
-  }
-  toggle.onclick = ()=>{ visible=!visible; panel.style.display=visible?'block':'none'; toggle.textContent=visible?'Hide':'Show'; };
-  window.addEventListener('error', e=>log(e.message+' @ '+e.filename+':'+e.lineno,'error'));
-  window.addEventListener('unhandledrejection', e=>log('Promise: '+(e.reason?.message||e.reason),'error'));
-  const origErr = console.error;
-  console.error = (...a)=>{ log(a.join(' '),'error'); origErr.apply(console,a); };
-  const origLog = console.log;
-  console.log = (...a)=>{ log(a.join(' '),'info'); origLog.apply(console,a); };
-  log('Debug panel ready');
 })();
 </script>
 </body>
