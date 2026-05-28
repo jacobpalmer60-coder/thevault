@@ -223,9 +223,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
                 </div>
               </div>
             </div>
-            <div class="mb-4">
-              <button id="similar-find" class="px-5 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-sm font-medium">Find Similar</button>
-            </div>
             <div class="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
               <table class="w-full text-sm value-table">
                 <thead class="table-head bg-slate-900/60">
@@ -376,7 +373,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     pkgMustInclude:[],
     pkgMustOptions:[],
     pkgResultsFull:[],
-    pkgTeamFilter:'all'
+    pkgTeamFilter:'all',
+    pkgExclude:new Set(),
+    pkgMust:new Set()
   };
 
   const $ = s => document.querySelector(s);
@@ -838,33 +837,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     state.teamA=state.rosters[0]?.roster_id;
     state.teamB=state.rosters[1]?.roster_id||state.rosters[0]?.roster_id;
     a.value=state.teamA;b.value=state.teamB;
-
-    // Populate Value Tools selects
-    const similarTeam = $('#similar-team');
-    const pkgTargetTeam = $('#pkg-target-team');
-    const pkgSourceTeam = $('#pkg-source-team');
-    if(similarTeam){
-      similarTeam.innerHTML = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
-      similarTeam.value = state.rosters[0]?.roster_id;
-      const sel = $('#similar-asset');
-      if(sel){
-        const assets = getAllAssetsForTeam(+similarTeam.value).filter(a=>a.type==='player');
-        sel.innerHTML = assets.map(a=>`<option value="${a.id}">${a.name} (${a.pos}) - ${fmt(a.value)}</option>`).join('');
-      }
-    }
-    if(pkgTargetTeam){
-      pkgTargetTeam.innerHTML = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
-      pkgTargetTeam.value = state.rosters[0]?.roster_id;
-    }
-    if(pkgSourceTeam){
-      pkgSourceTeam.innerHTML = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
-      pkgSourceTeam.value = state.rosters[1]?.roster_id || state.rosters[0]?.roster_id;
-      const mustSel = $('#pkg-must-select');
-      if(mustSel){
-        const assets = getAllAssetsForTeam(+pkgSourceTeam.value).filter(a=>a.type==='player');
-        mustSel.innerHTML = assets.map(a=>`<option value="${a.id}">${a.name} (${a.pos})</option>`).join('');
-      }
-    }
   }
 
   function toggle(set,id){set.has(id)?set.delete(id):set.add(id);updateAll();}
@@ -1268,10 +1240,22 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     }
     mustAdd?.addEventListener('click', ()=>{
       const pid = mustSel.value;
-      if(pid && state.pkgMust.size <2 && !state.pkgMust.has(pid)){
-        state.pkgMust.add(pid);
-        renderMustChips();
+      console.log('Must Add clicked, pid=', pid, 'size=', state.pkgMust.size);
+      if(!pid){
+        console.error('No player selected in Must Include dropdown');
+        return;
       }
+      if(state.pkgMust.size >=2){
+        console.error('Must Include limit reached (2 max)');
+        return;
+      }
+      if(state.pkgMust.has(pid)){
+        console.error('Player already in Must Include');
+        return;
+      }
+      state.pkgMust.add(pid);
+      renderMustChips();
+      console.log('Added to Must Include, new size=', state.pkgMust.size);
     });
     renderMustChips();
 
@@ -1336,10 +1320,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const tol = getActiveTol('pkg-tol-group')/100;
     let targetVal = targetValInput;
     if(!targetVal){
-      console.error('Enter Target Value in the Target Value field');
-      setStatus('Enter Target Value');
-      const tbody = $('#pkg-results');
-      if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-amber-400">Enter a Target Value above, then click Find Combos</td></tr>`;
+      alert('Enter Target Value');
       return;
     }
     const min = targetVal*(1-tol);
@@ -1433,6 +1414,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     buildPickInventory();
     computeTeamMetrics();
     renderSelect();
+    setupExclude();
+    setupPackageUI();
     setStatus('Ready • computed on refresh');
     updateAll();
   }
