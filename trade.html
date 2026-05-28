@@ -373,7 +373,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     pkgMustInclude:[],
     pkgMustOptions:[],
     pkgResultsFull:[],
-    pkgTeamFilter:'all'
+    pkgTeamFilter:'all',
+    pkgExclude:new Set()
   };
 
   const $ = s => document.querySelector(s);
@@ -1116,7 +1117,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   }
 
   function setupExclude(){
-    console.log('setupExclude called');
     const container = $('#pkg-exclude-combo');
     if(!container || container.dataset.initialized) return;
     container.dataset.initialized = '1';
@@ -1173,13 +1173,11 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   }
 
   function setupPackageUI(){
-    console.log('setupPackageUI called, rosters:', state.rosters.length);
     const similarTeam = $('#similar-team');
     const pkgTargetTeam = $('#pkg-target-team');
     const pkgSourceTeam = $('#pkg-source-team');
-    if(!similarTeam) { console.log('similarTeam not found'); return; }
+    if(!similarTeam) return;
     const options = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
-    console.log('options length', options.length);
     similarTeam.innerHTML = options;
     if(pkgTargetTeam) pkgTargetTeam.innerHTML = options;
     if(pkgSourceTeam) pkgSourceTeam.innerHTML = options;
@@ -1225,6 +1223,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     buildPickInventory();
     computeTeamMetrics();
     renderSelect();
+    setupExclude();
+    setupPackageUI();
     setStatus('Ready • computed on refresh');
     updateAll();
   }
