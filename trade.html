@@ -376,9 +376,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     pkgMustInclude:[],
     pkgMustOptions:[],
     pkgResultsFull:[],
-    pkgTeamFilter:'all',
-    pkgMust:new Set(),
-    pkgExclude:new Set()
+    pkgTeamFilter:'all'
   };
 
   const $ = s => document.querySelector(s);
@@ -1234,6 +1232,184 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     }
     if(pkgSourceTeam) pkgSourceTeam.addEventListener('change', populateMustSelect);
     populateMustSelect();
+
+    // Segmented button handlers
+    function setupSegGroup(id){
+      const grp = $('#'+id);
+      if(!grp) return;
+      grp.addEventListener('click', e=>{
+        const btn = e.target.closest('button[data-val]');
+        if(!btn) return;
+        grp.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    }
+    setupSegGroup('similar-tol-group');
+    setupSegGroup('pkg-tol-group');
+
+    // Must include add/remove
+    const mustAdd = $('#pkg-must-add');
+    const mustSel = $('#pkg-must-select');
+    const mustChips = $('#pkg-must-chips');
+    function renderMustChips(){
+      if(!mustChips) return;
+      mustChips.innerHTML = '';
+      state.pkgMust.forEach(pid=>{
+        const p = playerFromId(pid);
+        if(!p) return;
+        const chip = document.createElement('span');
+        chip.className = 'badge flex items-center gap-2';
+        chip.innerHTML = `${p.name} <span class="text-[10px] opacity-70">(${p.pos})</span> <button class="ml-1 text-slate-400 hover:text-white">×</button>`;
+        chip.querySelector('button').onclick = ()=>{ state.pkgMust.delete(pid); renderMustChips(); };
+        mustChips.appendChild(chip);
+      });
+      const warn = $('#pkg-must-warning');
+      if(warn) warn.classList.toggle('hidden', state.pkgMust.size <=2);
+    }
+    mustAdd?.addEventListener('click', ()=>{
+      const pid = mustSel.value;
+      if(pid && state.pkgMust.size <2 && !state.pkgMust.has(pid)){
+        state.pkgMust.add(pid);
+        renderMustChips();
+      }
+    });
+    renderMustChips();
+
+    // Button listeners
+    $('#similar-find')?.addEventListener('click', findSimilar);
+    $('#pkg-find')?.addEventListener('click', findPackageCombos);
+  }
+
+  function getActiveTol(groupId){
+    const grp = $('#'+groupId);
+    const btn = grp?.querySelector('button.active');
+    return btn ? +btn.dataset.val : 10;
+  }
+
+  function findSimilar(){
+    const assetSel = $('#similar-asset');
+    if(!assetSel) return;
+    const assetId = assetSel.value;
+    if(!assetId) return;
+    const refAsset = playerFromId(assetId);
+    if(!refAsset) return;
+    const tol = getActiveTol('similar-tol-group')/100;
+    const targetVal = refAsset.value;
+    const min = targetVal*(1-tol);
+    const max = targetVal*(1+tol);
+    const results = [];
+    state.rosters.forEach(r=>{
+      const assets = getAllAssetsForTeam(r.roster_id).filter(a=>a.type==='player' && a.id!==assetId);
+      assets.forEach(a=>{
+        if(a.value>=min && a.value<=max){
+          results.push({team:teamName(r), asset:a, delta:a.value-targetVal});
+        }
+      });
+    });
+    results.sort((a,b)=>Math.abs(a.delta)-Math.abs(b.delta));
+    const tbody = $('#similar-results');
+    if(!tbody) return;
+    if(!results.length){
+      tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-slate-500">No similar assets found</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = results.slice(0,50).map(r=>`
+      <tr class="hover:bg-white/5">
+        <td class="py-2 px-4">${r.team}</td>
+        <td class="py-2 px-3">${r.asset.name}</td>
+        <td class="py-2 px-3">${r.asset.pos}</td>
+        <td class="py-2 px-3">${r.asset.age??'—'}</td>
+        <td class="py-2 px-3">${r.asset.ppg?r.asset.ppg.toFixed(1):'—'}</td>
+        <td class="py-2 px-3 mono">${fmt(r.asset.value)}</td>
+        <td class="py-2 px-3 mono ${r.delta>=0?'text-green-400':'text-red-400'}">${r.delta>=0?'+':''}${fmt(r.delta)}</td>
+        <td class="py-2 px-4 text-right"><button class="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20">Add</button></td>
+      </tr>`).join('');
+  }
+
+  function findPackageCombos(){
+    const targetTeamEl = $('#pkg-target-team');
+    const sourceTeamEl = $('#pkg-source-team');
+    if(!targetTeamEl || !sourceTeamEl) return;
+    const targetTeamId = +targetTeamEl.value;
+    const sourceTeamId = +sourceTeamEl.value;
+    const targetValInput = +$('#pkg-value').value || 0;
+    const tol = getActiveTol('pkg-tol-group')/100;
+    let targetVal = targetValInput;
+    if(!targetVal){
+      alert('Enter Target Value');
+      return;
+    }
+    const min = targetVal*(1-tol);
+    const max = targetVal*(1+tol);
+    const candidates = getAllAssetsForTeam(sourceTeamId).filter(a=>{
+      if(state.pkgExclude.has(a.id)) return false;
+      if(a.type==='player' && a.value<500) return false;
+      return true;
+    });
+    const mustIds = Array.from(state.pkgMust);
+    const mustAssets = mustIds.map(id=>candidates.find(c=>c.id===id)).filter(Boolean);
+    const remaining = candidates.filter(c=>!mustIds.includes(c.id));
+    const req = {
+      QB: +$('#pkg-req-qb').value||0,
+      RB: +$('#pkg-req-rb').value||0,
+      WR: +$('#pkg-req-wr').value||0,
+      TE: +$('#pkg-req-te').value||0,
+      picks: +$('#pkg-req-picks').value||0
+    };
+    const combos = [];
+    const maxSize = 4;
+    function meetsReq(combo){
+      const cnt = {QB:0,RB:0,WR:0,TE:0,picks:0};
+      combo.forEach(a=>{
+        if(a.type==='pick') cnt.picks++;
+        else if(cnt[a.pos]!==undefined) cnt[a.pos]++;
+      });
+      return cnt.QB>=req.QB && cnt.RB>=req.RB && cnt.WR>=req.WR && cnt.TE>=req.TE && cnt.picks>=req.picks;
+    }
+    const n = remaining.length;
+    for(let i=0;i<n;i++){
+      const c=[...mustAssets, remaining[i]];
+      const val=c.reduce((s,a)=>s+a.value,0);
+      if(val>=min && val<=max && meetsReq(c)) combos.push(c);
+    }
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+      const c=[...mustAssets, remaining[i], remaining[j]];
+      if(c.length>maxSize) continue;
+      const val=c.reduce((s,a)=>s+a.value,0);
+      if(val>=min && val<=max && meetsReq(c)) combos.push(c);
+    }
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) for(let k=j+1;k<n;k++){
+      const c=[...mustAssets, remaining[i], remaining[j], remaining[k]];
+      if(c.length>maxSize) continue;
+      const val=c.reduce((s,a)=>s+a.value,0);
+      if(val>=min && val<=max && meetsReq(c)) combos.push(c);
+    }
+    combos.sort((a,b)=>{
+      const va=a.reduce((s,x)=>s+x.value,0);
+      const vb=b.reduce((s,x)=>s+x.value,0);
+      return Math.abs(va-targetVal)-Math.abs(vb-targetVal);
+    });
+    const tbody = $('#pkg-results');
+    if(!tbody) return;
+    if(!combos.length){
+      tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500">No combos found. Try looser tolerance or adjust requirements.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = combos.slice(0,30).map(c=>{
+      const val=c.reduce((s,a)=>s+a.value,0);
+      const names=c.map(a=>a.type==='pick'?`${a.year} ${a.round}.${a.pick}`:a.name).join(', ');
+      const posCounts={QB:0,RB:0,WR:0,TE:0};
+      c.forEach(a=>{ if(a.pos && posCounts[a.pos]!==undefined) posCounts[a.pos]++; });
+      const comp = Object.entries(posCounts).filter(([,v])=>v>0).map(([k,v])=>`${v} ${k}`).join(', ') || '—';
+      return `<tr class="hover:bg-white/5">
+        <td class="py-2 px-4">${names}</td>
+        <td class="py-2 px-3 mono">${fmt(val)}</td>
+        <td class="py-2 px-3 mono ${val>=targetVal?'text-green-400':'text-red-400'}">${val>=targetVal?'+':''}${fmt(val-targetVal)}</td>
+        <td class="py-2 px-3">${c.length}</td>
+        <td class="py-2 px-3 text-xs">${comp}</td>
+        <td class="py-2 px-4 text-right"><button class="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20">Add</button></td>
+      </tr>`;
+    }).join('');
   }
 
   async function init(){
@@ -1254,6 +1430,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     buildPickInventory();
     computeTeamMetrics();
     renderSelect();
+    setupExclude();
+    setupPackageUI();
     setStatus('Ready • computed on refresh');
     updateAll();
   }
