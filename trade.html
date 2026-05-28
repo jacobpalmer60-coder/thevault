@@ -223,9 +223,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
                 </div>
               </div>
             </div>
-            <div class="mb-4">
-              <button id="similar-find" class="px-5 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-sm font-medium">Find Similar</button>
-            </div>
             <div class="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
               <table class="w-full text-sm value-table">
                 <thead class="table-head bg-slate-900/60">
@@ -376,23 +373,21 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     pkgMustInclude:[],
     pkgMustOptions:[],
     pkgResultsFull:[],
-    pkgTeamFilter:'all'
+    pkgTeamFilter:'all',
+    pkgExclude:new Set()
   };
 
   const $ = s => document.querySelector(s);
   const fmt = n => Math.round(n).toLocaleString();
   const fmt1 = n => (Math.round(n*10)/10).toFixed(1);
   const setStatus = t => { const el=$('#status-text'); if(el) el.textContent=t; };
-  const teamName = r => {
-    const u = state.users.find(x=>x.user_id===r.owner_id);
-    return u?.metadata?.team_name || u?.display_name || `Team ${r.roster_id}`;
-  };
   const teamInfo = r => {
     const u = state.users.find(x=>x.user_id===r.owner_id);
     const tName = u?.metadata?.team_name || u?.display_name || `Team ${r.roster_id}`;
     const oName = u?.display_name || '';
     return {teamName:tName, ownerName:oName, distinct: u?.metadata?.team_name && u?.metadata?.team_name!== oName};
   };
+  const teamName = r => teamInfo(r).teamName;
   const ordinal = n => { const s=['th','st','nd','rd']; const v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
   const norm = s => String(s||'').toLowerCase().replace(/\./g,'').replace(/[^a-z0-9]+/g,' ').trim();
   const debounce = (fn,delay)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),delay);};};
@@ -838,33 +833,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     state.teamA=state.rosters[0]?.roster_id;
     state.teamB=state.rosters[1]?.roster_id||state.rosters[0]?.roster_id;
     a.value=state.teamA;b.value=state.teamB;
-
-    // Populate Value Tools selects
-    const similarTeam = $('#similar-team');
-    const pkgTargetTeam = $('#pkg-target-team');
-    const pkgSourceTeam = $('#pkg-source-team');
-    if(similarTeam){
-      similarTeam.innerHTML = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
-      similarTeam.value = state.rosters[0]?.roster_id;
-      const sel = $('#similar-asset');
-      if(sel){
-        const assets = getAllAssetsForTeam(+similarTeam.value).filter(a=>a.type==='player');
-        sel.innerHTML = assets.map(a=>`<option value="${a.id}">${a.name} (${a.pos}) - ${fmt(a.value)}</option>`).join('');
-      }
-    }
-    if(pkgTargetTeam){
-      pkgTargetTeam.innerHTML = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
-      pkgTargetTeam.value = state.rosters[0]?.roster_id;
-    }
-    if(pkgSourceTeam){
-      pkgSourceTeam.innerHTML = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
-      pkgSourceTeam.value = state.rosters[1]?.roster_id || state.rosters[0]?.roster_id;
-      const mustSel = $('#pkg-must-select');
-      if(mustSel){
-        const assets = getAllAssetsForTeam(+pkgSourceTeam.value).filter(a=>a.type==='player');
-        mustSel.innerHTML = assets.map(a=>`<option value="${a.id}">${a.name} (${a.pos})</option>`).join('');
-      }
-    }
   }
 
   function toggle(set,id){set.has(id)?set.delete(id):set.add(id);updateAll();}
@@ -1232,191 +1200,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     }
     if(pkgSourceTeam) pkgSourceTeam.addEventListener('change', populateMustSelect);
     populateMustSelect();
-
-    // Segmented button handlers
-    function setupSegGroup(id){
-      const grp = $('#'+id);
-      if(!grp) return;
-      grp.addEventListener('click', e=>{
-        const btn = e.target.closest('button[data-val]');
-        if(!btn) return;
-        grp.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-      });
-    }
-    setupSegGroup('similar-tol-group');
-    setupSegGroup('pkg-tol-group');
-
-    // Must include add/remove
-    const mustAdd = $('#pkg-must-add');
-    const mustSel = $('#pkg-must-select');
-    const mustChips = $('#pkg-must-chips');
-    const mustWrap = $('#pkg-must-wrap');
-    function renderMustChips(){
-      mustChips.innerHTML = '';
-      state.pkgMust.forEach(pid=>{
-        const p = playerFromId(pid);
-        if(!p) return;
-        const chip = document.createElement('span');
-        chip.className = 'badge flex items-center gap-2';
-        chip.innerHTML = `${p.name} <span class="text-[10px] opacity-70">(${p.pos})</span> <button class="ml-1 text-slate-400 hover:text-white">×</button>`;
-        chip.querySelector('button').onclick = ()=>{ state.pkgMust.delete(pid); renderMustChips(); };
-        mustChips.appendChild(chip);
-      });
-      const warn = $('#pkg-must-warning');
-      if(warn) warn.classList.toggle('hidden', state.pkgMust.size <=2);
-    }
-    mustAdd?.addEventListener('click', ()=>{
-      const pid = mustSel.value;
-      if(pid && state.pkgMust.size <2 && !state.pkgMust.has(pid)){
-        state.pkgMust.add(pid);
-        renderMustChips();
-      }
-    });
-    renderMustChips();
-
-    // Button listeners
-    $('#similar-find')?.addEventListener('click', findSimilar);
-    $('#pkg-find')?.addEventListener('click', findPackageCombos);
-  }
-
-  function getActiveTol(groupId){
-    const grp = $('#'+groupId);
-    const btn = grp?.querySelector('button.active');
-    return btn ? +btn.dataset.val : 10;
-  }
-
-  function findSimilar(){
-    const assetId = $('#similar-asset').value;
-    if(!assetId) return;
-    const refAsset = playerFromId(assetId);
-    if(!refAsset) return;
-    const tol = getActiveTol('similar-tol-group')/100;
-    const targetVal = refAsset.value;
-    const min = targetVal*(1-tol);
-    const max = targetVal*(1+tol);
-    const results = [];
-    state.rosters.forEach(r=>{
-      const assets = getAllAssetsForTeam(r.roster_id).filter(a=>a.type==='player' && a.id!==assetId);
-      assets.forEach(a=>{
-        if(a.value>=min && a.value<=max){
-          results.push({team:teamName(r), asset:a, delta:a.value-targetVal});
-        }
-      });
-    });
-    results.sort((a,b)=>Math.abs(a.delta)-Math.abs(b.delta));
-    const tbody = $('#similar-results');
-    if(!results.length){
-      tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-500">No similar assets found</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = results.slice(0,50).map(r=>`
-      <tr class="hover:bg-white/5">
-        <td class="py-2 px-4">${r.team}</td>
-        <td class="py-2 px-3">${r.asset.name}</td>
-        <td class="py-2 px-3">${r.asset.pos}</td>
-        <td class="py-2 px-3">${r.asset.age??'—'}</td>
-        <td class="py-2 px-3">${r.asset.ppg?r.asset.ppg.toFixed(1):'—'}</td>
-        <td class="py-2 px-3 mono">${fmt(r.asset.value)}</td>
-        <td class="py-2 px-3 mono ${r.delta>=0?'text-green-400':'text-red-400'}">${r.delta>=0?'+':''}${fmt(r.delta)}</td>
-        <td class="py-2 px-4 text-right"><button class="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20" onclick="alert('Add to trade')">Add</button></td>
-      </tr>`).join('');
-  }
-
-  function findPackageCombos(){
-    const targetTeamId = +$('#pkg-target-team').value;
-    const sourceTeamId = +$('#pkg-source-team').value;
-    const targetValInput = +$('#pkg-value').value || 0;
-    const tol = getActiveTol('pkg-tol-group')/100;
-    // If target value not entered, try to use selected target asset
-    let targetVal = targetValInput;
-    const targetAssetCombo = $('#pkg-target-player-combo select');
-    if(!targetVal && targetAssetCombo && targetAssetCombo.value){
-      const a = playerFromId(targetAssetCombo.value);
-      if(a) targetVal = a.value;
-    }
-    if(!targetVal){
-      alert('Enter Target Value or select Target Asset');
-      return;
-    }
-    const min = targetVal*(1-tol);
-    const max = targetVal*(1+tol);
-    const candidates = getAllAssetsForTeam(sourceTeamId).filter(a=>{
-      if(state.pkgExclude.has(a.id)) return false;
-      if(a.type==='player' && a.value<500) return false; // filter junk
-      return true;
-    });
-    // Must include
-    const mustIds = Array.from(state.pkgMust);
-    const mustAssets = mustIds.map(id=>candidates.find(c=>c.id===id)).filter(Boolean);
-    const mustValue = mustAssets.reduce((s,a)=>s+a.value,0);
-    const remaining = candidates.filter(c=>!mustIds.includes(c.id));
-    // Composition requirements
-    const req = {
-      QB: +$('#pkg-req-qb').value||0,
-      RB: +$('#pkg-req-rb').value||0,
-      WR: +$('#pkg-req-wr').value||0,
-      TE: +$('#pkg-req-te').value||0,
-      picks: +$('#pkg-req-picks').value||0
-    };
-    const combos = [];
-    // Simple brute force up to 3 assets plus must
-    const maxSize = 4;
-    function meetsReq(combo){
-      const cnt = {QB:0,RB:0,WR:0,TE:0,picks:0};
-      combo.forEach(a=>{
-        if(a.type==='pick') cnt.picks++;
-        else if(cnt[a.pos]!==undefined) cnt[a.pos]++;
-      });
-      return cnt.QB>=req.QB && cnt.RB>=req.RB && cnt.WR>=req.WR && cnt.TE>=req.TE && cnt.picks>=req.picks;
-    }
-    // generate combos
-    const n = remaining.length;
-    // 1 asset
-    for(let i=0;i<n;i++){
-      const c=[...mustAssets, remaining[i]];
-      const val=c.reduce((s,a)=>s+a.value,0);
-      if(val>=min && val<=max && meetsReq(c)) combos.push(c);
-    }
-    // 2 assets
-    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
-      const c=[...mustAssets, remaining[i], remaining[j]];
-      if(c.length>maxSize) continue;
-      const val=c.reduce((s,a)=>s+a.value,0);
-      if(val>=min && val<=max && meetsReq(c)) combos.push(c);
-    }
-    // 3 assets
-    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) for(let k=j+1;k<n;k++){
-      const c=[...mustAssets, remaining[i], remaining[j], remaining[k]];
-      if(c.length>maxSize) continue;
-      const val=c.reduce((s,a)=>s+a.value,0);
-      if(val>=min && val<=max && meetsReq(c)) combos.push(c);
-    }
-    combos.sort((a,b)=>{
-      const va=a.reduce((s,x)=>s+x.value,0);
-      const vb=b.reduce((s,x)=>s+x.value,0);
-      return Math.abs(va-targetVal)-Math.abs(vb-targetVal);
-    });
-    const tbody = $('#pkg-results');
-    if(!combos.length){
-      tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500">No combos found. Try looser tolerance or adjust requirements.</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = combos.slice(0,30).map(c=>{
-      const val=c.reduce((s,a)=>s+a.value,0);
-      const names=c.map(a=>a.type==='pick'?`${a.year} ${a.round}.${a.pick}`:a.name).join(', ');
-      const posCounts={QB:0,RB:0,WR:0,TE:0};
-      c.forEach(a=>{ if(a.pos && posCounts[a.pos]!==undefined) posCounts[a.pos]++; });
-      const comp = Object.entries(posCounts).filter(([,v])=>v>0).map(([k,v])=>`${v} ${k}`).join(', ') || '—';
-      return `<tr class="hover:bg-white/5">
-        <td class="py-2 px-4">${names}</td>
-        <td class="py-2 px-3 mono">${fmt(val)}</td>
-        <td class="py-2 px-3 mono ${val>=targetVal?'text-green-400':'text-red-400'}">${val>=targetVal?'+':''}${fmt(val-targetVal)}</td>
-        <td class="py-2 px-3">${c.length}</td>
-        <td class="py-2 px-3 text-xs">${comp}</td>
-        <td class="py-2 px-4 text-right"><button class="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20">Add</button></td>
-      </tr>`;
-    }).join('');
   }
 
   async function init(){
@@ -1437,6 +1220,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     buildPickInventory();
     computeTeamMetrics();
     renderSelect();
+    setupExclude();
+    setupPackageUI();
     setStatus('Ready • computed on refresh');
     updateAll();
   }
