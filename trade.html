@@ -223,6 +223,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
                 </div>
               </div>
             </div>
+            <div class="mb-4">
+              <button id="similar-find" class="px-5 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-sm font-medium">Find Similar</button>
+            </div>
             <div class="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
               <table class="w-full text-sm value-table">
                 <thead class="table-head bg-slate-900/60">
@@ -374,6 +377,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     pkgMustOptions:[],
     pkgResultsFull:[],
     pkgTeamFilter:'all',
+    pkgMust:new Set(),
     pkgExclude:new Set()
   };
 
@@ -381,13 +385,16 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   const fmt = n => Math.round(n).toLocaleString();
   const fmt1 = n => (Math.round(n*10)/10).toFixed(1);
   const setStatus = t => { const el=$('#status-text'); if(el) el.textContent=t; };
+  const teamName = r => {
+    const u = state.users.find(x=>x.user_id===r.owner_id);
+    return u?.metadata?.team_name || u?.display_name || `Team ${r.roster_id}`;
+  };
   const teamInfo = r => {
     const u = state.users.find(x=>x.user_id===r.owner_id);
     const tName = u?.metadata?.team_name || u?.display_name || `Team ${r.roster_id}`;
     const oName = u?.display_name || '';
     return {teamName:tName, ownerName:oName, distinct: u?.metadata?.team_name && u?.metadata?.team_name!== oName};
   };
-  const teamName = r => teamInfo(r).teamName;
   const ordinal = n => { const s=['th','st','nd','rd']; const v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
   const norm = s => String(s||'').toLowerCase().replace(/\./g,'').replace(/[^a-z0-9]+/g,' ').trim();
   const debounce = (fn,delay)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),delay);};};
@@ -833,6 +840,33 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     state.teamA=state.rosters[0]?.roster_id;
     state.teamB=state.rosters[1]?.roster_id||state.rosters[0]?.roster_id;
     a.value=state.teamA;b.value=state.teamB;
+
+    // Populate Value Tools selects
+    const similarTeam = $('#similar-team');
+    const pkgTargetTeam = $('#pkg-target-team');
+    const pkgSourceTeam = $('#pkg-source-team');
+    if(similarTeam){
+      similarTeam.innerHTML = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
+      similarTeam.value = state.rosters[0]?.roster_id;
+      const sel = $('#similar-asset');
+      if(sel){
+        const assets = getAllAssetsForTeam(+similarTeam.value).filter(a=>a.type==='player');
+        sel.innerHTML = assets.map(a=>`<option value="${a.id}">${a.name} (${a.pos}) - ${fmt(a.value)}</option>`).join('');
+      }
+    }
+    if(pkgTargetTeam){
+      pkgTargetTeam.innerHTML = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
+      pkgTargetTeam.value = state.rosters[0]?.roster_id;
+    }
+    if(pkgSourceTeam){
+      pkgSourceTeam.innerHTML = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
+      pkgSourceTeam.value = state.rosters[1]?.roster_id || state.rosters[0]?.roster_id;
+      const mustSel = $('#pkg-must-select');
+      if(mustSel){
+        const assets = getAllAssetsForTeam(+pkgSourceTeam.value).filter(a=>a.type==='player');
+        mustSel.innerHTML = assets.map(a=>`<option value="${a.id}">${a.name} (${a.pos})</option>`).join('');
+      }
+    }
   }
 
   function toggle(set,id){set.has(id)?set.delete(id):set.add(id);updateAll();}
@@ -1220,8 +1254,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     buildPickInventory();
     computeTeamMetrics();
     renderSelect();
-    setupExclude();
-    setupPackageUI();
     setStatus('Ready • computed on refresh');
     updateAll();
   }
