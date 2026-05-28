@@ -301,6 +301,11 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
               <div id="pkg-must-chips" class="mt-2 flex flex-wrap gap-1.5"></div>
               <div id="pkg-must-warning" class="mt-2 text-xs text-red-400 hidden">Must-include exceeds target</div>
             </div>
+            <div id="pkg-exclude-wrap" class="mb-4">
+              <label class="text-xs uppercase text-slate-500">Exclude Players</label>
+              <div id="pkg-exclude-combo" class="combo-wrap mt-1"></div>
+              <div id="pkg-exclude-chips" class="mt-2 flex flex-wrap gap-1.5"></div>
+            </div>
             <div id="pkg-needs" class="mb-3 flex flex-wrap gap-2"></div>
             <div id="pkg-team-filters" class="mb-3 flex flex-wrap gap-2 hidden"></div>
             <div class="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40">
@@ -689,7 +694,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   function getAllAssetsForTeam(rosterId){
     const r=state.rosters.find(x=>x.roster_id==rosterId);
     if(!r) return [];
-    const players=(r.players||[]).filter(pid=>!state.pkgExclude.has(pid)).map(playerFromId).map(p=>({...p, roster_id:rosterId}));
+    const players=(r.players||[]).map(playerFromId).map(p=>({...p, roster_id:rosterId}));
     const picks=(state.pickInventory.get(rosterId)||[]).map(p=>({...p, roster_id:rosterId}));
     return [...players,...picks];
   }
@@ -1108,6 +1113,95 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     $('#count-b').textContent=state.selectedB.size;
     const diff=bVal-aVal;
     $('#fairness-label').textContent= diff>500?'A wins big': diff>100?'A wins': diff<-500?'B wins big': diff<-100?'B wins':'Even';
+  }
+
+  function setupExclude(){
+    const container = $('#pkg-exclude-combo');
+    if(!container || container.dataset.initialized) return;
+    container.dataset.initialized = '1';
+    container.innerHTML = `<div class="relative"><input id="pkg-exclude-input" type="text" placeholder="Search players to exclude..." class="combo-input w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm" autocomplete="off"><div id="pkg-exclude-dropdown" class="combo-dropdown hidden absolute z-20 mt-1 w-full bg-slate-950 border border-white/10 rounded-lg max-h-60 overflow-y-auto"></div></div>`;
+    const input = $('#pkg-exclude-input');
+    const dropdown = $('#pkg-exclude-dropdown');
+    const chips = $('#pkg-exclude-chips');
+    function getAllPlayers(){
+      const set = new Map();
+      state.rosters.forEach(r=>{
+        (r.players||[]).forEach(pid=>{
+          const p = playerFromId(pid);
+          if(p && p.name) set.set(pid, p);
+        });
+      });
+      return Array.from(set.values()).sort((a,b)=>b.value-a.value);
+    }
+    function renderChips(){
+      chips.innerHTML = '';
+      if(state.pkgExclude.size===0){
+        chips.innerHTML = '<span class="text-xs text-slate-600">No players excluded</span>';
+        return;
+      }
+      state.pkgExclude.forEach(pid=>{
+        const p = playerFromId(pid);
+        if(!p) return;
+        const chip = document.createElement('span');
+        chip.className = 'badge flex items-center gap-2';
+        chip.innerHTML = `${p.name} <span class="text-[10px] opacity-70">(${p.pos})</span> <button class="ml-1 text-slate-400 hover:text-white">×</button>`;
+        chip.querySelector('button').onclick = ()=>{ state.pkgExclude.delete(pid); renderChips(); };
+        chips.appendChild(chip);
+      });
+    }
+    function showDropdown(q){
+      const query = q.trim().toLowerCase();
+      const players = getAllPlayers().filter(p=>!state.pkgExclude.has(p.id) && (!query || p.name.toLowerCase().includes(query))).slice(0,50);
+      if(!players.length){ dropdown.classList.add('hidden'); return; }
+      dropdown.innerHTML = players.map(p=>`<div class="px-3 py-2 hover:bg-white/5 cursor-pointer" data-id="${p.id}">${p.name} <span class="text-xs text-slate-500">(${p.pos})</span></div>`).join('');
+      dropdown.classList.remove('hidden');
+    }
+    input.addEventListener('input', ()=>showDropdown(input.value));
+    input.addEventListener('focus', ()=>showDropdown(input.value));
+    dropdown.addEventListener('click', e=>{
+      const item = e.target.closest('[data-id]');
+      if(item){
+        state.pkgExclude.add(item.dataset.id);
+        renderChips();
+        input.value='';
+        dropdown.classList.add('hidden');
+      }
+    });
+    document.addEventListener('click', e=>{ if(!container.contains(e.target)) dropdown.classList.add('hidden'); });
+    renderChips();
+  }
+
+  function setupPackageUI(){
+    const similarTeam = $('#similar-team');
+    const pkgTargetTeam = $('#pkg-target-team');
+    const pkgSourceTeam = $('#pkg-source-team');
+    if(!similarTeam) return;
+    const options = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
+    similarTeam.innerHTML = options;
+    if(pkgTargetTeam) pkgTargetTeam.innerHTML = options;
+    if(pkgSourceTeam) pkgSourceTeam.innerHTML = options;
+    if(state.rosters.length){
+      similarTeam.value = state.rosters[0].roster_id;
+      if(pkgTargetTeam) pkgTargetTeam.value = state.rosters[0].roster_id;
+      if(pkgSourceTeam) pkgSourceTeam.value = state.rosters[1]?.roster_id || state.rosters[0].roster_id;
+    }
+    function populateSimilarAssets(){
+      const rosterId = +similarTeam.value;
+      const assets = getAllAssetsForTeam(rosterId).filter(a=>a.type==='player');
+      const sel = $('#similar-asset');
+      if(sel) sel.innerHTML = assets.map(a=>`<option value="${a.id}">${a.name} (${a.pos}) - ${fmt(a.value)}</option>`).join('');
+    }
+    similarTeam.addEventListener('change', populateSimilarAssets);
+    populateSimilarAssets();
+    function populateMustSelect(){
+      const sel = $('#pkg-must-select');
+      if(!sel || !pkgSourceTeam) return;
+      const rosterId = +pkgSourceTeam.value;
+      const assets = getAllAssetsForTeam(rosterId).filter(a=>a.type==='player');
+      sel.innerHTML = assets.map(a=>`<option value="${a.id}">${a.name} (${a.pos})</option>`).join('');
+    }
+    if(pkgSourceTeam) pkgSourceTeam.addEventListener('change', populateMustSelect);
+    populateMustSelect();
   }
 
   async function init(){
