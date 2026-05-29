@@ -177,6 +177,12 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
     </div>
   </div>
+
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <h2 class="text-xl font-semibold mb-4">Debug: Detailed Calculations</h2>
+  <div id="debug-details" class="overflow-auto text-xs"></div>
+</div>
+
 </main>
 
 <script>
@@ -1321,9 +1327,43 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       $('#team-b-select').value=state.teamB;
       updateAll();
     });
+    window.state = state;
     init();
   });
 })();
 </script>
+
+<script>
+function renderDebugDetails(){
+  const container = document.getElementById('debug-details');
+  if(!container || !window.state || !window.state.teamMetrics) return;
+  const st = window.state;
+  const metrics = [...st.teamMetrics.values()];
+  if(metrics.length===0) return;
+  // Compute means and stds for reference
+  const values = metrics.map(m=>m.rosterValue);
+  const picks = metrics.map(m=>m.pickScore);
+  const ages = metrics.map(m=>m.avgAge);
+  const ppgs = metrics.map(m=>m.ppg);
+  const mean = arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
+  const std = arr=>{ const m=mean(arr); return Math.sqrt(arr.reduce((s,v)=>s+(v-m)*(v-m),0)/arr.length); };
+  const vM=mean(values), vS=std(values);
+  const pM=mean(picks), pS=std(picks);
+  const aM=mean(ages), aS=std(ages);
+  let html = '<table class="w-full"><thead><tr class="text-left border-b border-white/10"><th>Team</th><th>PPG</th><th>Prod %</th><th>Roster Value</th><th>Value Z</th><th>Pick Score</th><th>Picks Z</th><th>Avg Age</th><th>Age Z</th><th>Window Raw</th><th>Window %</th><th>Archetype</th></tr></thead><tbody>';
+  metrics.sort((a,b)=>a.name.localeCompare(b.name)).forEach(m=>{
+    const valueZ = (m.rosterValue - vM)/vS;
+    const picksZ = (m.pickScore - pM)/pS;
+    const ageZ = (m.avgAge - aM)/aS;
+    const windowRaw = 0.5*valueZ + 0.3*picksZ + 0.2*(-ageZ);
+    html += `<tr class="border-b border-white/5"><td>${m.name}</td><td>${m.ppg.toFixed(1)}</td><td>${m.prodPct}</td><td>${m.rosterValue}</td><td>${valueZ.toFixed(2)}</td><td>${m.pickScore}</td><td>${picksZ.toFixed(2)}</td><td>${m.avgAge.toFixed(1)}</td><td>${ageZ.toFixed(2)}</td><td>${windowRaw.toFixed(2)}</td><td>${m.windowPct}</td><td>${m.archetype}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  html += `<div class="mt-4 text-gray-400">Means: Value=${vM.toFixed(0)}, Picks=${pM.toFixed(0)}, Age=${aM.toFixed(1)} | Stds: Value=${vS.toFixed(0)}, Picks=${pS.toFixed(0)}, Age=${aS.toFixed(1)}</div>`;
+  container.innerHTML = html;
+}
+setInterval(renderDebugDetails, 1500);
+</script>
+
 </body>
 </html>
