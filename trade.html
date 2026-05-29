@@ -179,8 +179,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   </div>
 
 <div class="max-w-7xl mx-auto px-4 py-8">
-  <h2 class="text-xl font-semibold mb-4">Debug: Detailed Calculations</h2>
-  <div id="debug-details" class="overflow-auto text-xs"></div>
+  <h2 class="text-xl font-semibold mb-4">Debug: Lineup Details</h2>
+  <select id="team-select" class="bg-gray-800 text-white p-2 rounded mb-4"></select>
+  <div id="lineup-details" class="text-sm"></div>
 </div>
 
 </main>
@@ -401,7 +402,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     }
   }
 
-  function playerFromId(pid){
+  window.playerFromId = function playerFromId(pid){
     const p=state.players[pid]||{};
     const name=p.full_name||`${p.first_name||''} ${p.last_name||''}`.trim()||pid;
     const auditVal = state.auditValues.get(norm(name));
@@ -615,7 +616,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     return [...players,...picks];
   }
 
-  function getStarterCounts(){
+  window.getStarterCounts = function getStarterCounts(){
     const pos = state.league.roster_positions||[];
     const counts={QB:0,RB:0,WR:0,TE:0,FLEX:0,SFLEX:0};
     pos.forEach(p=>{
@@ -1334,35 +1335,48 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 </script>
 
 <script>
-function renderDebugDetails(){
-  const container = document.getElementById('debug-details');
-  if(!container || !window.state || !window.state.teamMetrics) return;
+function renderLineup(){
+  const sel = document.getElementById('team-select');
+  const out = document.getElementById('lineup-details');
+  if(!sel || !out || !window.state) return;
+  const rosterId = sel.value;
+  if(!rosterId) return;
   const st = window.state;
-  const metrics = [...st.teamMetrics.values()];
-  if(metrics.length===0) return;
-  // Compute means and stds for reference
-  const values = metrics.map(m=>m.rosterValue);
-  const picks = metrics.map(m=>m.pickScore);
-  const ages = metrics.map(m=>m.avgAge);
-  const ppgs = metrics.map(m=>m.ppg);
-  const mean = arr=>arr.reduce((a,b)=>a+b,0)/arr.length;
-  const std = arr=>{ const m=mean(arr); return Math.sqrt(arr.reduce((s,v)=>s+(v-m)*(v-m),0)/arr.length); };
-  const vM=mean(values), vS=std(values);
-  const pM=mean(picks), pS=std(picks);
-  const aM=mean(ages), aS=std(ages);
-  let html = '<table class="w-full"><thead><tr class="text-left border-b border-white/10"><th>Team</th><th>PPG</th><th>Prod %</th><th>Roster Value</th><th>Value Z</th><th>Pick Score</th><th>Picks Z</th><th>Avg Age</th><th>Age Z</th><th>Window Raw</th><th>Window %</th><th>Archetype</th></tr></thead><tbody>';
-  metrics.sort((a,b)=>a.name.localeCompare(b.name)).forEach(m=>{
-    const valueZ = (m.rosterValue - vM)/vS;
-    const picksZ = (m.pickScore - pM)/pS;
-    const ageZ = (m.avgAge - aM)/aS;
-    const windowRaw = 0.5*valueZ + 0.3*picksZ + 0.2*(-ageZ);
-    html += `<tr class="border-b border-white/5"><td>${m.name}</td><td>${m.ppg.toFixed(1)}</td><td>${m.prodPct}</td><td>${m.rosterValue}</td><td>${valueZ.toFixed(2)}</td><td>${m.pickScore}</td><td>${picksZ.toFixed(2)}</td><td>${m.avgAge.toFixed(1)}</td><td>${ageZ.toFixed(2)}</td><td>${windowRaw.toFixed(2)}</td><td>${m.windowPct}</td><td>${m.archetype}</td></tr>`;
+  const roster = st.rosters.find(r=>String(r.roster_id)===String(rosterId));
+  if(!roster) return;
+  const players = (roster.players||[]).map(pid=>window.playerFromId(pid)).filter(p=>p.ppg>0).sort((a,b)=>b.ppg-a.ppg);
+  const optimal = window.computeOptimalLineup(roster.roster_id);
+  let html = '<h3 class="font-semibold mb-2">Optimal Lineup (PPG total: '+optimal.total.toFixed(1)+')</h3>';
+  html += '<table class="w-full text-xs"><thead><tr class="text-left border-b border-white/10"><th>Slot</th><th>Player</th><th>Pos</th><th>PPG</th><th>Value</th></tr></thead><tbody>';
+  optimal.lineup.forEach(slot=>{
+    html += `<tr class="border-b border-white/5"><td>${slot.slot}</td><td>${slot.name}</td><td>${slot.pos}</td><td>${slot.ppg.toFixed(1)}</td><td>${slot.value}</td></tr>`;
   });
   html += '</tbody></table>';
-  html += `<div class="mt-4 text-gray-400">Means: Value=${vM.toFixed(0)}, Picks=${pM.toFixed(0)}, Age=${aM.toFixed(1)} | Stds: Value=${vS.toFixed(0)}, Picks=${pS.toFixed(0)}, Age=${aS.toFixed(1)}</div>`;
-  container.innerHTML = html;
+  html += '<h3 class="font-semibold mt-4 mb-2">All Roster Players by PPG</h3>';
+  html += '<table class="w-full text-xs"><thead><tr class="text-left border-b border-white/10"><th>Player</th><th>Pos</th><th>PPG</th><th>Value</th></tr></thead><tbody>';
+  players.forEach(p=>{
+    html += `<tr class="border-b border-white/5"><td>${p.name}</td><td>${p.pos}</td><td>${p.ppg.toFixed(1)}</td><td>${p.value}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  out.innerHTML = html;
 }
-setInterval(renderDebugDetails, 1500);
+function initLineupDebug(){
+  const sel = document.getElementById('team-select');
+  if(!sel || !window.state) return;
+  const st = window.state;
+  if(!st.rosters || st.rosters.length===0) return;
+  if(sel.options.length>0) return;
+  st.rosters.forEach(r=>{
+    const name = st.users.find(u=>u.user_id===r.owner_id)?.display_name || `Team ${r.roster_id}`;
+    const opt = document.createElement('option');
+    opt.value = r.roster_id;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', renderLineup);
+  renderLineup();
+}
+setInterval(initLineupDebug, 1500);
 </script>
 
 </body>
