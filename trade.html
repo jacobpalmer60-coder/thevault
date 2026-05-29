@@ -179,9 +179,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   </div>
 
 <div class="max-w-7xl mx-auto px-4 py-8">
-  <h2 class="text-xl font-semibold mb-4">Debug: Lineup Details</h2>
-  <select id="team-select" class="bg-gray-800 text-white p-2 rounded mb-4"></select>
-  <div id="lineup-details" class="text-sm"></div>
+  <h2 class="text-xl font-semibold mb-4">Debug: All Lineups</h2>
+  <div id="lineup-debug" class="text-xs overflow-auto"></div>
 </div>
 
 </main>
@@ -402,7 +401,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     }
   }
 
-  window.playerFromId = function playerFromId(pid){
+  function playerFromId(pid){
     const p=state.players[pid]||{};
     const name=p.full_name||`${p.first_name||''} ${p.last_name||''}`.trim()||pid;
     const auditVal = state.auditValues.get(norm(name));
@@ -616,7 +615,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     return [...players,...picks];
   }
 
-  window.getStarterCounts = function getStarterCounts(){
+  function getStarterCounts(){
     const pos = state.league.roster_positions||[];
     const counts={QB:0,RB:0,WR:0,TE:0,FLEX:0,SFLEX:0};
     pos.forEach(p=>{
@@ -1292,7 +1291,22 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     }).join('');
   }
 
-  async function init(){
+  
+  function renderLineupDebug(){
+    const container = document.getElementById('lineup-debug');
+    if(!container) return;
+    let html = '<table class="w-full"><thead><tr class="text-left border-b border-white/10"><th>Team</th><th>PPG Total</th><th>Optimal Lineup</th></tr></thead><tbody>';
+    state.rosters.forEach(r=>{
+      const name = state.users.find(u=>u.user_id===r.owner_id)?.display_name || `Team ${r.roster_id}`;
+      const opt = computeOptimalLineup(r.roster_id);
+      const lineupStr = opt.lineup.map(s=>`${s.slot}: ${s.name} (${s.pos} ${s.ppg.toFixed(1)})`).join('<br>');
+      html += `<tr class="border-b border-white/5 align-top"><td class="py-2 pr-4">${name}</td><td class="py-2 pr-4 mono">${opt.total.toFixed(1)}</td><td class="py-2">${lineupStr}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+async function init(){
     setStatus('Loading league…');
     const [league,users,rosters,players,traded]=await Promise.all([
       fetchJSON(`https://api.sleeper.app/v1/league/${league_id}`),
@@ -1309,6 +1323,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     computeSlots();
     buildPickInventory();
     computeTeamMetrics();
+    renderLineupDebug();
     renderSelect();
     setupExclude();
     setupPackageUI();
@@ -1328,56 +1343,9 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       $('#team-b-select').value=state.teamB;
       updateAll();
     });
-    window.state = state;
     init();
   });
 })();
 </script>
-
-<script>
-function renderLineup(){
-  const sel = document.getElementById('team-select');
-  const out = document.getElementById('lineup-details');
-  if(!sel || !out || !window.state) return;
-  const rosterId = sel.value;
-  if(!rosterId) return;
-  const st = window.state;
-  const roster = st.rosters.find(r=>String(r.roster_id)===String(rosterId));
-  if(!roster) return;
-  const players = (roster.players||[]).map(pid=>window.playerFromId(pid)).filter(p=>p.ppg>0).sort((a,b)=>b.ppg-a.ppg);
-  const optimal = window.computeOptimalLineup(roster.roster_id);
-  let html = '<h3 class="font-semibold mb-2">Optimal Lineup (PPG total: '+optimal.total.toFixed(1)+')</h3>';
-  html += '<table class="w-full text-xs"><thead><tr class="text-left border-b border-white/10"><th>Slot</th><th>Player</th><th>Pos</th><th>PPG</th><th>Value</th></tr></thead><tbody>';
-  optimal.lineup.forEach(slot=>{
-    html += `<tr class="border-b border-white/5"><td>${slot.slot}</td><td>${slot.name}</td><td>${slot.pos}</td><td>${slot.ppg.toFixed(1)}</td><td>${slot.value}</td></tr>`;
-  });
-  html += '</tbody></table>';
-  html += '<h3 class="font-semibold mt-4 mb-2">All Roster Players by PPG</h3>';
-  html += '<table class="w-full text-xs"><thead><tr class="text-left border-b border-white/10"><th>Player</th><th>Pos</th><th>PPG</th><th>Value</th></tr></thead><tbody>';
-  players.forEach(p=>{
-    html += `<tr class="border-b border-white/5"><td>${p.name}</td><td>${p.pos}</td><td>${p.ppg.toFixed(1)}</td><td>${p.value}</td></tr>`;
-  });
-  html += '</tbody></table>';
-  out.innerHTML = html;
-}
-function initLineupDebug(){
-  const sel = document.getElementById('team-select');
-  if(!sel || !window.state) return;
-  const st = window.state;
-  if(!st.rosters || st.rosters.length===0) return;
-  if(sel.options.length>0) return;
-  st.rosters.forEach(r=>{
-    const name = st.users.find(u=>u.user_id===r.owner_id)?.display_name || `Team ${r.roster_id}`;
-    const opt = document.createElement('option');
-    opt.value = r.roster_id;
-    opt.textContent = name;
-    sel.appendChild(opt);
-  });
-  sel.addEventListener('change', renderLineup);
-  renderLineup();
-}
-setInterval(initLineupDebug, 1500);
-</script>
-
 </body>
 </html>
