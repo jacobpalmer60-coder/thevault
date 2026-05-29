@@ -1321,6 +1321,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       $('#team-b-select').value=state.teamB;
       updateAll();
     });
+    window.state = state;
     init();
   });
 })();
@@ -1328,18 +1329,13 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
 <div class="max-w-7xl mx-auto px-4 py-8">
   <h2 class="text-xl font-semibold mb-4">Debug: Team Metrics</h2>
-  <div id="debug-table" class="overflow-auto text-sm">Loading...</div>
+  <div id="debug-table" class="overflow-auto"></div>
 </div>
 <script>
 function renderDebugTable(){
   const container = document.getElementById('debug-table');
   if(!container) return;
-  const st = window.state;
-  if(!st || !st.teamMetrics || st.teamMetrics.size===0){
-    container.innerHTML = 'Waiting for data...';
-    return;
-  }
-  const rows = [...st.teamMetrics.values()].sort((a,b)=>a.name.localeCompare(b.name));
+  const rows = [...state.teamMetrics.values()].sort((a,b)=>a.name.localeCompare(b.name));
   let html = '<table class="w-full text-sm"><thead><tr class="text-left border-b border-white/10"><th>Team</th><th>Prod %</th><th>Window %</th><th>Roster Value</th><th>Pick Score</th><th>Avg Age</th><th>PPG</th><th>Archetype</th></tr></thead><tbody>';
   rows.forEach(m=>{
     html += `<tr class="border-b border-white/5"><td>${m.name}</td><td>${m.prodPct}</td><td>${m.windowPct}</td><td>${m.rosterValue}</td><td>${m.pickScore}</td><td>${m.avgAge.toFixed(1)}</td><td>${m.ppg.toFixed(1)}</td><td>${m.archetype}</td></tr>`;
@@ -1347,7 +1343,12 @@ function renderDebugTable(){
   html += '</tbody></table>';
   container.innerHTML = html;
 }
-setInterval(renderDebugTable, 1000);
+// Hook after computeTeamMetrics
+const origCompute = computeTeamMetrics;
+computeTeamMetrics = function(){
+  origCompute();
+  setTimeout(renderDebugTable,0);
+}
 </script>
 
 </body>
