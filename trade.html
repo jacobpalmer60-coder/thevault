@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dynasty Trade Calculator</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
@@ -338,10 +339,8 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   const league_id = params.get('league_id') || DEFAULT_LEAGUE;
 
   const CSV_URLS = {
-    audit: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=0&single=true&output=csv',
-    sleeper: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1866730819&single=true&output=csv',
-    fp: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=2012227164&single=true&output=csv',
-    ra: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1226234680&single=true&output=csv'
+    value: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1226234680&single=true&output=csv',
+    ppg: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1865143681&single=true&output=csv'
   };
 
   const ARCHETYPES = [
@@ -423,18 +422,25 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   function toNum(v){ if(v==null||v==='')return NaN; const n=Number(v); return Number.isFinite(n)?n:NaN; }
 
   async function loadAuditValues(){
-    const txt = await fetchText(CSV_URLS.audit);
-    const rows = parseCSV(txt);
-    const headers = Object.keys(rows[0]||{});
-    const playerCol = headers.find(h=>/player/i.test(h)) || 'Player';
-    const valueCol = headers.find(h=>/value/i.test(h)) || 'Value';
-    state.auditValues.clear();
-    rows.forEach(r=>{
-      const name = r[playerCol];
-      const val = toNum(r[valueCol]);
-      if(name && Number.isFinite(val)){
-        state.auditValues.set(norm(name), val);
-      }
+    setStatus('Loading values…');
+    return new Promise((resolve)=>{
+      Papa.parse(CSV_URLS.value, {
+        download:true,
+        header:true,
+        skipEmptyLines:true,
+        complete:(res)=>{
+          state.auditValues.clear();
+          res.data.forEach(r=>{
+            const name = r.Player || r.player;
+            const val = parseFloat(r.Value);
+            if(name && Number.isFinite(val)){
+              state.auditValues.set(norm(name), Math.round(val));
+            }
+          });
+          resolve();
+        },
+        error:()=>resolve()
+      });
     });
   }
 
@@ -461,38 +467,37 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   async function loadPPG(){
     setStatus('Loading projections…');
-    const [sTxt,fTxt,rTxt]=await Promise.all([fetchText(CSV_URLS.sleeper),fetchText(CSV_URLS.fp),fetchText(CSV_URLS.ra)]);
-    const sMap=buildSourceMap(parseCSV(sTxt));
-    const fMap=buildSourceMap(parseCSV(fTxt));
-    const rMap=buildSourceMap(parseCSV(rTxt));
-    const keys=new Set([...sMap.keys(),...fMap.keys(),...rMap.keys()]);
-    const comboKeys=['Std','Std 0.5 TEP','Std TEP','Half','Half 0.5 TEP','Half TEP','PPR','PPR 0.5 TEP','PPR TEP'];
-    const consensus=new Map();
-    keys.forEach(k=>{
-      const s=sMap.get(k)||{}, f=fMap.get(k)||{}, r=rMap.get(k)||{};
-      const out={name:s.name||f.name||r.name,pos:s.pos||f.pos||r.pos};
-      comboKeys.forEach(c=>{
-        const vals=[s[c],f[c],r[c]].filter(Number.isFinite);
-        out[c]=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:NaN;
+    const rec = state.league.scoring_settings?.rec || 0;
+    const bonusTe = state.league.scoring_settings?.bonus_rec_te || 0;
+    const recLabel = rec>=1 ? 'PPR' : rec>=0.5 ? 'Half' : 'Std';
+    const tepLabel = bonusTe>=1 ? '_TEP' : bonusTe>=0.5 ? '_0.5_TEP' : '';
+    state.scoringKey = recLabel + (tepLabel ? tepLabel.replace('_',' ') : '');
+    $('#scoring-name').textContent = state.scoringKey;
+    const colName = `Avg_${recLabel}${tepLabel}`;
+    return new Promise((resolve)=>{
+      Papa.parse(CSV_URLS.ppg, {
+        download:true,
+        header:true,
+        skipEmptyLines:true,
+        complete:(res)=>{
+          const nameToId = new Map();
+          Object.entries(state.players).forEach(([id,p])=>{
+            const full = norm(p.full_name || `${p.first_name||''} ${p.last_name||''}`);
+            if(full) nameToId.set(full, id);
+          });
+          state.ppg.clear();
+          res.data.forEach(r=>{
+            const name = r.Player;
+            if(!name) return;
+            const pid = nameToId.get(norm(name));
+            if(!pid) return;
+            const val = parseFloat(r[colName]);
+            if(Number.isFinite(val)) state.ppg.set(pid, val);
+          });
+          resolve();
+        },
+        error:()=>resolve()
       });
-      consensus.set(k,out);
-    });
-    const nameToId=new Map();
-    Object.entries(state.players).forEach(([id,p])=>{
-      const full=norm(p.full_name||`${p.first_name||''} ${p.last_name||''}`);
-      if(full) nameToId.set(full,id);
-    });
-    const rec=state.league.scoring_settings?.rec||0;
-    const bonusTe=state.league.scoring_settings?.bonus_rec_te||0;
-    const recLabel=rec>=1?'PPR':rec>=0.5?'Half':'Std';
-    const tepLabel=bonusTe>=1?' TEP':bonusTe>=0.5?' 0.5 TEP':'';
-    state.scoringKey=(recLabel+tepLabel).trim();
-    $('#scoring-name').textContent=state.scoringKey;
-    state.ppg.clear();
-    consensus.forEach((c,k)=>{
-      const pid=nameToId.get(k); if(!pid) return;
-      const ppg=c[state.scoringKey];
-      if(Number.isFinite(ppg)) state.ppg.set(pid, ppg);
     });
   }
 
@@ -514,6 +519,20 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const name=p.full_name||`${p.first_name||''} ${p.last_name||''}`.trim()||pid;
     const auditVal = state.auditValues.get(norm(name));
     const ppg = state.ppg.get(pid)||0;
+    let value = auditVal;
+    if(!Number.isFinite(value)){
+      const age = p.age?Number(p.age):null;
+      let mult = 1;
+      if(age){
+        if(age<=23) mult=1.3;
+        else if(age<=25) mult=1.1;
+        else if(age<=27) mult=1.0;
+        else if(age<=29) mult=0.85;
+        else mult=0.65;
+      }
+      value = Math.round(ppg * 400 * mult);
+      if(value<200) value = 200 + Math.round((p.position==='QB'?300:0));
+    }
     return {
       id:pid,
       name,
@@ -521,7 +540,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       team:p.team||'',
       age:p.age?Number(p.age):null,
       ppg,
-      value: Number.isFinite(auditVal)? auditVal : 500,
+      value,
       type:'player'
     };
   }
@@ -1240,22 +1259,10 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     }
     mustAdd?.addEventListener('click', ()=>{
       const pid = mustSel.value;
-      console.log('Must Add clicked, pid=', pid, 'size=', state.pkgMust.size);
-      if(!pid){
-        console.error('No player selected in Must Include dropdown');
-        return;
+      if(pid && state.pkgMust.size <2 && !state.pkgMust.has(pid)){
+        state.pkgMust.add(pid);
+        renderMustChips();
       }
-      if(state.pkgMust.size >=2){
-        console.error('Must Include limit reached (2 max)');
-        return;
-      }
-      if(state.pkgMust.has(pid)){
-        console.error('Player already in Must Include');
-        return;
-      }
-      state.pkgMust.add(pid);
-      renderMustChips();
-      console.log('Added to Must Include, new size=', state.pkgMust.size);
     });
     renderMustChips();
 
