@@ -419,6 +419,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     };
   }
 
+
   function computeSlots(){
     // Assign early/mid/late based on PPG ranking to match league overview
     const scores = state.rosters.map(r=>{
@@ -430,17 +431,15 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       let slot='mid'; if(i<3)slot='late'; else if(i>=scores.length-3)slot='early';
       state.teamSlots.set(s.id,slot);
     });
-  });
   }
+
 
   function getPickValue(season,round,slot){
     const key1 = `${season}-${round}-${slot}`;
     const key2 = `${round}-${slot}`;
     return state.pickValueMap.get(key1) ?? state.pickValueMap.get(key2) ?? 0;
-  }-${round}-${slot}`;
-    const key2 = `${round}-${slot}`;
-    return state.pickValueMap.get(key1) ?? state.pickValueMap.get(key2) ?? state.pickValues.get(norm(`${season} ${ordinal(round)} ${slot}`)) ?? 2000;
   }
+
 
   function buildPickInventory(){
     state.rosters.forEach(r=>state.pickInventory.set(r.roster_id,[]));
@@ -508,11 +507,11 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
       counts[slot]=(counts[slot]||0)+1;
       const displaySlot = slot==='SUPER_FLEX'? 'SFLEX' : slot;
       const label = counts[slot]>1? `${displaySlot}${counts[slot]}` : displaySlot;
-      let best=null, bestIdx=-1;
-      pool.forEach((p,idx)=>{
+      let best=null;
+      pool.forEach(p=>{
         if(used.has(p.id))return;
         if(eligible(p.pos,slot)){
-          if(!best||p.ppg>best.ppg){best=p;bestIdx=idx;}
+          if(!best||p.ppg>best.ppg) best=p;
         }
       });
       if(best){
@@ -525,6 +524,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const avgAge=ages.length? ages.reduce((a,b)=>a+b,0)/ages.length : null;
     return {total, starters, avgAge};
   }
+
 
   function getTeamBaseMetrics(rosterId){
     const r=state.rosters.find(x=>x.roster_id==rosterId);
@@ -835,8 +835,6 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const postAges = postPlayers.map(p=>p.age).filter(a=>a!=null&&a>0);
     const postAvgAge = postAges.length? postAges.reduce((a,b)=>a+b,0)/postAges.length : mBefore.avgAge;
 
-    const allPpg = [...state.teamMetrics.values()].map(m=>m.ppg);
-    const allWinRaw = [...state.teamMetrics.values()].map(m=>m.windowRaw||0);
     const vals = [...state.teamMetrics.values()].map(m=>m.rosterValue);
     const picks = [...state.teamMetrics.values()].map(m=>m.pickScore);
     const ages = [...state.teamMetrics.values()].map(m=>m.avgAge);
@@ -847,11 +845,24 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const postPicksZ = (postPickScore - pM)/pS;
     const postAgeZ = (postAvgAge - aM)/aS;
     const postWindowRaw = 0.5*postValueZ + 0.3*postPicksZ + 0.2*(-postAgeZ);
-    const postProdPct = percentiles([...allPpg, afterOpt.total]).pop();
-    const postWinPct = percentiles([...allWinRaw, postWindowRaw]).pop();
+    const teamIds = [...state.teamMetrics.keys()];
+    const allPpg = teamIds.map(id => id===receivingTeamId ? afterOpt.total : state.teamMetrics.get(id).ppg);
+    const allWinRaw = teamIds.map(id => {
+      if(id===receivingTeamId) return postWindowRaw;
+      const m = state.teamMetrics.get(id);
+      return m.windowRaw||0;
+    });
+    const allPickScores = teamIds.map(id => id===receivingTeamId ? postPickScore : state.teamMetrics.get(id).pickScore);
+    const prodPcts = percentiles(allPpg);
+    const winPcts = percentiles(allWinRaw);
+    const pickPcts = percentiles(allPickScores);
+    const idx = teamIds.indexOf(receivingTeamId);
+    const postProdPct = prodPcts[idx];
+    const postWinPct = winPcts[idx];
+    const postPicksPct = pickPcts[idx];
 
     const archBefore = mBefore.archetype;
-    const tempObj = {prodPct:postProdPct, windowPct:postWinPct, avgAge:postAvgAge, picksPct:mBefore.picksPct};
+    const tempObj = {prodPct:postProdPct, windowPct:postWinPct, avgAge:postAvgAge, picksPct:postPicksPct};
     const archAfter = ARCHETYPES.find(a=>a.cond(tempObj)).name;
 
     const dPPG = afterOpt.total - beforeOpt.total;
