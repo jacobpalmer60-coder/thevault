@@ -812,175 +812,77 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
 
   function renderImpactPanel(containerId, receivingTeamId, givingTeamId, outSelSet, inSelSet){
     const cont=$(containerId);
-    const incoming=getSelectedAssets(givingTeamId,inSelSet);
-    const outgoing=getSelectedAssets(receivingTeamId,outSelSet);
-    const addPlayers=incoming.filter(a=>a.type==='player');
-    const removeIds=new Set(outgoing.filter(a=>a.type==='player').map(a=>a.id));
-    const beforeOpt=computeOptimalLineup(receivingTeamId);
-    const afterOpt=computeOptimalLineup(receivingTeamId, addPlayers, removeIds);
-    const starterIds=new Set(afterOpt.starters.map(s=>s.id));
-    const beforeIds=new Set(beforeOpt.starters.map(s=>s.id));
-    const newIds=new Set([...starterIds].filter(id=>!beforeIds.has(id)));
-    const inVal=incoming.reduce((s,a)=>s+a.value,0);
-    const outVal=outgoing.reduce((s,a)=>s+a.value,0);
-    const netVal=inVal-outVal;
-
-    const mBefore = state.teamMetrics.get(receivingTeamId);
-    const r = state.rosters.find(x=>x.roster_id===receivingTeamId);
-    const basePlayers = (r.players||[]).filter(pid=>!removeIds.has(pid)).map(playerFromId);
-    const postPlayers = [...basePlayers,...addPlayers];
-    const postRosterValue = postPlayers.reduce((s,p)=>s+p.value,0);
-    const postPicks = (state.pickInventory.get(receivingTeamId)||[]).filter(p=>!outgoing.some(o=>o.id===p.id));
-    const postPickScore = postPicks.reduce((s,p)=>s+p.value,0) + incoming.filter(a=>a.type==='pick').reduce((s,a)=>s+a.value,0);
-    const postAges = postPlayers.map(p=>p.age).filter(a=>a!=null&&a>0);
-    const postAvgAge = postAges.length? postAges.reduce((a,b)=>a+b,0)/postAges.length : mBefore.avgAge;
-
-    const vals = [...state.teamMetrics.values()].map(m=>m.rosterValue);
-    const picks = [...state.teamMetrics.values()].map(m=>m.pickScore);
-    const ages = [...state.teamMetrics.values()].map(m=>m.avgAge);
-    const vM=mean(vals), vS=std(vals);
-    const pM=mean(picks), pS=std(picks);
-    const aM=mean(ages), aS=std(ages);
-    const postValueZ = (postRosterValue - vM)/vS;
-    const postPicksZ = (postPickScore - pM)/pS;
-    const postAgeZ = (postAvgAge - aM)/aS;
-    const postWindowRaw = 0.5*postValueZ + 0.3*postPicksZ + 0.2*(-postAgeZ);
-    const teamIds = [...state.teamMetrics.keys()];
-    const allPpg = teamIds.map(id => id===receivingTeamId ? afterOpt.total : state.teamMetrics.get(id).ppg);
-    const allWinRaw = teamIds.map(id => {
-      if(id===receivingTeamId) return postWindowRaw;
-      const m = state.teamMetrics.get(id);
-      return m.windowRaw||0;
-    });
-    const allPickScores = teamIds.map(id => id===receivingTeamId ? postPickScore : state.teamMetrics.get(id).pickScore);
-    const prodPcts = percentiles(allPpg);
-    const winPcts = percentiles(allWinRaw);
-    const pickPcts = percentiles(allPickScores);
-    const idx = teamIds.indexOf(receivingTeamId);
-    const postProdPct = prodPcts[idx];
-    const postWinPct = winPcts[idx];
-    const postPicksPct = pickPcts[idx];
-
-    const archBefore = mBefore.archetype;
-    const tempObj = {prodPct:postProdPct, windowPct:postWinPct, avgAge:postAvgAge, picksPct:postPicksPct};
-    const archAfter = ARCHETYPES.find(a=>a.cond(tempObj)).name;
-
-    const dPPG = afterOpt.total - beforeOpt.total;
-    const dProd = postProdPct - mBefore.prodPct;
-    const dWin = postWinPct - mBefore.windowPct;
-    const fit = getFitSentence(archBefore, archAfter, dProd, dWin);
-
-    const needsBefore = computePositionalNeeds(receivingTeamId).map(n=>n.pos);
-    const origPlayers = r.players;
-    r.players = postPlayers.map(p=>p.id);
-    const needsAfter = computePositionalNeeds(receivingTeamId).map(n=>n.pos);
-    r.players = origPlayers;
-
-    const topBefore = getTopHeavyPct(beforeOpt.starters);
-    const topAfter = getTopHeavyPct(afterOpt.starters);
-
-    const ageDistBefore = getAgeDistribution(mBefore.players);
-    const ageDistAfter = getAgeDistribution(postPlayers);
-
-    const head = `
-    <div class="mb-4 p-3 rounded-xl bg-slate-800/60 border border-white/10">
-      <div class="text-xs uppercase text-slate-500">Archetype</div>
-      <div class="text-lg font-semibold">${archBefore} → <span style="color:${ARCHETYPES.find(a=>a.name===archAfter).color}">${archAfter}</span></div>
-      <div class="text-sm mt-1 ${fit.cls}">${fit.text}</div>
-    </div>
-    <div class="mb-4 grid-cols-3 gap-3">
-      <div class="p-3.5 rounded-xl bg-slate-800/60 border border-white/10">
-        <div class="text-xs uppercase text-slate-500">Δ PPG</div>
-        <div class="text-xl mono">${fmt1(beforeOpt.total)} → <span class="text-amber-300">${fmt1(afterOpt.total)}</span></div>
-        <div class="text-sm ${dPPG>=0?'text-green-400':'text-red-400'}">${dPPG>=0?'+':''}${fmt1(dPPG)}</div>
-      </div>
-      <div class="p-3.5 rounded-xl bg-slate-800/60 border border-white/10">
-        <div class="text-xs uppercase text-slate-500">Prod %</div>
-        <div class="text-xl mono">${mBefore.prodPct.toFixed(0)} → <span class="text-amber-300">${postProdPct.toFixed(0)}</span></div>
-        <div class="text-sm text-slate-400">${dProd>=0?'+':''}${dProd.toFixed(0)}</div>
-      </div>
-      <div class="p-3.5 rounded-xl bg-slate-800/60 border border-white/10">
-        <div class="text-xs uppercase text-slate-500">Window %</div>
-        <div class="text-xl mono">${mBefore.windowPct.toFixed(0)} → <span class="text-amber-300">${postWinPct.toFixed(0)}</span></div>
-        <div class="text-sm text-slate-400">${dWin>=0?'+':''}${dWin.toFixed(0)}</div>
-      </div>
-    </div>`;
-
-    const risk = `
-    <div class="mb-4 grid grid-cols-3 gap-3">
-      <div class="p-3 rounded-xl bg-slate-950/50 border border-white/10">
-        <div class="text-xs uppercase text-slate-500">Positional Needs</div>
-        <div class="text-sm mt-1">Before: ${needsBefore.length?needsBefore.join(', '):'—'}</div>
-        <div class="text-sm">After: ${needsAfter.length?needsAfter.join(', '):'—'}</div>
-      </div>
-      <div class="p-3 rounded-xl bg-slate-950/50 border border-white/10">
-        <div class="text-xs uppercase text-slate-500">Top-Heavy %</div>
-        <div class="text-sm mt-1 mono">${topBefore.toFixed(0)}% → ${topAfter.toFixed(0)}%</div>
-        <div class="text-xs text-slate-400">Top 3 starters share</div>
-      </div>
-      <div class="p-3 rounded-xl bg-slate-950/50 border border-white/10">
-        <div class="text-xs uppercase text-slate-500">Age Distribution</div>
-        <div class="text-xs mt-1">Youth ≤23: ${ageDistBefore.youthPct.toFixed(0)}% → ${ageDistAfter.youthPct.toFixed(0)}%</div>
-        <div class="text-xs">Prime 24-27: ${ageDistBefore.primePct.toFixed(0)}% → ${ageDistAfter.primePct.toFixed(0)}%</div>
-        <div class="text-xs">Aging 28+: ${ageDistBefore.agingPct.toFixed(0)}% → ${ageDistAfter.agingPct.toFixed(0)}%</div>
-      </div>
-    </div>`;
-
-    const lineup = `<div class="grid grid-cols-2 gap-4">
-      ${lineupHTML('Before', beforeOpt.starters)}
-      ${lineupHTML('After', afterOpt.starters, newIds)}
-    </div>`;
-
-    const assetsHeader = `
-      <div class="sticky top-0 z-10 -mx-4 px-4 py-3 bg-slate-900/95 backdrop-blur border-y border-white/10 flex items-center justify-between mb-3">
-        <div class="text-xs uppercase tracking-wider text-slate-300 font-semibold">Incoming Assets</div>
-        <span class="text-xs px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-200 border-amber-500/30">${incoming.length}</span>
-      </div>`;
-
-    if(incoming.length===0){
-      cont.innerHTML = head + risk + `<div class="text-sm text-slate-500 mb-4">No assets selected to receive</div>` + lineup;
-      return;
-    }
-
-    const rows=incoming.map(a=>{
-      if(a.type==='pick'){
-        return `<tr class="border-b border-white/5 odd:bg-white/[0.02]">
-          <td class="py-2 px-2 font-medium">${a.name}</td>
-          <td class="py-2 px-2">PICK</td>
-          <td class="py-2 px-2">-</td>
-          <td class="py-2 px-2">-</td>
-          <td class="py-2 px-2 mono tabular-nums">${fmt(a.value)}</td>
-          <td class="py-2 px-2">-</td>
-        </tr>`;
-      }else{
-        const role=starterIds.has(a.id)?'<span class="role-starter">Starter</span>':'<span class="role-depth">Depth</span>';
-        return `<tr class="border-b border-white/5 odd:bg-white/[0.02]">
-          <td class="py-2 px-2 font-medium">${a.name}</td>
-          <td class="py-2 px-2 w-[48px]">${a.pos}</td>
-          <td class="py-2 px-2 w-[48px] mono tabular-nums">${a.age||'-'}</td>
-          <td class="py-2 px-2 w-[64px] mono tabular-nums">${fmt1(a.ppg)}</td>
-          <td class="py-2 px-2 w-[80px] mono tabular-nums">${fmt(a.value)}</td>
-          <td class="py-2 px-2 w-[80px]">${role}</td>
-        </tr>`;
+    try{
+      const incoming=getSelectedAssets(givingTeamId,inSelSet);
+      const outgoing=getSelectedAssets(receivingTeamId,outSelSet);
+      const addPlayers=incoming.filter(a=>a.type==='player');
+      const removeIds=new Set(outgoing.filter(a=>a.type==='player').map(a=>a.id));
+      const beforeOpt=computeOptimalLineup(receivingTeamId);
+      const afterOpt=computeOptimalLineup(receivingTeamId, addPlayers, removeIds);
+      const mBefore=state.teamMetrics.get(receivingTeamId);
+      const r=state.rosters.find(x=>x.roster_id===receivingTeamId);
+      const basePlayers=(r.players||[]).filter(pid=>!removeIds.has(pid)).map(playerFromId);
+      const postPlayers=[...basePlayers,...addPlayers];
+      const postRosterValue=postPlayers.reduce((s,p)=>s+p.value,0);
+      const postPicks=(state.pickInventory.get(receivingTeamId)||[]).filter(p=>!outgoing.some(o=>o.id===p.id));
+      const postPickScore=postPicks.reduce((s,p)=>s+p.value,0)+incoming.filter(a=>a.type==='pick').reduce((s,a)=>s+a.value,0);
+      const postAges=postPlayers.map(p=>p.age).filter(a=>a!=null&&a>0);
+      const postAvgAge=postAges.length?postAges.reduce((a,b)=>a+b,0)/postAges.length:mBefore.avgAge;
+      const vals=[...state.teamMetrics.values()].map(m=>m.rosterValue);
+      const picks=[...state.teamMetrics.values()].map(m=>m.pickScore);
+      const ages=[...state.teamMetrics.values()].map(m=>m.avgAge);
+      const vM=mean(vals), vS=std(vals)||1;
+      const pM=mean(picks), pS=std(picks)||1;
+      const aM=mean(ages), aS=std(ages)||1;
+      const postValueZ=(postRosterValue-vM)/vS;
+      const postPicksZ=(postPickScore-pM)/pS;
+      const postAgeZ=(postAvgAge-aM)/aS;
+      const postWindowRaw=0.5*postValueZ+0.3*postPicksZ+0.2*(-postAgeZ);
+      const teamIds=[...state.teamMetrics.keys()];
+      const allPpg=teamIds.map(id=>id===receivingTeamId?afterOpt.total:state.teamMetrics.get(id).ppg);
+      const allWinRaw=teamIds.map(id=>id===receivingTeamId?postWindowRaw:(state.teamMetrics.get(id).windowRaw||0));
+      const allPickScores=teamIds.map(id=>id===receivingTeamId?postPickScore:state.teamMetrics.get(id).pickScore);
+      const prodPcts=percentiles(allPpg);
+      const winPcts=percentiles(allWinRaw);
+      const pickPcts=percentiles(allPickScores);
+      const idx=teamIds.indexOf(receivingTeamId);
+      const postProdPct=prodPcts[idx];
+      const postWinPct=winPcts[idx];
+      const archBefore=mBefore.archetype;
+      const tempObj={prodPct:postProdPct,windowPct:postWinPct,avgAge:postAvgAge,picksPct:pickPcts[idx]};
+      const archAfter=(ARCHETYPES.find(a=>a.cond(tempObj))||{name:'Unknown'}).name;
+      const dPPG=afterOpt.total-beforeOpt.total;
+      const dProd=postProdPct-mBefore.prodPct;
+      const dWin=postWinPct-mBefore.windowPct;
+      const fit=getFitSentence(archBefore,archAfter,dProd,dWin);
+      const needsBefore=computePositionalNeeds(receivingTeamId);
+      const origPlayers=r.players;
+      r.players=postPlayers.map(p=>p.id);
+      const needsAfter=computePositionalNeeds(receivingTeamId);
+      r.players=origPlayers;
+      const topBefore=getTopHeavyPct(beforeOpt.starters);
+      const topAfter=getTopHeavyPct(afterOpt.starters);
+      const ageBefore=getAgeDistribution(mBefore.players);
+      const ageAfter=getAgeDistribution(postPlayers);
+      const inVal=incoming.reduce((s,a)=>s+a.value,0);
+      const outVal=outgoing.reduce((s,a)=>s+a.value,0);
+      const netVal=inVal-outVal;
+      const newStarters=afterOpt.starters.filter(s=>!beforeOpt.starters.some(b=>b.id===s.id));
+      let html=`<div class="space-y-4">`;
+      html+=`<div class="p-4 rounded-2xl bg-slate-800/70 border border-white/10"><div class="flex items-center justify-between"><div><div class="text-xs uppercase opacity-70">Net Value</div><div class="text-2xl font-bold ${netVal>=0?'text-emerald-400':'text-rose-400'}">${netVal>=0?'+':''}${fmt(netVal)}</div></div><div class="text-right text-xs opacity-80">PPG ${dPPG>=0?'+':''}${dPPG.toFixed(1)}<br>Prod ${dProd>=0?'+':''}${dProd.toFixed(0)}%<br>Win ${dWin>=0?'+':''}${dWin.toFixed(0)}%</div></div></div>`;
+      html+=`<div class="p-4 rounded-2xl bg-slate-800/70 border border-white/10"><div class="text-xs uppercase opacity-70 mb-1">Archetype Shift</div><div class="text-sm">${archBefore} → <span class="font-semibold">${archAfter}</span></div><div class="text-xs opacity-80 mt-1">${fit}</div></div>`;
+      if(newStarters.length){
+        html+=`<div class="p-4 rounded-2xl bg-slate-800/70 border border-white/10"><div class="text-xs uppercase opacity-70 mb-2">New Starters</div>`+newStarters.map(s=>`<div class="flex justify-between text-sm py-0.5"><span>${s.slot}: ${s.name}</span><span class="opacity-70">${s.pos} ${s.ppg.toFixed(1)}</span></div>`).join('')+`</div>`;
       }
-    }).join('');
-
-    const assetsTable = `
-      <div class="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/40 mb-4">
-        <table class="w-full text-sm">
-          <thead class="table-head bg-slate-900/60"><tr>
-            <th class="text-left py-2 px-2">Player</th>
-            <th class="text-left py-2 px-2 w-[48px]">Pos</th>
-            <th class="text-left py-2 px-2 w-[48px]">Age</th>
-            <th class="text-left py-2 px-2 w-[64px]">PPG</th>
-            <th class="text-left py-2 px-2 w-[80px]">Value</th>
-            <th class="text-left py-2 px-2 w-[80px]">Role</th>
-          </tr></thead>
-          <tbody class="divide-y divide-white/5">${rows}</tbody>
-        </table>
-      </div>`;
-
-    cont.innerHTML = head + risk + assetsHeader + assetsTable + lineup;
+      html+=`<div class="grid grid-cols-2 gap-3"><div class="p-3 rounded-xl bg-slate-800/60 border border-white/10"><div class="text-xs uppercase opacity-70">Top Heavy</div><div class="text-sm">${topBefore.toFixed(0)}% → ${topAfter.toFixed(0)}%</div></div><div class="p-3 rounded-xl bg-slate-800/60 border border-white/10"><div class="text-xs uppercase opacity-70">Avg Age</div><div class="text-sm">${mBefore.avgAge.toFixed(1)} → ${postAvgAge.toFixed(1)}</div></div></div>`;
+      html+=`<div class="p-4 rounded-2xl bg-slate-800/70 border border-white/10"><div class="text-xs uppercase opacity-70 mb-2">Positional Needs</div><div class="grid grid-cols-2 gap-2 text-xs"><div><div class="opacity-70 mb-1">Before</div>${needsBefore.length?needsBefore.map(n=>`<div>${n.pos} (${n.deficit})</div>`).join(''):'<div class="opacity-60">None</div>'}</div><div><div class="opacity-70 mb-1">After</div>${needsAfter.length?needsAfter.map(n=>`<div>${n.pos} (${n.deficit})</div>`).join(''):'<div class="opacity-60">None</div>'}</div></div></div>`;
+      html+=`<div class="p-4 rounded-2xl bg-slate-800/70 border border-white/10"><div class="text-xs uppercase opacity-70 mb-2">Age Distribution</div><div class="grid grid-cols-2 gap-3 text-xs"><div><div class="opacity-70 mb-1">Before</div>${Object.entries(ageBefore).map(([k,v])=>`<div class="flex justify-between"><span>${k}</span><span>${v}%</span></div>`).join('')}</div><div><div class="opacity-70 mb-1">After</div>${Object.entries(ageAfter).map(([k,v])=>`<div class="flex justify-between"><span>${k}</span><span>${v}%</span></div>`).join('')}</div></div></div>`;
+      html+=`</div>`;
+      cont.innerHTML=html;
+    }catch(e){
+      cont.innerHTML=`<div class="p-3 rounded-xl bg-red-900/30 border border-red-700 text-xs">Impact error: ${e.message}</div>`;
+      console.error(e);
+    }
   }
 
   function sumAssets(rosterId,selSet){
@@ -1306,13 +1208,21 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   function renderLineupDebug(){
     const container = document.getElementById('lineup-debug');
     if(!container) return;
-    let html = '<table class="w-full"><thead><tr class="text-left border-b border-white/10"><th>Team</th><th>PPG</th><th>Prod %</th><th>Window %</th><th>Value</th><th>Picks</th><th>Age</th><th>Optimal Lineup</th></tr></thead><tbody>';
+    let html = '<table class="w-full"><thead><tr class="text-left border-b border-white/10"><th>Team</th><th>PPG</th><th>Prod %</th><th>Window %</th><th>Value</th><th>Picks</th><th>Age</th><th>Optimal Lineup</th><th>Full Roster (PPG)</th></tr></thead><tbody>';
     state.rosters.forEach(r=>{
       const name = state.users.find(u=>u.user_id===r.owner_id)?.display_name || `Team ${r.roster_id}`;
       const opt = computeOptimalLineup(r.roster_id);
       const m = state.teamMetrics.get(r.roster_id);
       const lineupStr = (opt.starters||[]).map(s=>`${s.slot}: ${s.name} (${s.pos} ${s.ppg.toFixed(1)})`).join('<br>');
-      html += `<tr class="border-b border-white/5 align-top"><td class="py-2 pr-4">${name}</td><td class="py-2 pr-4 mono">${opt.total.toFixed(1)}</td><td class="py-2 pr-4 mono">${m?m.prodPct.toFixed(0):'-'}</td><td class="py-2 pr-4 mono">${m?m.windowPct.toFixed(0):'-'}</td><td class="py-2 pr-4 mono">${m?fmt(m.rosterValue):'-'}</td><td class="py-2 pr-4 mono">${m?m.pickScore:'-'}</td><td class="py-2 pr-4 mono">${m&&m.avgAge?m.avgAge.toFixed(1):'-'}</td><td class="py-2">${lineupStr}</td></tr>`;
+      // Full roster
+      const allPlayers = (r.players||[]).map(pid=>{
+        const p = playerFromId(pid);
+        const ppg = state.ppg.get(pid)||0;
+        return {...p, ppg};
+      }).sort((a,b)=>b.ppg-a.ppg);
+      const rosterStr = allPlayers.map(p=>`${p.full_name} (${p.pos} ${p.ppg.toFixed(1)})`).join('<br>');
+      const zeroCount = allPlayers.filter(p=>p.ppg===0).length;
+      html += `<tr class="border-b border-white/5 align-top"><td class="py-2 pr-4">${name}</td><td class="py-2 pr-4 mono">${opt.total.toFixed(1)}${zeroCount?` <span class="text-amber-300">(${zeroCount} zero)</span>`:''}</td><td class="py-2 pr-4 mono">${m?m.prodPct.toFixed(0):'-'}</td><td class="py-2 pr-4 mono">${m?m.windowPct.toFixed(0):'-'}</td><td class="py-2 pr-4 mono">${m?fmt(m.rosterValue):'-'}</td><td class="py-2 pr-4 mono">${m?m.pickScore:'-'}</td><td class="py-2 pr-4 mono">${m&&m.avgAge?m.avgAge.toFixed(1):'-'}</td><td class="py-2">${lineupStr}</td><td class="py-2 text-xs opacity-80">${rosterStr}</td></tr>`;
     });
     html += '</tbody></table>';
     container.innerHTML = html;
