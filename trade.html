@@ -406,20 +406,7 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const name=p.full_name||`${p.first_name||''} ${p.last_name||''}`.trim()||pid;
     const auditVal = state.auditValues.get(norm(name));
     const ppg = state.ppg.get(pid)||0;
-    let value = auditVal;
-    if(!Number.isFinite(value)){
-      const age = state.ageMap.get(norm(name)) ?? (p.age?Number(p.age):null);
-      let mult = 1;
-      if(age){
-        if(age<=23) mult=1.3;
-        else if(age<=25) mult=1.1;
-        else if(age<=27) mult=1.0;
-        else if(age<=29) mult=0.85;
-        else mult=0.65;
-      }
-      value = Math.round(ppg * 400 * mult);
-      if(value<200) value = 200 + Math.round((p.position==='QB'?300:0));
-    }
+    const value = Number.isFinite(auditVal) ? auditVal : 0;
     const ageVal = state.ageMap.get(norm(name)) ?? (p.age?Number(p.age):null);
     return {
       id:pid,
@@ -433,15 +420,17 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   }
 
   function computeSlots(){
-    const scores=state.rosters.map(r=>{
-      const total=(r.players||[]).map(playerFromId).reduce((s,p)=>s+p.value,0);
-      return {id:r.roster_id,total};
-    }).sort((a,b)=>b.total-a.total);
+    // Assign early/mid/late based on PPG ranking to match league overview
+    const scores = state.rosters.map(r=>{
+      const opt = computeOptimalLineup(r.roster_id);
+      return {id:r.roster_id, ppg:opt.total};
+    }).sort((a,b)=>b.ppg-a.ppg);
     state.teamSlots.clear();
     scores.forEach((s,i)=>{
       let slot='mid'; if(i<3)slot='late'; else if(i>=scores.length-3)slot='early';
       state.teamSlots.set(s.id,slot);
     });
+  });
   }
 
   function getPickValue(season,round,slot){
@@ -498,28 +487,36 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
     const used=new Set();
     let total=0;
     const starters=[];
-    const pickBest=(filter, slotName)=>{
-      let best=null;
-      pool.forEach(p=>{
+    const isFlex=s=>/FLEX/.test(s);
+    const ordered=[...slots.filter(s=>!isFlex(s)),...slots.filter(isFlex)];
+    const eligible=(pos,slot)=>{
+      if(slot==='QB')return pos==='QB';
+      if(slot==='RB')return pos==='RB';
+      if(slot==='WR')return pos==='WR';
+      if(slot==='TE')return pos==='TE';
+      if(slot==='FLEX')return ['RB','WR','TE'].includes(pos);
+      if(slot==='SUPER_FLEX')return ['QB','RB','WR','TE'].includes(pos);
+      if(slot==='REC_FLEX')return ['WR','TE'].includes(pos);
+      if(slot==='WRRB_FLEX')return ['WR','RB'].includes(pos);
+      return false;
+    };
+    const counts={};
+    ordered.forEach(slot=>{
+      counts[slot]=(counts[slot]||0)+1;
+      const displaySlot = slot==='SUPER_FLEX'? 'SFLEX' : slot;
+      const label = counts[slot]>1? `${displaySlot}${counts[slot]}` : displaySlot;
+      let best=null, bestIdx=-1;
+      pool.forEach((p,idx)=>{
         if(used.has(p.id))return;
-        if(filter(p)){
-          if(!best||p.ppg>best.ppg) best=p;
+        if(eligible(p.pos,slot)){
+          if(!best||p.ppg>best.ppg){best=p;bestIdx=idx;}
         }
       });
       if(best){
         used.add(best.id);
         total+=best.ppg;
-        starters.push({...best, slot: slotName});
+        starters.push({...best, slot: label});
       }
-    };
-    const counts={};
-    slots.forEach(s=>{
-      counts[s]=(counts[s]||0)+1;
-      const displaySlot = s==='SUPER_FLEX'? 'SFLEX' : s;
-      const label = counts[s]>1? `${displaySlot}${counts[s]}` : displaySlot;
-      if(s==='FLEX') pickBest(p=>['RB','WR','TE'].includes(p.pos), 'FLEX');
-      else if(s==='SUPER_FLEX') pickBest(p=>['QB','RB','WR','TE'].includes(p.pos), 'SFLEX');
-      else pickBest(p=>p.pos===s, label);
     });
     const ages=starters.map(s=>s.age).filter(a=>Number.isFinite(a));
     const avgAge=ages.length? ages.reduce((a,b)=>a+b,0)/ages.length : null;
