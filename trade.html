@@ -1306,12 +1306,13 @@ body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
   function renderLineupDebug(){
     const container = document.getElementById('lineup-debug');
     if(!container) return;
-    let html = '<table class="w-full"><thead><tr class="text-left border-b border-white/10"><th>Team</th><th>PPG Total</th><th>Optimal Lineup</th></tr></thead><tbody>';
+    let html = '<table class="w-full"><thead><tr class="text-left border-b border-white/10"><th>Team</th><th>PPG</th><th>Prod %</th><th>Window %</th><th>Value</th><th>Picks</th><th>Age</th><th>Optimal Lineup</th></tr></thead><tbody>';
     state.rosters.forEach(r=>{
       const name = state.users.find(u=>u.user_id===r.owner_id)?.display_name || `Team ${r.roster_id}`;
       const opt = computeOptimalLineup(r.roster_id);
+      const m = state.teamMetrics.get(r.roster_id);
       const lineupStr = (opt.starters||[]).map(s=>`${s.slot}: ${s.name} (${s.pos} ${s.ppg.toFixed(1)})`).join('<br>');
-      html += `<tr class="border-b border-white/5 align-top"><td class="py-2 pr-4">${name}</td><td class="py-2 pr-4 mono">${opt.total.toFixed(1)}</td><td class="py-2">${lineupStr}</td></tr>`;
+      html += `<tr class="border-b border-white/5 align-top"><td class="py-2 pr-4">${name}</td><td class="py-2 pr-4 mono">${opt.total.toFixed(1)}</td><td class="py-2 pr-4 mono">${m?m.prodPct.toFixed(0):'-'}</td><td class="py-2 pr-4 mono">${m?m.windowPct.toFixed(0):'-'}</td><td class="py-2 pr-4 mono">${m?fmt(m.rosterValue):'-'}</td><td class="py-2 pr-4 mono">${m?m.pickScore:'-'}</td><td class="py-2 pr-4 mono">${m&&m.avgAge?m.avgAge.toFixed(1):'-'}</td><td class="py-2">${lineupStr}</td></tr>`;
     });
     html += '</tbody></table>';
     container.innerHTML = html;
