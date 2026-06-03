@@ -2,279 +2,407 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Fantasy Football Tier Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Fantasy Football Tier Dashboard • Symmetric Bands</title>
+<script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0f;
-    --card: #141420;
-    --card-2: #1a1a29;
-    --border: #252537;
-    --gold: #facc15;
-    --red: #f87171;
-  }
-  html, body {
-    background: var(--bg);
-    color: #e5e7eb;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  }
-  body {
-    background-image:
-      radial-gradient(1200px 600px at 80% -20%, rgba(139,92,246,0.12), transparent 60%),
-      radial-gradient(1000px 500px at -10% 10%, rgba(20,184,166,0.10), transparent 60%);
-  }
-  .mono { font-family: 'JetBrains Mono', monospace; }
-  .glass {
-    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
-    backdrop-filter: blur(8px);
-  }
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-  }
-  .pill {
-    border: 1px solid transparent;
-    font-weight: 600;
-    font-size: 11px;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-  }
-  .scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
-  .scrollbar::-webkit-scrollbar-track { background: #0f0f18; }
-  .scrollbar::-webkit-scrollbar-thumb { background: #2a2a3f; border-radius: 999px; }
-  .scrollbar::-webkit-scrollbar-thumb:hover { background: #3a3a55; }
-  .row-hover:hover { background: rgba(255,255,255,0.03); }
-  .tab-active {
-    background: #1f1f2e;
-    color: white;
-    border-color: #3a3a55;
-  }
-  .focus-ring:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px #0a0a0f, 0 0 0 4px #6366f1;
-  }
+  :root { color-scheme: dark; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background:#0a0a0f; }
+  .display { font-family: 'Space Grotesk', Inter, sans-serif; }
+  .card { background:#141420; border:1px solid rgba(255,255,255,.06) }
+  .scrollbar-thin::-webkit-scrollbar { height:8px; width:8px }
+  .scrollbar-thin::-webkit-scrollbar-track { background:transparent }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background:#2a2a40; border-radius:999px }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background:#3a3a55 }
+  .glass { backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px) }
+  .sort-btn.active { color:#fff }
+  .pill { border:1px solid transparent }
 </style>
 </head>
-<body class="min-h-screen text-[15px] leading-relaxed">
-  <div class="max-w-[1280px] mx-auto px-4 md:px-8 py-8 md:py-12">
+<body class="text-slate-200 min-h-screen antialiased">
+  <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
-    <header class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
       <div class="max-w-3xl">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-fuchsia-900/30">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2l2.5 5 5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 2z" fill="white" fill-opacity=".95"/>
-            </svg>
-          </div>
-          <h1 class="text-2xl md:text-[28px] font-semibold tracking-tight">Fantasy Tier Dashboard</h1>
-        </div>
-        <p class="text-[#9ca3af] text-[15px]">Production, longevity, and asset value compressed into actionable archetypes. Sorted by archetype precedence then hidden tier score.</p>
+        <h1 class="display text-[32px] sm:text-[40px] font-semibold tracking-tight text-white leading-[1.1]">Fantasy Tier Dashboard</h1>
+        <p class="mt-3 text-slate-400 text-[15px] leading-relaxed">
+          Production, longevity, and asset value compressed into actionable archetypes. Sorted by archetype precedence then hidden tier score.
+        </p>
       </div>
       <div class="flex items-center gap-3 shrink-0">
-        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#11111a] border border-[#242438] text-xs text-[#a1a1b5]">
+        <span class="inline-flex items-center gap-2 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 px-3 py-1.5 text-xs font-medium">
           <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
           </span>
           Live sync • 10 teams
-        </div>
-        <button id="exportBtn" class="focus-ring px-3.5 py-2 rounded-xl bg-[#1f1f2e] hover:bg-[#26263a] border border-[#2e2e44] text-sm font-medium flex items-center gap-2 transition">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M20 21H4"/></svg>
+        </span>
+        <button id="exportBtn" class="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 active:bg-white/20 border border-white/10 px-4 py-2 text-sm font-medium text-white transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export CSV
         </button>
       </div>
-    </header>
+    </div>
 
     <!-- Controls -->
-    <div class="card rounded-2xl p-4 md:p-5 mb-6 shadow-2xl shadow-black/20">
+    <div class="card rounded-2xl p-4 sm:p-5 mb-6">
       <div class="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-        <div class="flex items-center gap-2 p-1 rounded-xl bg-[#0f0f18] border border-[#222236] w-full md:w-auto">
-          <button data-filter="all" class="tab-btn tab-active px-3.5 py-1.5 rounded-lg text-sm font-medium border border-transparent transition">All</button>
-          <button data-filter="contenders" class="tab-btn px-3.5 py-1.5 rounded-lg text-sm font-medium text-[#a1a1b5] hover:text-white border border-transparent transition">Contenders</button>
-          <button data-filter="rebuilders" class="tab-btn px-3.5 py-1.5 rounded-lg text-sm font-medium text-[#a1a1b5] hover:text-white border border-transparent transition">Rebuilders</button>
+        <div class="relative flex-1 max-w-xl">
+          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="search" type="text" placeholder="Search team or archetype..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#0f0f18] border border-white/10 text-[14px] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition" />
         </div>
-        <div class="relative flex-1 md:max-w-sm">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input id="search" type="text" placeholder="Search team or archetype..." class="focus-ring w-full pl-10 pr-3 py-2.5 rounded-xl bg-[#0f0f18] border border-[#222236] placeholder-[#6b7280] text-sm" />
+        <div class="flex items-center gap-2 p-1 rounded-xl bg-[#0f0f18] border border-white/10 w-fit">
+          <button data-filter="all" class="filter-tab px-3.5 py-1.5 text-sm font-medium rounded-lg transition bg-white/10 text-white">All</button>
+          <button data-filter="contenders" class="filter-tab px-3.5 py-1.5 text-sm font-medium rounded-lg transition text-slate-400 hover:text-white">Contenders</button>
+          <button data-filter="rebuilders" class="filter-tab px-3.5 py-1.5 text-sm font-medium rounded-lg transition text-slate-400 hover:text-white">Rebuilders</button>
         </div>
       </div>
     </div>
 
     <!-- Table -->
-    <div class="card rounded-2xl overflow-hidden shadow-2xl shadow-black/30">
-      <div class="overflow-x-auto scrollbar">
-        <table class="w-full min-w-[1000px]">
-          <thead class="text-[11px] uppercase tracking-wider text-[#8a8fa5] bg-[#0f0f18] border-b border-[#222236]">
-            <tr>
-              <th class="text-left font-medium px-5 py-3">Rank</th>
-              <th class="text-left font-medium px-5 py-3">Team</th>
-              <th class="text-left font-medium px-5 py-3">Archetype</th>
-              <th class="text-right font-medium px-5 py-3">PPG</th>
-              <th class="text-right font-medium px-5 py-3">Prod Diff</th>
-              <th class="text-right font-medium px-5 py-3">Longevity</th>
-              <th class="text-right font-medium px-5 py-3">Value</th>
-              <th class="text-right font-medium px-5 py-3">Picks</th>
-              <th class="text-right font-medium px-5 py-3">Age</th>
+    <div class="card rounded-2xl overflow-hidden">
+      <div class="overflow-x-auto scrollbar-thin">
+        <table class="w-full min-w-[1100px]">
+          <thead class="bg-[#0f0f18]/80 backdrop-blur sticky top-0 z-10 border-b border-white/10">
+            <tr class="text-[11px] uppercase tracking-wider text-slate-400">
+              <th class="text-left font-semibold px-5 py-3">
+                <button class="sort-btn active flex items-center gap-1 hover:text-white" data-key="rank">Rank <span class="arrow">↓</span></button>
+              </th>
+              <th class="text-left font-semibold px-5 py-3">
+                <button class="sort-btn flex items-center gap-1 hover:text-white" data-key="team">Team <span class="arrow opacity-0">↓</span></button>
+              </th>
+              <th class="text-left font-semibold px-5 py-3">
+                <button class="sort-btn flex items-center gap-1 hover:text-white" data-key="archetype">Archetype <span class="arrow opacity-0">↓</span></button>
+              </th>
+              <th class="text-right font-semibold px-5 py-3">
+                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="ppg">PPG <span class="arrow opacity-0">↓</span></button>
+              </th>
+              <th class="text-right font-semibold px-5 py-3">
+                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="prodDiff">Prod Diff <span class="arrow opacity-0">↓</span></button>
+              </th>
+              <th class="text-right font-semibold px-5 py-3">
+                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="longevity">Longevity <span class="arrow opacity-0">↓</span></button>
+              </th>
+              <th class="text-right font-semibold px-5 py-3">
+                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="value">Value <span class="arrow opacity-0">↓</span></button>
+              </th>
+              <th class="text-right font-semibold px-5 py-3">
+                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="picks">Picks <span class="arrow opacity-0">↓</span></button>
+              </th>
+              <th class="text-right font-semibold px-5 py-3">
+                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="age">Age <span class="arrow opacity-0">↓</span></button>
+              </th>
             </tr>
           </thead>
-          <tbody id="tbody" class="divide-y divide-[#1e1e2e]">
-            <!-- rows injected -->
-          </tbody>
+          <tbody id="tbody" class="divide-y divide-white/[0.06]"></tbody>
         </table>
       </div>
     </div>
 
     <!-- Bottom Cards -->
-    <div class="grid lg:grid-cols-2 gap-6 mt-8">
-      <!-- Legend -->
+    <div class="grid lg:grid-cols-2 gap-6 mt-6">
+      <!-- Archetype Legend -->
       <div class="card rounded-2xl p-6">
-        <h3 class="text-[13px] uppercase tracking-wider text-[#9ca3af] font-semibold mb-4">Archetype Legend</h3>
+        <h3 class="display text-lg font-semibold text-white mb-1">Archetype Legend</h3>
+        <p class="text-sm text-slate-400 mb-5">Precedence ordered from championship window to full rebuild.</p>
         <div class="space-y-3.5">
-          <div class="flex gap-3"><span class="pill px-2.5 py-1 rounded-full bg-amber-400/10 text-amber-300 border-amber-400/20">Juggernaut</span><p class="text-sm text-[#c7cad5]"><strong class="text-white font-medium">Juggernaut:</strong> Elite production + elite longevity. Championship favorite.</p></div>
-          <div class="flex gap-3"><span class="pill px-2.5 py-1 rounded-full bg-emerald-400/10 text-emerald-300 border-emerald-400/20">Contender</span><p class="text-sm text-[#c7cad5]"><strong class="text-white font-medium">Contender:</strong> Win-now roster with strong weekly ceiling.</p></div>
-          <div class="flex gap-3"><span class="pill px-2.5 py-1 rounded-full bg-sky-400/10 text-sky-300 border-sky-400/20">Young Riser</span><p class="text-sm text-[#c7cad5]"><strong class="text-white font-medium">Young Riser:</strong> Ascending value curve, core getting better.</p></div>
-          <div class="flex gap-3"><span class="pill px-2.5 py-1 rounded-full bg-violet-400/10 text-violet-300 border-violet-400/20">Balanced</span><p class="text-sm text-[#c7cad5]"><strong class="text-white font-medium">Balanced Core:</strong> Stable production, average age profile.</p></div>
-          <div class="flex gap-3"><span class="pill px-2.5 py-1 rounded-full bg-orange-400/10 text-orange-300 border-orange-400/20">Treadmill</span><p class="text-sm text-[#c7cad5]"><strong class="text-white font-medium">Treadmill:</strong> Mid production, aging out. Stuck in middle.</p></div>
-          <div class="flex gap-3"><span class="pill px-2.5 py-1 rounded-full bg-cyan-400/10 text-cyan-300 border-cyan-400/20">Pick-Rich</span><p class="text-sm text-[#c7cad5]"><strong class="text-white font-medium">Pick-Rich Rebuilder:</strong> Weak now but elite future capital.</p></div>
-          <div class="flex gap-3"><span class="pill px-2.5 py-1 rounded-full bg-rose-400/10 text-rose-300 border-rose-400/20">Rebuilding</span><p class="text-sm text-[#c7cad5]"><strong class="text-white font-medium">Rebuilding:</strong> Full reset mode, collecting assets.</p></div>
-          <div class="flex gap-3"><span class="pill px-2.5 py-1 rounded-full bg-slate-400/10 text-slate-300 border-slate-400/20">Stripped</span><p class="text-sm text-[#c7cad5]"><strong class="text-white font-medium">Stripped Rebuilder:</strong> Bare cupboard, low production & longevity.</p></div>
+          <div class="flex items-start gap-3">
+            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-400/15 text-amber-200 border-amber-400/30 shrink-0 mt-0.5">JUGGERNAUT</span>
+            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Elite production & longevity.</span> Championship favorite with sustained window. Rare dual-Elite profile.</p>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border-amber-500/30 shrink-0 mt-0.5">CONTENDER</span>
+            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Strong now with solid future.</span> Playoff lock with upside to win it all.</p>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-400/15 text-sky-300 border-sky-400/30 shrink-0 mt-0.5">YOUNG RISER</span>
+            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Average production, strong age curve.</span> Trending up; buy before breakout.</p>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-400/15 text-purple-300 border-purple-400/30 shrink-0 mt-0.5">BALANCED CORE</span>
+            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Solid across board.</span> No clear weakness, lacks elite ceiling.</p>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-400/15 text-orange-300 border-orange-400/30 shrink-0 mt-0.5">TREADMILL</span>
+            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Middling production, declining longevity.</span> Stuck in middle; pick a direction.</p>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-400/15 text-cyan-300 border-cyan-400/30 shrink-0 mt-0.5">PICK-RICH REBUILDER</span>
+            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Weak now, elite future via picks/youth.</span> Asset base to accelerate.</p>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-400/15 text-rose-300 border-rose-400/30 shrink-0 mt-0.5">REBUILDING</span>
+            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Weak production, average longevity.</span> Full reset in progress.</p>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-400/15 text-slate-300 border-slate-400/30 shrink-0 mt-0.5">STRIPPED REBUILDER</span>
+            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Bottom production & weak longevity.</span> Asset poor; long timeline.</p>
+          </div>
         </div>
       </div>
 
       <!-- Tier System -->
       <div class="card rounded-2xl p-6">
-        <h3 class="text-[13px] uppercase tracking-wider text-[#9ca3af] font-semibold mb-4">Tier System — Updated Bands We Agreed On</h3>
-        <div class="grid sm:grid-cols-2 gap-6">
+        <h3 class="display text-lg font-semibold text-white mb-1">Tier System</h3>
+        <p class="text-sm text-slate-400 mb-5">Symmetric bands centered on league average.</p>
+        
+        <div class="space-y-6">
           <div>
-            <h4 class="font-medium text-white mb-2">Production Tier vs league avg PPG</h4>
-            <ul class="space-y-1.5 text-sm text-[#c7cad5]">
-              <li class="flex justify-between"><span class="text-[#9ca3af]">Elite</span><span class="mono text-amber-300">+10.0 +</span></li>
-              <li class="flex justify-between"><span class="text-[#9ca3af]">Strong</span><span class="mono">+4.0 to +9.9</span></li>
-              <li class="flex justify-between"><span class="text-[#9ca3af]">Average</span><span class="mono">-2.0 to +3.9</span></li>
-              <li class="flex justify-between"><span class="text-[#9ca3af]">Weak</span><span class="mono">-7.0 to -2.1</span></li>
-              <li class="flex justify-between"><span class="text-[#9ca3af]">Rebuild</span><span class="mono text-red-400">&lt; -7.0</span></li>
-            </ul>
+            <h4 class="text-[13px] font-semibold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+              <span class="h-1.5 w-1.5 rounded-full bg-indigo-400"></span> Production Tier vs League Avg PPG
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div class="rounded-xl bg-[#0f0f18] border border-amber-400/20 p-3 flex items-center justify-between">
+                <span class="text-sm font-medium text-amber-200">Elite</span>
+                <span class="text-sm font-mono text-slate-300">+9.0 +</span>
+              </div>
+              <div class="rounded-xl bg-[#0f0f18] border border-amber-500/20 p-3 flex items-center justify-between">
+                <span class="text-sm font-medium text-amber-400">Strong</span>
+                <span class="text-sm font-mono text-slate-300">+3.0 to +8.9</span>
+              </div>
+              <div class="rounded-xl bg-[#0f0f18] border border-sky-400/20 p-3 flex items-center justify-between">
+                <span class="text-sm font-medium text-sky-300">Average</span>
+                <span class="text-sm font-mono text-slate-300">-3.0 to +2.9</span>
+              </div>
+              <div class="rounded-xl bg-[#0f0f18] border border-orange-400/20 p-3 flex items-center justify-between">
+                <span class="text-sm font-medium text-orange-300">Weak</span>
+                <span class="text-sm font-mono text-slate-300">-9.0 to -3.1</span>
+              </div>
+              <div class="rounded-xl bg-[#0f0f18] border border-rose-400/20 p-3 flex items-center justify-between sm:col-span-2">
+                <span class="text-sm font-medium text-rose-300">Rebuild</span>
+                <span class="text-sm font-mono text-slate-300">&lt; -9.0</span>
+              </div>
+            </div>
           </div>
+
           <div>
-            <h4 class="font-medium text-white mb-2">Longevity Tier age-adjusted value</h4>
-            <ul class="space-y-1.5 text-sm text-[#c7cad5]">
-              <li class="flex justify-between"><span class="text-[#9ca3af]">Elite</span><span class="mono text-amber-300">+10% +</span></li>
-              <li class="flex justify-between"><span class="text-[#9ca3af]">Strong</span><span class="mono">+4% to +9.9%</span></li>
-              <li class="flex justify-between"><span class="text-[#9ca3af]">Average</span><span class="mono">-3% to +3.9%</span></li>
-              <li class="flex justify-between"><span class="text-[#9ca3af]">Weak</span><span class="mono">-9% to -3.1%</span></li>
-              <li class="flex justify-between"><span class="text-[#9ca3af]">Rebuild</span><span class="mono text-red-400">&lt; -9%</span></li>
-            </ul>
+            <h4 class="text-[13px] font-semibold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+              <span class="h-1.5 w-1.5 rounded-full bg-fuchsia-400"></span> Longevity Tier Age-Adjusted Value
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div class="rounded-xl bg-[#0f0f18] border border-amber-400/20 p-3 flex items-center justify-between">
+                <span class="text-sm font-medium text-amber-200">Elite</span>
+                <span class="text-sm font-mono text-slate-300">+9% +</span>
+              </div>
+              <div class="rounded-xl bg-[#0f0f18] border border-amber-500/20 p-3 flex items-center justify-between">
+                <span class="text-sm font-medium text-amber-400">Strong</span>
+                <span class="text-sm font-mono text-slate-300">+3% to +8.9%</span>
+              </div>
+              <div class="rounded-xl bg-[#0f0f18] border border-sky-400/20 p-3 flex items-center justify-between">
+                <span class="text-sm font-medium text-sky-300">Average</span>
+                <span class="text-sm font-mono text-slate-300">-3% to +2.9%</span>
+              </div>
+              <div class="rounded-xl bg-[#0f0f18] border border-orange-400/20 p-3 flex items-center justify-between">
+                <span class="text-sm font-medium text-orange-300">Weak</span>
+                <span class="text-sm font-mono text-slate-300">-9% to -3.1%</span>
+              </div>
+              <div class="rounded-xl bg-[#0f0f18] border border-rose-400/20 p-3 flex items-center justify-between sm:col-span-2">
+                <span class="text-sm font-medium text-rose-300">Rebuild</span>
+                <span class="text-sm font-mono text-slate-300">&lt; -9%</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="mt-5 pt-5 border-t border-[#252537] text-xs text-[#8a8fa5]">
-          <p><span class="text-[#c7cad5] font-medium">Note:</span> Teams are sorted by archetype precedence, then by a hidden tier score combining production differential, longevity delta, total asset value, and pick capital. Hover rows for detail.</p>
         </div>
       </div>
     </div>
 
-    <footer class="mt-10 text-center text-xs text-[#6b7280]">
-      Built for competitive dynasty leagues • Dark mode optimized
+    <footer class="mt-10 text-center text-xs text-slate-600">
+      Dashboard v2.0 • Symmetric Bands • Gold positives • Dark mode
     </footer>
   </div>
 
 <script>
 const teams = [
-  { rank:1, team:"Premium MailOrder McBride", archetype:"JUGGERNAUT", ppg:170.0, prodDiff:15.4, longevity:16, value:63412, picks:"3 • 3,339", age:25.3, prod:"Elite", long:"Elite" },
-  { rank:2, team:"Walker Touchdown stRanger", archetype:"CONTENDER", ppg:161.1, prodDiff:6.5, longevity:3, value:53246, picks:"3 • 3,974", age:25.3, prod:"Strong", long:"Average" },
-  { rank:3, team:"Molon Labe", archetype:"YOUNG RISER", ppg:157.8, prodDiff:3.2, longevity:5, value:54998, picks:"3 • 3,742", age:25.1, prod:"Average", long:"Strong" },
-  { rank:4, team:"Puka Boo", archetype:"BALANCED CORE", ppg:156.7, prodDiff:2.2, longevity:3, value:54066, picks:"3 • 3,858", age:25.6, prod:"Average", long:"Average" },
-  { rank:5, team:"Salt Factory", archetype:"TREADMILL", ppg:156.3, prodDiff:1.8, longevity:-10, value:49600, picks:"3 • 4,559", age:26.4, prod:"Average", long:"Rebuild" },
-  { rank:6, team:"Allen's Creamy Surprise", archetype:"TREADMILL", ppg:152.8, prodDiff:-1.8, longevity:-4, value:52783, picks:"3 • 3,344", age:25.7, prod:"Average", long:"Weak" },
-  { rank:7, team:"TURBONUTZ", archetype:"TREADMILL", ppg:153.9, prodDiff:-0.7, longevity:-19, value:45068, picks:"3 • 4,349", age:27.4, prod:"Average", long:"Rebuild" },
-  { rank:8, team:"Scrooge McDucks", archetype:"PICK-RICH REBUILDER", ppg:149.1, prodDiff:-5.4, longevity:10, value:58594, picks:"3 • 6,218", age:25.3, prod:"Weak", long:"Elite" },
-  { rank:9, team:"Super bo or bust", archetype:"REBUILDING", ppg:146.3, prodDiff:-8.3, longevity:0, value:51875, picks:"3 • 5,161", age:25.9, prod:"Rebuild", long:"Average" },
-  { rank:10, team:"Athanasios13", archetype:"STRIPPED REBUILDER", ppg:141.8, prodDiff:-12.8, longevity:-4, value:52003, picks:"3 • 4,308", age:25.7, prod:"Rebuild", long:"Weak" },
+  { rank:1, team:'Premium MailOrder McBride', archetype:'JUGGERNAUT', ppg:170.0, prodDiff:15.4, prodTier:'Elite', longevity:16, longTier:'Elite', value:63412, picks:'3 • 3,339', picksValue:3339, age:25.3 },
+  { rank:2, team:'Walker Touchdown stRanger', archetype:'CONTENDER', ppg:161.1, prodDiff:6.5, prodTier:'Strong', longevity:3, longTier:'Strong', value:53246, picks:'3 • 3,974', picksValue:3974, age:25.3 },
+  { rank:3, team:'Molon Labe', archetype:'CONTENDER', ppg:157.8, prodDiff:3.2, prodTier:'Strong', longevity:5, longTier:'Strong', value:54998, picks:'3 • 3,742', picksValue:3742, age:25.1 },
+  { rank:4, team:'Puka Boo', archetype:'YOUNG RISER', ppg:156.7, prodDiff:2.2, prodTier:'Average', longevity:3, longTier:'Strong', value:54066, picks:'3 • 3,858', picksValue:3858, age:25.6 },
+  { rank:5, team:'Salt Factory', archetype:'TREADMILL', ppg:156.3, prodDiff:1.8, prodTier:'Average', longevity:-10, longTier:'Rebuild', value:49600, picks:'3 • 4,559', picksValue:4559, age:26.4 },
+  { rank:6, team:"Allen's Creamy Surprise", archetype:'TREADMILL', ppg:152.8, prodDiff:-1.8, prodTier:'Average', longevity:-4, longTier:'Weak', value:52783, picks:'3 • 3,344', picksValue:3344, age:25.7 },
+  { rank:7, team:'TURBONUTZ', archetype:'TREADMILL', ppg:153.9, prodDiff:-0.7, prodTier:'Average', longevity:-19, longTier:'Rebuild', value:45068, picks:'3 • 4,349', picksValue:4349, age:27.4 },
+  { rank:8, team:'Scrooge McDucks', archetype:'PICK-RICH REBUILDER', ppg:149.1, prodDiff:-5.4, prodTier:'Weak', longevity:10, longTier:'Elite', value:58594, picks:'3 • 6,218', picksValue:6218, age:25.3 },
+  { rank:9, team:'Super bo or bust', archetype:'REBUILDING', ppg:146.3, prodDiff:-8.3, prodTier:'Weak', longevity:0, longTier:'Average', value:51875, picks:'3 • 5,161', picksValue:5161, age:25.9 },
+  { rank:10, team:'Athanasios13', archetype:'STRIPPED REBUILDER', ppg:141.8, prodDiff:-12.8, prodTier:'Rebuild', longevity:-4, longTier:'Weak', value:52003, picks:'3 • 4,308', picksValue:4308, age:25.7 },
 ];
 
+const archetypeOrder = {
+  'JUGGERNAUT':0,
+  'CONTENDER':1,
+  'YOUNG RISER':2,
+  'BALANCED CORE':3,
+  'TREADMILL':4,
+  'PICK-RICH REBUILDER':5,
+  'REBUILDING':6,
+  'STRIPPED REBUILDER':7
+};
+
 const archetypeStyles = {
-  "JUGGERNAUT": "bg-amber-400/10 text-amber-300 border-amber-400/25",
-  "CONTENDER": "bg-emerald-400/10 text-emerald-300 border-emerald-400/25",
-  "YOUNG RISER": "bg-sky-400/10 text-sky-300 border-sky-400/25",
-  "BALANCED CORE": "bg-violet-400/10 text-violet-300 border-violet-400/25",
-  "TREADMILL": "bg-orange-400/10 text-orange-300 border-orange-400/25",
-  "PICK-RICH REBUILDER": "bg-cyan-400/10 text-cyan-300 border-cyan-400/25",
-  "REBUILDING": "bg-rose-400/10 text-rose-300 border-rose-400/25",
-  "STRIPPED REBUILDER": "bg-slate-400/10 text-slate-300 border-slate-400/25",
+  'JUGGERNAUT':'bg-amber-400/15 text-amber-200 border-amber-400/30',
+  'CONTENDER':'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  'YOUNG RISER':'bg-sky-400/15 text-sky-300 border-sky-400/30',
+  'BALANCED CORE':'bg-purple-400/15 text-purple-300 border-purple-400/30',
+  'TREADMILL':'bg-orange-400/15 text-orange-300 border-orange-400/30',
+  'PICK-RICH REBUILDER':'bg-cyan-400/15 text-cyan-300 border-cyan-400/30',
+  'REBUILDING':'bg-rose-400/15 text-rose-300 border-rose-400/30',
+  'STRIPPED REBUILDER':'bg-slate-400/15 text-slate-300 border-slate-400/30',
+};
+
+let state = {
+  filter:'all',
+  search:'',
+  sortKey:'rank',
+  sortDir:'asc'
 };
 
 const tbody = document.getElementById('tbody');
 const searchInput = document.getElementById('search');
-let activeFilter = 'all';
+const filterTabs = document.querySelectorAll('.filter-tab');
+const sortBtns = document.querySelectorAll('.sort-btn');
 
-function formatProd(val){
-  const cls = val > 0 ? 'text-[#facc15]' : val < 0 ? 'text-[#f87171]' : 'text-[#9ca3af]';
-  const sign = val > 0 ? '+' : '';
-  return `<span class="mono ${cls}">${sign}${val.toFixed(1)}</span>`;
+function formatNumber(n){ return n.toLocaleString('en-US'); }
+function formatPPG(n){ return n.toFixed(1); }
+function formatDiff(n){ return (n>0?'+':'') + n.toFixed(1); }
+function formatLong(n){ return (n>0?'+':'') + n + '%'; }
+function colorDiff(n){
+  if(n>0) return 'text-[#facc15]';
+  if(n<0) return 'text-[#f87171]';
+  return 'text-slate-400';
 }
-function formatLong(val){
-  const cls = val > 0 ? 'text-[#facc15]' : val < 0 ? 'text-[#f87171]' : 'text-[#9ca3af]';
-  const sign = val > 0 ? '+' : '';
-  return `<span class="mono ${cls}">${sign}${val}%</span>`;
+
+function getFiltered(){
+  let data = [...teams];
+  if(state.filter==='contenders'){
+    data = data.filter(t=>t.rank<=6);
+  }else if(state.filter==='rebuilders'){
+    data = data.filter(t=>t.rank>=7);
+  }
+  if(state.search){
+    const q = state.search.toLowerCase();
+    data = data.filter(t=> t.team.toLowerCase().includes(q) || t.archetype.toLowerCase().includes(q));
+  }
+  const key = state.sortKey;
+  data.sort((a,b)=>{
+    let av, bv;
+    switch(key){
+      case 'rank': av=a.rank; bv=b.rank; break;
+      case 'team': av=a.team.toLowerCase(); bv=b.team.toLowerCase(); break;
+      case 'archetype': av=archetypeOrder[a.archetype]; bv=archetypeOrder[b.archetype]; break;
+      case 'ppg': av=a.ppg; bv=b.ppg; break;
+      case 'prodDiff': av=a.prodDiff; bv=b.prodDiff; break;
+      case 'longevity': av=a.longevity; bv=b.longevity; break;
+      case 'value': av=a.value; bv=b.value; break;
+      case 'picks': av=a.picksValue; bv=b.picksValue; break;
+      case 'age': av=a.age; bv=b.age; break;
+      default: av=a.rank; bv=b.rank;
+    }
+    if(av < bv) return state.sortDir==='asc' ? -1 : 1;
+    if(av > bv) return state.sortDir==='asc' ? 1 : -1;
+    return 0;
+  });
+  return data;
 }
 
 function render(){
-  const q = searchInput.value.toLowerCase().trim();
-  tbody.innerHTML = '';
-  teams.filter(t => {
-    if (activeFilter === 'contenders' && t.rank > 6) return false;
-    if (activeFilter === 'rebuilders' && t.rank <= 6) return false;
-    if (q && !(t.team.toLowerCase().includes(q) || t.archetype.toLowerCase().includes(q))) return false;
-    return true;
-  }).forEach(t => {
-    const tr = document.createElement('tr');
-    tr.className = 'row-hover transition';
-    tr.innerHTML = `
+  const data = getFiltered();
+  tbody.innerHTML = data.map(t=>`
+    <tr class="group hover:bg-white/[0.03] transition">
       <td class="px-5 py-4 align-top">
-        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-[#1a1a29] border border-[#2a2a3f] text-sm font-semibold mono">${t.rank}</span>
+        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-sm font-semibold text-white">${t.rank}</span>
       </td>
       <td class="px-5 py-4 align-top">
-        <div class="font-medium text-white leading-tight">${t.team}</div>
-        <div class="text-xs text-[#8a8fa5] mt-0.5">Prod: ${t.prod} • Long: ${t.long}</div>
+        <div class="font-semibold text-white leading-tight">${t.team}</div>
+        <div class="text-xs text-slate-400 mt-1">Prod: ${t.prodTier} • Long: ${t.longTier}</div>
       </td>
       <td class="px-5 py-4 align-top">
-        <span class="pill inline-flex items-center px-2.5 py-1 rounded-full border ${archetypeStyles[t.archetype]}">${t.archetype.replace('PICK-RICH ','PICK-RICH ')}</span>
+        <span class="pill inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${archetypeStyles[t.archetype]}">${t.archetype}</span>
       </td>
-      <td class="px-5 py-4 text-right align-top mono text-white">${t.ppg.toFixed(1)}</td>
-      <td class="px-5 py-4 text-right align-top">${formatProd(t.prodDiff)}</td>
-      <td class="px-5 py-4 text-right align-top">${formatLong(t.longevity)}</td>
-      <td class="px-5 py-4 text-right align-top mono text-white">${t.value.toLocaleString()}</td>
-      <td class="px-5 py-4 text-right align-top mono text-[#c7cad5]">${t.picks}</td>
-      <td class="px-5 py-4 text-right align-top mono text-[#c7cad5]">${t.age.toFixed(1)}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+      <td class="px-5 py-4 text-right align-top">
+        <span class="font-mono text-[15px] text-white">${formatPPG(t.ppg)}</span>
+      </td>
+      <td class="px-5 py-4 text-right align-top">
+        <span class="font-mono text-[15px] font-medium ${colorDiff(t.prodDiff)}">${formatDiff(t.prodDiff)}</span>
+      </td>
+      <td class="px-5 py-4 text-right align-top">
+        <span class="font-mono text-[15px] font-medium ${colorDiff(t.longevity)}">${formatLong(t.longevity)}</span>
+      </td>
+      <td class="px-5 py-4 text-right align-top">
+        <span class="font-mono text-[15px] text-slate-200">${formatNumber(t.value)}</span>
+      </td>
+      <td class="px-5 py-4 text-right align-top">
+        <span class="font-mono text-[14px] text-slate-300">${t.picks}</span>
+      </td>
+      <td class="px-5 py-4 text-right align-top">
+        <span class="font-mono text-[15px] text-slate-200">${t.age.toFixed(1)}</span>
+      </td>
+    </tr>
+  `).join('');
 }
 
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active','border-[#3a3a55]'));
-    btn.classList.add('tab-active','border-[#3a3a55]');
-    activeFilter = btn.dataset.filter;
+searchInput.addEventListener('input', e=>{
+  state.search = e.target.value.trim();
+  render();
+});
+
+filterTabs.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    filterTabs.forEach(b=>{ b.classList.remove('bg-white/10','text-white'); b.classList.add('text-slate-400') });
+    btn.classList.add('bg-white/10','text-white');
+    btn.classList.remove('text-slate-400');
+    state.filter = btn.dataset.filter;
     render();
   });
 });
 
-searchInput.addEventListener('input', render);
+sortBtns.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const key = btn.dataset.key;
+    if(state.sortKey===key){
+      state.sortDir = state.sortDir==='asc' ? 'desc' : 'asc';
+    }else{
+      state.sortKey = key;
+      state.sortDir = key==='team' || key==='archetype' ? 'asc' : 'desc';
+      if(key==='rank') state.sortDir='asc';
+    }
+    sortBtns.forEach(b=>{
+      b.classList.remove('active','text-white');
+      b.querySelector('.arrow').classList.add('opacity-0');
+    });
+    btn.classList.add('active','text-white');
+    const arrow = btn.querySelector('.arrow');
+    arrow.classList.remove('opacity-0');
+    arrow.textContent = state.sortDir==='asc' ? '↑' : '↓';
+    render();
+  });
+});
 
-document.getElementById('exportBtn').addEventListener('click', () => {
-  const headers = ['Rank','Team','Archetype','PPG','Prod Diff','Longevity','Value','Picks','Age','Prod','Long'];
-  const rows = teams.map(t=>[t.rank,t.team,t.archetype,t.ppg,t.prodDiff,t.longevity,t.value,t.picks,t.age,t.prod,t.long]);
-  const csv = [headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv],{type:'text/csv'});
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const data = getFiltered();
+  const headers = ['RANK','TEAM','ARCHETYPE','PPG','PROD DIFF','LONGEVITY','VALUE','PICKS','AGE','PROD TIER','LONG TIER'];
+  const rows = data.map(t=>[
+    t.rank,
+    `"${t.team.replace(/"/g,'""')}"`,
+    t.archetype,
+    t.ppg.toFixed(1),
+    (t.prodDiff>=0?'+':'')+t.prodDiff.toFixed(1),
+    (t.longevity>=0?'+':'')+t.longevity+'%',
+    t.value,
+    `"${t.picks}"`,
+    t.age.toFixed(1),
+    t.prodTier,
+    t.longTier
+  ].join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'fantasy_tiers.csv';
+  a.download = 'fantasy-tier-dashboard.csv';
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   URL.revokeObjectURL(url);
 });
 
