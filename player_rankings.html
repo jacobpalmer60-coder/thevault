@@ -2,460 +2,450 @@
 <html lang="en" class="dark">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>THE VAULT — Player Rankings</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>THE VAULT • Player Rankings</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root { color-scheme: dark; }
-  html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-  .mono { font-family: 'JetBrains Mono', monospace; }
-  .glass { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-  .scrollbar-thin::-webkit-scrollbar { height:8px; width:8px }
-  .scrollbar-thin::-webkit-scrollbar-thumb { background:#2a2a3d; border-radius:999px }
-  .scrollbar-thin::-webkit-scrollbar-track { background:transparent }
-  .sort-asc::after { content:' ↑'; opacity:.6 }
-  .sort-desc::after { content:' ↓'; opacity:.6 }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .scroll-thin::-webkit-scrollbar { height:8px; width:8px }
+  .scroll-thin::-webkit-scrollbar-thumb { background:#334155; border-radius:999px }
+  .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 </style>
 </head>
-<body class="min-h-screen bg-[#050508] text-zinc-100 antialiased selection:bg-fuchsia-500/30">
-  <!-- Background -->
-  <div class="fixed inset-0 -z-10">
-    <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(139,92,246,0.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(236,72,153,0.2),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(59,130,246,0.15),transparent_50%),#050508]"></div>
-    <div class="absolute inset-0 opacity-[0.04] mix-blend-soft-light" style="background-image:repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 24px),repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 24px)"></div>
+<body class="bg-[#050a14] text-slate-100 min-h-screen selection:bg-cyan-500/30">
+  <!-- BG GLOW -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden">
+    <div class="absolute -top-1/2 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] rounded-full bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.15),transparent_60%)]"></div>
+    <div class="absolute top-1/3 -right-1/4 w-[800px] h-[800px] rounded-full bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.12),transparent_60%)]"></div>
   </div>
 
-  <div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-    <!-- Header -->
-    <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
-      <div>
-        <h1 class="text-[clamp(32px,6vw,56px)] font-extrabold tracking-tight leading-none">
-          THE <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400">VAULT</span>
-        </h1>
-        <p class="mt-2 text-zinc-300 max-w-xl">Dynasty rankings with live value + PPG fusion. Auto-detects your Sleeper format.</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <span id="badge-auto" class="hidden items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-200">
-          <span class="size-1.5 rounded-full bg-violet-400 animate-pulse"></span>
-          Auto-detected
-        </span>
-        <span id="badge-updated" class="rounded-full border border-zinc-700 bg-zinc-900/70 px-3 py-1 text-xs mono text-zinc-300">Updated —</span>
+  <div class="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 py-6">
+    <!-- HEADER -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-violet-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 3v14M19 7l-7 4-7-4" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div>
+          <h1 class="text-3xl md:text-4xl font-black tracking-tight leading-none">
+            <span class="bg-gradient-to-r from-cyan-300 via-sky-300 to-violet-300 bg-clip-text text-transparent">THE VAULT</span>
+          </h1>
+          <p class="text-slate-400 text-sm font-medium -mt-0.5">Player Rankings • Values + PPG Merge</p>
+        </div>
+      <div class="flex items-center gap-3">
+        <div class="mono text-xs px-3 py-1.5 rounded-full bg-slate-800/70 border border-slate-700 text-slate-300">
+          <span id="status-dot" class="inline-block w-2 h-2 rounded-full bg-amber-400 mr-2 animate-pulse"></span>
+          <span id="status-text">Idle</span>
+        </div>
+        <button id="refreshBtn" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-semibold transition">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-9-9"/><path d="M21 3v6h-6"/></svg>
+          Refresh
+        </button>
       </div>
     </header>
 
-    <!-- Controls Card -->
-    <div class="glass rounded-2xl border border-white/10 bg-white/[0.04] shadow-2xl shadow-black/40">
-      <div class="p-4 sm:p-6 border-b border-white/10">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <!-- Format -->
-          <div class="lg:col-span-4">
-            <label class="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1.5 font-semibold">Format</label>
-            <div class="relative">
-              <select id="format" class="w-full appearance-none rounded-xl bg-zinc-900/80 border border-zinc-700 pl-3 pr-10 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500">
-                <option>SuperFlex PPR</option>
-                <option>SuperFlex PPR TEP 0.5</option>
-                <option>SuperFlex PPR TEP</option>
-                <option>1QB PPR</option>
-                <option>1QB PPR TEP 0.5</option>
-                <option>1QB PPR TEP</option>
-              </select>
-              <span id="format-auto-badge" class="hidden absolute -top-2 -right-2 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-violet-600 text-white shadow">AUTO</span>
-              <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 size-4 text-zinc-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>
-            </div>
+    <!-- CONTROLS -->
+    <section class="grid lg:grid-cols-12 gap-4 mb-6">
+      <div class="lg:col-span-8 grid md:grid-cols-3 gap-4">
+        <!-- FORMAT -->
+        <div class="relative group">
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Format</label>
+          <div class="relative">
+            <select id="formatSelect" class="w-full appearance-none bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition">
+              <option value="val_sf_ppr">SF • PPR</option>
+              <option value="val_sf_ppr_tep05">SF • PPR • TEP 0.5</option>
+              <option value="val_sf_ppr_tep">SF • PPR • TEP 1.0</option>
+              <option value="val_1qb_ppr">1QB • PPR</option>
+              <option value="val_1qb_ppr_tep05">1QB • PPR • TEP 0.5</option>
+              <option value="val_1qb_ppr_tep">1QB • PPR • TEP 1.0</option>
+            </select>
+            <svg class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
           </div>
+          <span id="autoBadge" class="hidden absolute -top-2 -right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500 text-slate-900 shadow-lg shadow-cyan-500/30">AUTO</span>
+        </div>
 
-          <!-- League ID -->
-          <div class="lg:col-span-4">
-            <label class="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1.5 font-semibold">Sleeper League ID</label>
-            <div class="flex gap-2">
-              <input id="league-id" placeholder="e.g. 104 ..." class="mono flex-1 rounded-xl bg-zinc-900/80 border border-zinc-700 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500" />
-              <button id="load-league" class="rounded-xl bg-violet-600 hover:bg-violet-500 active:bg-violet-700 transition px-4 text-sm font-semibold shadow-lg shadow-violet-900/30">Load</button>
-            </div>
-          </div>
-
-          <!-- Search + POS + Refresh -->
-          <div class="lg:col-span-4 grid grid-cols-1 sm:grid-cols-7 gap-2">
-            <div class="sm:col-span-4">
-              <label class="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1.5 font-semibold">Search</label>
-              <div class="relative">
-                <input id="search" placeholder="Player name..." class="w-full rounded-xl bg-zinc-900/80 border border-zinc-700 pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500" />
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              </div>
-            </div>
-            <div class="sm:col-span-2">
-              <label class="block text-[11px] uppercase tracking-wider text-zinc-400 mb-1.5 font-semibold">POS</label>
-              <select id="pos-filter" class="w-full rounded-xl bg-zinc-900/80 border border-zinc-700 px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500">
-                <option value="">All</option>
-                <option>QB</option>
-                <option>RB</option>
-                <option>WR</option>
-                <option>TE</option>
-              </select>
-            </div>
-            <div class="sm:col-span-1 flex items-end">
-              <button id="refresh" title="Refresh data" class="w-full rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 p-2.5 transition">
-                <svg class="size-5 mx-auto text-zinc-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M9 9l-3 3 3 3"/><path d="M12 3v9"/></svg>
-              </button>
-            </div>
+        <!-- LEAGUE -->
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Sleeper League ID</label>
+          <div class="flex gap-2">
+            <input id="leagueInput" placeholder="e.g. 123456789012345678" class="flex-1 bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-sm mono focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition" />
+            <button id="loadLeagueBtn" class="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-sm font-semibold transition shadow-lg shadow-violet-600/20">Load</button>
           </div>
         </div>
       </div>
 
-      <!-- Stats chips -->
-      <div class="px-4 sm:px-6 py-3 flex flex-wrap items-center gap-2 text-xs">
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-zinc-900/80 border border-zinc-800 px-2.5 py-1">
-          <span class="size-1.5 rounded-full bg-emerald-400"></span>
-          Values: <span id="stat-values" class="mono font-semibold">—</span>
-        </span>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-zinc-900/80 border border-zinc-800 px-2.5 py-1">
-          <span class="size-1.5 rounded-full bg-sky-400"></span>
-          PPG: <span id="stat-ppg" class="mono font-semibold">—</span>
-        </span>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-zinc-900/80 border border-zinc-800 px-2.5 py-1">
-          <span class="size-1.5 rounded-full bg-fuchsia-400"></span>
-          Merged: <span id="stat-merged" class="mono font-semibold">—</span>
-        </span>
-        <span class="ml-auto text-[11px] text-zinc-500">Tip: Click headers to sort • Format auto-switches on league load</span>
+      <div class="lg:col-span-4 grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Search</label>
+          <div class="relative">
+            <input id="searchInput" placeholder="Player name…" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition" />
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">Position</label>
+          <select id="posFilter" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition">
+            <option value="ALL">All POS</option>
+            <option value="QB">QB</option>
+            <option value="RB">RB</option>
+            <option value="WR">WR</option>
+            <option value="TE">TE</option>
+          </select>
+        </div>
       </div>
+    </section>
 
-      <!-- Table -->
-      <div class="overflow-x-auto scrollbar-thin">
-        <table class="w-full min-w-[960px]">
-          <thead class="sticky top-0 z-10 backdrop-blur bg-zinc-950/80 border-y border-white/10">
-            <tr class="text-[11px] uppercase tracking-wider text-zinc-400">
-              <th class="text-left font-semibold px-4 sm:px-6 py-3 cursor-pointer select-none" data-sort="name">Player</th>
-              <th class="text-left font-semibold px-3 py-3 cursor-pointer select-none" data-sort="pos">Pos</th>
-              <th class="text-left font-semibold px-3 py-3 cursor-pointer select-none" data-sort="team">Team</th>
-              <th class="text-right font-semibold px-3 py-3 cursor-pointer select-none" data-sort="age">Age</th>
-              <th class="text-right font-semibold px-3 py-3 cursor-pointer select-none" data-sort="value">Value</th>
-              <th class="text-right font-semibold px-3 py-3 cursor-pointer select-none" data-sort="sleeperPpg">Sleeper PPG</th>
-              <th class="text-right font-semibold px-3 py-3 cursor-pointer select-none" data-sort="fpPpg">FP PPG</th>
-              <th class="text-right font-semibold px-3 py-3 cursor-pointer select-none" data-sort="avgPpg">Avg PPG</th>
-              <th class="text-right font-semibold px-4 sm:px-6 py-3 cursor-pointer select-none" data-sort="valuePerPpg">Value / PPG</th>
+    <!-- STATS CHIPS -->
+    <section class="flex flex-wrap items-center gap-3 mb-6">
+      <div class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Values: <span id="chipValues" class="mono text-slate-100 font-semibold">0</span>
+      </div>
+      <div class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-sky-400"></span> PPG: <span id="chipPpg" class="mono text-slate-100 font-semibold">0</span>
+      </div>
+      <div class="px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-violet-400"></span> Merged: <span id="chipMerged" class="mono text-slate-100 font-semibold">0</span>
+      </div>
+      <div class="ml-auto text-xs text-slate-500 mono">
+        Updated: <span id="updatedAt" class="text-slate-300">—</span>
+      </div>
+    </section>
+
+    <!-- TABLE -->
+    <section class="relative rounded-2xl border border-slate-800 bg-slate-950/60 glass shadow-2xl shadow-black/30 overflow-hidden">
+      <div class="overflow-x-auto scroll-thin max-h-[70vh]">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 z-20 bg-slate-950/95 backdrop-blur border-b border-slate-800">
+            <tr class="text-[11px] uppercase tracking-wider text-slate-400">
+              <th class="text-left font-semibold px-4 py-3 sticky left-0 bg-slate-950/95">Player</th>
+              <th class="text-left font-semibold px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="pos">POS</th>
+              <th class="text-left font-semibold px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="team">Team</th>
+              <th class="text-right font-semibold px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="age">Age</th>
+              <th class="text-right font-semibold px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="value">Value</th>
+              <th class="text-right font-semibold px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="sleeper_ppg">Sleeper PPG</th>
+              <th class="text-right font-semibold px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="fp_ppg">FP PPG</th>
+              <th class="text-right font-semibold px-3 py-3 cursor-pointer hover:text-slate-200" data-sort="avg_ppg">Avg PPG</th>
+              <th class="text-right font-semibold px-4 py-3 cursor-pointer hover:text-slate-200" data-sort="value_per_ppg">Value / PPG</th>
             </tr>
           </thead>
-          <tbody id="tbody" class="divide-y divide-white/5">
+          <tbody id="tbody" class="divide-y divide-slate-900/70">
             <tr>
-              <td colspan="9" class="px-6 py-16 text-center">
+              <td colspan="9" class="px-4 py-16 text-center text-slate-500">
                 <div class="inline-flex flex-col items-center gap-3">
-                  <div class="size-10 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin"></div>
-                  <p class="text-zinc-400 text-sm">Loading rankings...</p>
+                  <svg class="animate-spin" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-9-9"/></svg>
+                  <span class="text-sm">Loading data…</span>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+    </section>
 
-      <!-- Empty state -->
-      <div id="empty" class="hidden px-6 py-16 text-center text-zinc-500 text-sm">No players match your filters.</div>
-
-      <!-- Footer -->
-      <div class="px-4 sm:px-6 py-4 border-t border-white/10 text-[11px] text-zinc-500 flex items-center justify-between">
-        <span>Built for THE VAULT • Dynasty values + PPG fusion</span>
-        <span class="mono">v1.0</span>
+    <!-- STATUS LOG -->
+    <section class="mt-6">
+      <div class="rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Fetch Status</h2>
+        <div id="log" class="mono text-xs leading-relaxed text-slate-400 max-h-32 overflow-y-auto scroll-thin whitespace-pre-wrap"></div>
       </div>
-    </div>
+    </section>
+
+    <footer class="text-center text-[11px] text-slate-600 mt-10 pb-10">
+      THE VAULT • Built for dynasty degeneracy. Data from Google Sheets via AllOrigins proxy.
+    </footer>
   </div>
 
 <script>
 (() => {
-  const CSV_VALUES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=689232361&single=true&output=csv';
-  const CSV_PPG = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
+  const CSV_VALUES_ORIG = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=689232361&single=true&output=csv';
+  const CSV_PPG_ORIG = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
+  const PROXY = url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
-  const FORMAT_MAP = {
-    'SuperFlex PPR': { valueKey:'val_sf_ppr', sleeperKey:'Sleeper_PPR', fpKey:'FP_PPR', isTep:false },
-    'SuperFlex PPR TEP 0.5': { valueKey:'val_sf_ppr_tep05', sleeperKey:'Sleeper_PPR_0.5_TEP', fpKey:'FP_PPR_0.5_TEP', isTep:true, tep:0.5 },
-    'SuperFlex PPR TEP': { valueKey:'val_sf_ppr_tep', sleeperKey:'Sleeper_PPR_TEP', fpKey:'FP_PPR_TEP', isTep:true, tep:1 },
-    '1QB PPR': { valueKey:'val_1qb_ppr', sleeperKey:'Sleeper_PPR', fpKey:'FP_PPR', isTep:false },
-    '1QB PPR TEP 0.5': { valueKey:'val_1qb_ppr_tep05', sleeperKey:'Sleeper_PPR_0.5_TEP', fpKey:'FP_PPR_0.5_TEP', isTep:true, tep:0.5 },
-    '1QB PPR TEP': { valueKey:'val_1qb_ppr_tep', sleeperKey:'Sleeper_PPR_TEP', fpKey:'FP_PPR_TEP', isTep:true, tep:1 },
-  };
+  const $ = sel => document.querySelector(sel);
+  const logEl = $('#log');
+  const statusText = $('#status-text');
+  const statusDot = $('#status-dot');
+  const tbody = $('#tbody');
+  const chipValues = $('#chipValues');
+  const chipPpg = $('#chipPpg');
+  const chipMerged = $('#chipMerged');
+  const updatedAt = $('#updatedAt');
+  const formatSelect = $('#formatSelect');
+  const autoBadge = $('#autoBadge');
+  const searchInput = $('#searchInput');
+  const posFilter = $('#posFilter');
+  const leagueInput = $('#leagueInput');
+  const loadLeagueBtn = $('#loadLeagueBtn');
+  const refreshBtn = $('#refreshBtn');
 
-  const state = {
-    valuesRaw: [],
-    ppgRaw: [],
-    merged: [],
-    filtered: [],
-    sortKey: 'value',
-    sortDir: 'desc',
-    format: 'SuperFlex PPR',
-    autoFormat: false,
-    leagueId: null,
-  };
+  let valuesRaw = [];
+  let ppgRaw = [];
+  let merged = [];
+  let sortKey = 'value';
+  let sortDir = 'desc';
+  let lastLeagueAuto = null;
 
-  const els = {
-    format: document.getElementById('format'),
-    formatAutoBadge: document.getElementById('format-auto-badge'),
-    leagueId: document.getElementById('league-id'),
-    loadLeague: document.getElementById('load-league'),
-    search: document.getElementById('search'),
-    posFilter: document.getElementById('pos-filter'),
-    refresh: document.getElementById('refresh'),
-    tbody: document.getElementById('tbody'),
-    empty: document.getElementById('empty'),
-    statValues: document.getElementById('stat-values'),
-    statPpg: document.getElementById('stat-ppg'),
-    statMerged: document.getElementById('stat-merged'),
-    badgeAuto: document.getElementById('badge-auto'),
-    badgeUpdated: document.getElementById('badge-updated'),
-  };
+  function log(msg, type='info') {
+    const ts = new Date().toLocaleTimeString();
+    const color = type==='error' ? 'text-red-400' : type==='success' ? 'text-emerald-400' : 'text-slate-500';
+    logEl.innerHTML += `<span class="${color}">[${ts}]</span> ${msg}\n`;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function setStatus(text, color='amber') {
+    statusText.textContent = text;
+    statusDot.className = `inline-block w-2 h-2 rounded-full mr-2 animate-pulse bg-${color}-400`;
+  }
 
-  // Utils
-  const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  const fmtNum = (n,d=0)=> (n==null||isNaN(n))?'—': Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});
-  const fmt1 = n=> (n==null||isNaN(n))?'—': Number(n).toFixed(1);
-  const nowTime = ()=> new Date().toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  const normalizeName = s => s.toLowerCase().replace(/[^a-z0-9]/g,'');
 
-  function cleanValues(text){
-    text = text.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
-    const lines = text.split('\n');
+  function parseValues(txt) {
+    txt = txt.replace(/^\uFEFF/, '');
+    txt = txt.replace(/\s+/g, ' ').trim();
+    const m = txt.search(/\b\d{3,7}/);
+    if (m >= 0) txt = txt.slice(m);
+    const recs = txt.split(/(?=\b\d{3,7},)/);
     const out = [];
-    let buf = '';
-    for(let line of lines){
-      line = line.trim();
-      if(!line) continue;
-      if(/^\d+,/.test(line)){
-        if(buf) out.push(buf);
-        buf = line;
-      }else{
-        buf = buf ? buf + ' ' + line : line;
-      }
+    for (const rec of recs) {
+      const parts = rec.split(',');
+      if (parts.length < 11) continue;
+      const id = parts[0].trim();
+      const name = parts[1].trim();
+      const pos = parts[2].trim().toUpperCase();
+      const team = parts[3].trim().toUpperCase();
+      const age = parseFloat(parts[4]);
+      const val_sf_ppr = parseFloat(parts[5]);
+      const val_sf_ppr_tep05 = parseFloat(parts[6]);
+      const val_sf_ppr_tep = parseFloat(parts[7]);
+      const val_1qb_ppr = parseFloat(parts[8]);
+      const val_1qb_ppr_tep05 = parseFloat(parts[9]);
+      const val_1qb_ppr_tep = parseFloat(parts[10]);
+      if (!['QB','RB','WR','TE'].includes(pos)) continue;
+      if (!/^\d+$/.test(id)) continue;
+      out.push({ id, name, pos, team, age, val_sf_ppr, val_sf_ppr_tep05, val_sf_ppr_tep, val_1qb_ppr, val_1qb_ppr_tep05, val_1qb_ppr_tep });
     }
-    if(buf) out.push(buf);
-    return out.join('\n');
+    return out;
   }
 
-  function cleanPpg(text){
-    text = text.replace(/^\uFEFF/,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
-    const lines = text.split('\n');
+  function parsePPG(txt) {
+    txt = txt.replace(/^\uFEFF/, '');
+    txt = txt.replace(/\s+/g, ' ').trim();
+    // split by player pattern
+    const splitter = /(?=[A-Za-z][A-Za-z.'\-\s]{2,40},\s*[A-Z]{2,4},\s*(?:QB|RB|WR|TE|K),)/g;
+    const chunks = txt.split(splitter).filter(c => c.includes(','));
     const out = [];
-    let buf = '';
-    for(let line of lines){
-      line = line.trim();
-      if(!line) continue;
-      if(line.includes(',')){
-        if(buf) out.push(buf);
-        buf = line;
-      }else{
-        buf = buf ? buf + ' ' + line : line;
-      }
+    for (const chunk of chunks) {
+      const parts = chunk.split(',');
+      if (parts.length < 21) continue;
+      const player = parts[0].trim();
+      const team = parts[1].trim().toUpperCase();
+      const pos = parts[2].trim().toUpperCase();
+      const sleeper_ppr = parseFloat(parts[9]);
+      const sleeper_ppr_05 = parseFloat(parts[10]);
+      const sleeper_ppr_tep = parseFloat(parts[11]);
+      const fp_ppr = parseFloat(parts[18]);
+      const fp_ppr_05 = parseFloat(parts[19]);
+      const fp_ppr_tep = parseFloat(parts[20]);
+      if (!player) continue;
+      out.push({ player, team, pos, sleeper_ppr, sleeper_ppr_05, sleeper_ppr_tep, fp_ppr_05, fp_ppr_tep });
     }
-    if(buf) out.push(buf);
-    return out.join('\n');
+    return out;
   }
 
-  function parseCSV(text){
-    return Papa.parse(text, { header:true, dynamicTyping:true, skipEmptyLines:true }).data;
-  }
-
-  function mergeData(){
-    const fmt = FORMAT_MAP[state.format];
-    // Build PPG map
+  function mergeData() {
     const ppgMap = new Map();
-    for(const r of state.ppgRaw){
-      const key = norm(r.Player);
-      if(key) ppgMap.set(key, r);
+    for (const p of ppgRaw) {
+      ppgMap.set(normalizeName(p.player), p);
     }
-    const merged = [];
-    for(const v of state.valuesRaw){
-      const name = v.name;
-      if(!name) continue;
-      const p = ppgMap.get(norm(name));
-      let sleeperPpg = null, fpPpg = null;
-      const isTE = (v.pos||'').toUpperCase() === 'TE';
-      if(p){
-        if(isTE && fmt.isTep){
-          sleeperPpg = p[fmt.sleeperKey] ?? p.Sleeper_PPR;
-          fpPpg = p[fmt.fpKey] ?? p.FP_PPR;
-        }else{
-          sleeperPpg = p.Sleeper_PPR;
-          fpPpg = p.FP_PPR;
-        }
-      }
-      const avgPpg = (sleeperPpg!=null && fpPpg!=null) ? (sleeperPpg+fpPpg)/2 : (sleeperPpg ?? fpPpg ?? null);
-      const value = v[fmt.valueKey] ?? null;
-      const valuePerPpg = (value!=null && avgPpg) ? value/avgPpg : null;
-      merged.push({
-        sleeper_id: v.sleeper_id,
-        name,
+    const fmt = formatSelect.value; // e.g. val_sf_ppr_tep05
+    const tepLevel = fmt.includes('tep05') ? '05' : fmt.includes('tep') ? 'tep' : 'base';
+
+    const mapped = [];
+    for (const v of valuesRaw) {
+      const p = ppgMap.get(normalizeName(v.name));
+      if (!p) continue;
+      const value = v[fmt];
+      let sleeper_ppg, fp_ppg;
+      if (tepLevel === 'tep') { sleeper_ppg = p.sleeper_ppr_tep; fp_ppg = p.fp_ppr_tep; }
+      else if (tepLevel === '05') { sleeper_ppg = p.sleeper_ppr_05; fp_ppg = p.fp_ppr_05; }
+      else { sleeper_ppg = p.sleeper_ppr; fp_ppg = p.fp_ppr; }
+      const avg_ppg = (isFinite(sleeper_ppg) && isFinite(fp_ppg)) ? (sleeper_ppg + fp_ppg)/2 : (isFinite(sleeper_ppg) ? sleeper_ppg : fp_ppg);
+      const value_per_ppg = (isFinite(value) && isFinite(avg_ppg) && avg_ppg > 0) ? value / avg_ppg : null;
+      mapped.push({
+        name: v.name,
         pos: v.pos,
         team: v.team,
         age: v.age,
         value,
-        sleeperPpg,
-        fpPpg,
-        avgPpg,
-        valuePerPpg,
+        sleeper_ppg,
+        fp_ppg,
+        avg_ppg,
+        value_per_ppg
       });
     }
-    state.merged = merged;
-    els.statValues.textContent = state.valuesRaw.length.toLocaleString();
-    els.statPpg.textContent = state.ppgRaw.length.toLocaleString();
-    els.statMerged.textContent = merged.length.toLocaleString();
+    merged = mapped;
+    chipValues.textContent = valuesRaw.length.toLocaleString();
+    chipPpg.textContent = ppgRaw.length.toLocaleString();
+    chipMerged.textContent = merged.length.toLocaleString();
   }
 
-  function applyFilters(){
-    const q = els.search.value.trim().toLowerCase();
-    const pos = els.posFilter.value;
-    let arr = state.merged;
-    if(q){
-      arr = arr.filter(r=> r.name.toLowerCase().includes(q));
-    }
-    if(pos){
-      arr = arr.filter(r=> (r.pos||'').toUpperCase()===pos);
-    }
-    state.filtered = arr;
-    sortAndRender();
+  function formatNum(n, dec=1) {
+    if (!isFinite(n)) return '—';
+    return n.toLocaleString(undefined, { minimumFractionDigits: dec, maximumFractionDigits: dec });
   }
 
-  function sortAndRender(){
-    const key = state.sortKey;
-    const dir = state.sortDir==='asc'?1:-1;
-    const arr = [...state.filtered];
-    arr.sort((a,b)=>{
-      const av = a[key], bv = b[key];
-      if(av==null && bv==null) return 0;
-      if(av==null) return 1;
-      if(bv==null) return -1;
-      if(typeof av==='string') return av.localeCompare(bv)*dir;
-      return (av-bv)*dir;
+  function render() {
+    const q = searchInput.value.trim().toLowerCase();
+    const pos = posFilter.value;
+    let rows = merged.filter(r => {
+      if (pos !== 'ALL' && r.pos !== pos) return false;
+      if (q && !r.name.toLowerCase().includes(q)) return false;
+      return true;
     });
-    renderTable(arr);
-  }
 
-  function renderTable(rows){
-    els.empty.classList.toggle('hidden', rows.length>0);
-    if(rows.length===0){
-      els.tbody.innerHTML = '';
+    rows.sort((a,b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      const an = isFinite(av) ? av : -Infinity;
+      const bn = isFinite(bv) ? bv : -Infinity;
+      return sortDir === 'asc' ? an - bn : bn - an;
+    });
+
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-16 text-center text-slate-600">No players match filters.</td></tr>`;
       return;
     }
+
     const posColor = {
-      QB:'text-amber-300 bg-amber-500/10 border-amber-500/20',
-      RB:'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
-      WR:'text-sky-300 bg-sky-500/10 border-sky-500/20',
-      TE:'text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/20',
+      QB: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
+      RB: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+      WR: 'text-sky-300 bg-sky-500/10 border-sky-500/20',
+      TE: 'text-violet-300 bg-violet-500/10 border-violet-500/20'
     };
-    const html = rows.map(r=>{
-      const pc = posColor[(r.pos||'').toUpperCase()]||'text-zinc-300 bg-zinc-500/10 border-zinc-500/20';
-      return `<tr class="hover:bg-white/[0.03] transition">
-        <td class="px-4 sm:px-6 py-3">
-          <div class="font-semibold leading-tight">${escapeHtml(r.name)}</div>
-          <div class="text-[11px] mono text-zinc-500">#${r.sleeper_id||''}</div>
+
+    tbody.innerHTML = rows.map(r => `
+      <tr class="hover:bg-slate-900/60 transition">
+        <td class="px-4 py-3 sticky left-0 bg-slate-950/80 backdrop-blur">
+          <div class="font-semibold text-slate-100">${r.name}</div>
+          <div class="text-[11px] text-slate-500 mono">${normalizeName(r.name)}</div>
         </td>
-        <td class="px-3 py-3"><span class="inline-flex items-center rounded-md border px-1.5 py-0.5 text-[11px] font-bold ${pc}">${escapeHtml(r.pos||'')}</span></td>
-        <td class="px-3 py-3 text-zinc-300 font-medium">${escapeHtml(r.team||'')}</td>
-        <td class="px-3 py-3 text-right mono text-zinc-300">${r.age!=null?fmt1(r.age):'—'}</td>
-        <td class="px-3 py-3 text-right mono font-semibold text-white">${r.value!=null?fmtNum(r.value):'—'}</td>
-        <td class="px-3 py-3 text-right mono text-zinc-300">${fmt1(r.sleeperPpg)}</td>
-        <td class="px-3 py-3 text-right mono text-zinc-300">${fmt1(r.fpPpg)}</td>
-        <td class="px-3 py-3 text-right mono font-medium text-zinc-100">${fmt1(r.avgPpg)}</td>
-        <td class="px-4 sm:px-6 py-3 text-right mono font-semibold text-violet-300">${r.valuePerPpg!=null?fmtNum(r.valuePerPpg,0):'—'}</td>
-      </tr>`;
-    }).join('');
-    els.tbody.innerHTML = html;
+        <td class="px-3 py-3">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold border ${posColor[r.pos]||''}">${r.pos}</span>
+        </td>
+        <td class="px-3 py-3 text-slate-300 font-medium">${r.team}</td>
+        <td class="px-3 py-3 text-right mono text-slate-300">${isFinite(r.age)?r.age.toFixed(1):'—'}</td>
+        <td class="px-3 py-3 text-right mono font-semibold text-slate-100">${formatNum(r.value,0)}</td>
+        <td class="px-3 py-3 text-right mono text-slate-300">${formatNum(r.sleeper_ppg)}</td>
+        <td class="px-3 py-3 text-right mono text-slate-300">${formatNum(r.fp_ppg)}</td>
+        <td class="px-3 py-3 text-right mono text-cyan-300 font-medium">${formatNum(r.avg_ppg)}</td>
+        <td class="px-4 py-3 text-right mono font-semibold ${r.value_per_ppg && r.value_per_ppg>300 ? 'text-emerald-300' : 'text-slate-200'}">${r.value_per_ppg?formatNum(r.value_per_ppg,0):'—'}</td>
+      </tr>
+    `).join('');
+
     // update sort indicators
-    document.querySelectorAll('th[data-sort]').forEach(th=>{
-      th.classList.remove('sort-asc','sort-desc');
-      if(th.dataset.sort===state.sortKey){
-        th.classList.add(state.sortDir==='asc'?'sort-asc':'sort-desc');
-      }
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+      const k = th.dataset.sort;
+      const isActive = k === sortKey;
+      th.innerHTML = th.textContent.replace(/ [\u2191\u2193]/,'') + (isActive ? (sortDir==='asc'?' ↑':' ↓') : '');
+      th.classList.toggle('text-cyan-300', isActive);
     });
   }
 
-  function escapeHtml(s){ return String(s).replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+  async function fetchCSV(name, url) {
+    log(`Fetching ${name}...`);
+    setStatus(`Fetching ${name}…`, 'amber');
+    const res = await fetch(PROXY(url));
+    if (!res.ok) throw new Error(`${name} HTTP ${res.status}`);
+    const txt = await res.text();
+    log(`${name} fetched (${(txt.length/1024).toFixed(1)} KB)`, 'success');
+    return txt;
+  }
 
-  async function loadData(){
-    els.tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-16 text-center"><div class="inline-flex flex-col items-center gap-3"><div class="size-10 rounded-full border-2 border-violet-500/30 border-t-violet-500 animate-spin"></div><p class="text-zinc-400 text-sm">Fetching Sheets...</p></div></td></tr>`;
-    try{
-      const [vTxt,pTxt] = await Promise.all([fetch(CSV_VALUES).then(r=>r.text()), fetch(CSV_PPG).then(r=>r.text())]);
-      const vClean = cleanValues(vTxt);
-      const pClean = cleanPpg(pTxt);
-      state.valuesRaw = parseCSV(vClean);
-      state.ppgRaw = parseCSV(pClean);
+  async function loadAll() {
+    try {
+      setStatus('Loading…', 'amber');
+      const [valuesTxt, ppgTxt] = await Promise.all([
+        fetchCSV('VALUES', CSV_VALUES_ORIG),
+        fetchCSV('PPG', CSV_PPG_ORIG)
+      ]);
+      log(`Parsing VALUES...`);
+      valuesRaw = parseValues(valuesTxt);
+      log(`Parsed ${valuesRaw.length} values`, 'success');
+      log(`Parsing PPG...`);
+      ppgRaw = parsePPG(ppgTxt);
+      log(`Parsed ${ppgRaw.length} PPG rows`, 'success');
       mergeData();
-      applyFilters();
-      els.badgeUpdated.textContent = `Updated ${nowTime()}`;
-    }catch(e){
+      render();
+      updatedAt.textContent = new Date().toLocaleString();
+      setStatus('Ready', 'emerald');
+      log(`Render complete.`, 'success');
+    } catch (e) {
       console.error(e);
-      els.tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-16 text-center text-red-400">Failed to load data. Check console.</td></tr>`;
+      setStatus('Error', 'red');
+      log(`ERROR: ${e.message}`, 'error');
+      tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-16 text-center text-red-400">Failed to load data. See log.</td></tr>`;
     }
   }
 
-  async function detectLeague(leagueId){
-    if(!leagueId) return;
-    try{
+  async function detectLeagueFormat(leagueId) {
+    try {
+      setStatus('Detecting league…', 'amber');
+      log(`Detecting league ${leagueId}...`);
       const res = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`);
-      if(!res.ok) throw new Error('League not found');
-      const league = await res.json();
-      const isSF = (league.roster_positions||[]).includes('SUPER_FLEX') || (league.roster_positions||[]).filter(p=>p==='QB').length>=2;
-      const tep = league.scoring_settings?.bonus_rec_te || 0;
-      let format = isSF ? 'SuperFlex PPR' : '1QB PPR';
-      if(tep>0){
-        format += tep>=1 ? ' TEP' : ' TEP 0.5';
-      }
-      state.format = format;
-      state.autoFormat = true;
-      els.format.value = format;
-      els.formatAutoBadge.classList.remove('hidden');
-      els.badgeAuto.classList.remove('hidden');
-      els.badgeAuto.classList.add('inline-flex');
+      if (!res.ok) throw new Error(`Sleeper ${res.status}`);
+      const json = await res.json();
+      const rp = json.roster_positions || [];
+      const isSF = rp.includes('SUPER_FLEX') || rp.filter(p=>p==='QB').length >= 2;
+      const bonusTe = json.scoring_settings?.bonus_rec_te || 0;
+      let tep = '';
+      if (bonusTe >= 0.9) tep = '_tep';
+      else if (bonusTe >= 0.4) tep = '_tep05';
+      const prefix = isSF ? 'val_sf_ppr' : 'val_1qb_ppr';
+      const fmt = prefix + tep;
+      formatSelect.value = fmt;
+      autoBadge.classList.remove('hidden');
+      lastLeagueAuto = fmt;
+      log(`Auto-detected format: ${fmt} (SF=${isSF}, TE bonus=${bonusTe})`, 'success');
+      setStatus('Ready', 'emerald');
       mergeData();
-      applyFilters();
-    }catch(e){
-      console.warn('Auto-detect failed', e);
+      render();
+    } catch (e) {
+      log(`League detect failed: ${e.message}`, 'error');
+      setStatus('Ready', 'emerald');
     }
   }
 
-  // Event listeners
-  els.format.addEventListener('change', e=>{
-    state.format = e.target.value;
-    state.autoFormat = false;
-    els.formatAutoBadge.classList.add('hidden');
+  // Events
+  formatSelect.addEventListener('change', () => {
+    autoBadge.classList.add('hidden');
     mergeData();
-    applyFilters();
+    render();
   });
-  els.loadLeague.addEventListener('click', ()=>{
-    const id = els.leagueId.value.trim();
-    if(!id) return;
-    state.leagueId = id;
-    detectLeague(id);
+  searchInput.addEventListener('input', () => render());
+  posFilter.addEventListener('change', () => render());
+  refreshBtn.addEventListener('click', loadAll);
+  loadLeagueBtn.addEventListener('click', () => {
+    const id = leagueInput.value.trim();
+    if (!id) return;
+    localStorage.setItem('vault_league_id', id);
+    detectLeagueFormat(id);
   });
-  els.search.addEventListener('input', ()=> { clearTimeout(els.search._t); els.search._t=setTimeout(applyFilters,150); });
-  els.posFilter.addEventListener('change', applyFilters);
-  els.refresh.addEventListener('click', loadData);
-  document.querySelectorAll('th[data-sort]').forEach(th=>{
-    th.addEventListener('click', ()=>{
-      const key = th.dataset.sort;
-      if(state.sortKey===key){
-        state.sortDir = state.sortDir==='asc'?'desc':'asc';
-      }else{
-        state.sortKey = key;
-        state.sortDir = key==='name'?'asc':'desc';
-      }
-      sortAndRender();
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const k = th.dataset.sort;
+      if (sortKey === k) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      else { sortKey = k; sortDir = k === 'player' ? 'asc' : 'desc'; }
+      render();
     });
   });
 
-  // Init from URL
-  const url = new URL(location.href);
-  const leagueParam = url.searchParams.get('league_id') || url.searchParams.get('league');
-  if(leagueParam){
-    els.leagueId.value = leagueParam;
-    state.leagueId = leagueParam;
-  }
-
-  // Default sort
-  state.sortKey = 'value';
-  state.sortDir = 'desc';
-
-  // Kick off
-  loadData().then(()=>{
-    if(state.leagueId) detectLeague(state.leagueId);
-  });
+  // Init
+  leagueInput.value = localStorage.getItem('vault_league_id') || '';
+  loadAll();
 })();
 </script>
 <script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
