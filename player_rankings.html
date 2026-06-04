@@ -1,405 +1,464 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Player Rankings • Roster Audit</title>
+<title>The Vault • Player Rankings</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root { color-scheme: dark; }
-  html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-  .mono { font-family: 'JetBrains Mono', monospace; }
-  body { background: #05070f; }
-  .glass { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-  .scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
-  .scrollbar::-webkit-scrollbar-track { background: transparent; }
-  .scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 999px; }
-  .scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
-  @keyframes fadeIn { from { opacity:0; transform: translateY(4px)} to { opacity:1; transform: translateY(0)} }
-  .fade-in { animation: fadeIn .4s ease forwards; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  .display { font-family: 'Space Grotesk', sans-serif; }
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .glass-hover:hover { background: rgba(255,255,255,0.08); }
+  .scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 8px; }
+  .scroll-thin::-webkit-scrollbar-track { background: transparent; }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  .spin { animation: spin 1s linear infinite; }
 </style>
 </head>
-<body class="min-h-screen text-slate-100 selection:bg-indigo-500/30">
-<!-- Background -->
-<div class="fixed inset-0 -z-10 overflow-hidden">
-  <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(99,102,241,0.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(14,165,233,0.2),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(236,72,153,0.15),transparent_50%),#05070f]"></div>
-  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] bg-indigo-600/10 blur-[200px] rounded-full pointer-events-none"></div>
-</div>
+<body class="min-h-screen bg-[#05080f] text-slate-200 antialiased selection:bg-violet-500/30">
+  <!-- Background Glow -->
+  <div class="fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(124,58,237,0.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(56,189,248,0.2),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(236,72,153,0.15),transparent_50%),#05080f]"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] bg-[conic-gradient(from_0deg,transparent,rgba(124,58,237,0.08),transparent)] blur-3xl opacity-60"></div>
+  </div>
 
-<!-- Nav -->
-<nav class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/70 glass">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-16">
-      <div class="flex items-center gap-6">
-        <a href="#" class="flex items-center gap-2.5">
-          <div class="size-9 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 shadow-lg shadow-indigo-500/25 grid place-items-center">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" stroke="white" stroke-width="1.5"/></svg>
-          </div>
-          <span class="font-semibold tracking-tight">Roster Audit</span>
-        </a>
-        <div class="hidden md:flex items-center gap-1 text-sm">
-          <a href="#" class="px-3 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white transition">Home</a>
-          <a href="#" class="px-3 py-1.5 rounded-lg bg-white/10 text-white">Player Rankings</a>
-          <a href="#" class="px-3 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white transition">Roster Audit</a>
-          <a href="#" class="px-3 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white transition">Tools</a>
+  <!-- Nav -->
+  <nav class="sticky top-0 z-40 border-b border-white/10 bg-[#05080f]/70 backdrop-blur-xl">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="text-white">
+            <path d="M12 3l7 4v6c0 5-7 8-7 8s-7-3-7-8V7l7-4z" stroke="currentColor" stroke-width="1.5" fill="currentColor" fill-opacity="0.2"/>
+          </svg>
+        </div>
+        <div class="leading-tight">
+          <div class="display font-bold text-[15px] tracking-wide">THE VAULT</div>
+          <div class="text-[10px] uppercase tracking-widest text-slate-400 -mt-0.5">Dynasty Intelligence</div>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <span id="scoringBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-xs font-medium border border-emerald-500/20">
-          <span class="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          SF • TEP 0.5
-        </span>
-        <button class="size-9 grid place-items-center rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>
+      <div class="hidden md:flex items-center gap-2 text-sm">
+        <a class="px-3 py-1.5 rounded-lg hover:bg-white/5 text-slate-300" href="#">Dashboard</a>
+        <a class="px-3 py-1.5 rounded-lg bg-white/10 text-white" href="#">Rankings</a>
+        <a class="px-3 py-1.5 rounded-lg hover:bg-white/5 text-slate-300" href="#">League</a>
+        <a class="px-3 py-1.5 rounded-lg hover:bg-white/5 text-slate-300" href="#">Tools</a>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-xl glass-hover text-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live
+        </button>
+        <img src="https://i.pravatar.cc/32" alt="user" class="w-8 h-8 rounded-lg ring-1 ring-white/10">
+      </div>
+    </div>
+  </nav>
+
+  <!-- Header -->
+  <header class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6">
+    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <div>
+        <h1 class="display text-4xl md:text-5xl font-bold tracking-tight">Player Rankings</h1>
+        <p class="mt-2 text-slate-400 max-w-xl">Merged KeepTradeCut values with Sleeper & FantasyPros PPG. TEP formats auto-swap TE scoring.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Format Select -->
+        <div class="glass rounded-2xl px-3 py-2 flex items-center gap-3">
+          <label for="formatSelect" class="text-xs uppercase tracking-wider text-slate-400 font-medium">Format</label>
+          <select id="formatSelect" class="bg-transparent text-sm font-medium focus:outline-none pr-6 cursor-pointer">
+            <option value="sf_ppr" class="bg-[#0a0e14]">SF PPR</option>
+            <option value="sf_ppr_tep05" class="bg-[#0a0e14]">SF 0.5 TEP</option>
+            <option value="sf_ppr_tep" class="bg-[#0a0e14]">SF TEP</option>
+            <option value="1qb_ppr" class="bg-[#0a0e14]">1QB PPR</option>
+            <option value="1qb_ppr_tep05" class="bg-[#0a0e14]">1QB 0.5 TEP</option>
+            <option value="1qb_ppr_tep" class="bg-[#0a0e14]">1QB TEP</option>
+          </select>
+        </div>
+        <!-- League -->
+        <div class="glass rounded-2xl px-3 py-2 flex items-center gap-2">
+          <input id="leagueInput" type="text" placeholder="League ID" class="bg-transparent w-[120px] sm:w-[160px] text-sm placeholder-slate-500 focus:outline-none" />
+          <button id="loadLeagueBtn" class="text-xs font-semibold px-2.5 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 transition">Load</button>
+        </div>
+        <button id="refreshBtn" class="glass glass-hover rounded-2xl px-3 py-2 text-sm font-medium flex items-center gap-2">
+          <svg id="refreshIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 3v6h-6"/></svg>
+          Refresh
         </button>
       </div>
     </div>
-  </div>
-</nav>
 
-<!-- Header -->
-<header class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6">
-  <div class="flex flex-wrap items-end justify-between gap-6">
-    <div>
-      <h1 class="text-[32px] sm:text-[40px] font-bold tracking-tight leading-[1.1]">Player Rankings</h1>
-      <p class="mt-2 text-slate-400 max-w-xl">Superflex values blended with Sleeper & FantasyPros PPG. Search, filter, and sort to find market inefficiencies.</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <div class="flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-white/10">
-        <button data-tep="0" class="tep-btn px-2.5 py-1.5 text-xs font-medium rounded-lg transition">TEP 0</button>
-        <button data-tep="0.5" class="tep-btn px-2.5 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white shadow">TEP 0.5</button>
-        <button data-tep="1" class="tep-btn px-2.5 py-1.5 text-xs font-medium rounded-lg transition hover:bg-white/5">TEP 1.0</button>
+    <!-- Controls -->
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div class="lg:col-span-2 glass rounded-2xl px-4 py-3 flex items-center gap-3">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="searchInput" type="text" placeholder="Search player, team..." class="w-full bg-transparent text-sm placeholder-slate-500 focus:outline-none" />
+        <kbd class="hidden sm:inline-flex text-[10px] px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-slate-400">/</kbd>
+      </div>
+      <div class="glass rounded-2xl px-2 py-2 flex items-center gap-1 overflow-x-auto scroll-thin">
+        <button data-pos="ALL" class="pos-btn px-3 py-1.5 rounded-xl text-sm font-medium bg-white/10 text-white">All</button>
+        <button data-pos="QB" class="pos-btn px-3 py-1.5 rounded-xl text-sm font-medium hover:bg-white/5 text-slate-300">QB</button>
+        <button data-pos="RB" class="pos-btn px-3 py-1.5 rounded-xl text-sm font-medium hover:bg-white/5 text-slate-300">RB</button>
+        <button data-pos="WR" class="pos-btn px-3 py-1.5 rounded-xl text-sm font-medium hover:bg-white/5 text-slate-300">WR</button>
+        <button data-pos="TE" class="pos-btn px-3 py-1.5 rounded-xl text-sm font-medium hover:bg-white/5 text-slate-300">TE</button>
       </div>
     </div>
-  </div>
-</header>
 
-<!-- Controls -->
-<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
-  <div class="flex flex-col lg:flex-row gap-3">
-    <div class="flex-1 relative">
-      <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3.5-3.5"/></svg>
-      <input id="search" placeholder="Search player, team..." class="w-full pl-10 pr-4 h-11 rounded-xl bg-slate-900 border border-white/10 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition" />
-    </div>
-    <div class="flex items-center gap-2 overflow-x-auto scrollbar pb-1">
-      <button data-pos="ALL" class="pos-btn px-3 h-11 rounded-xl text-sm font-medium bg-indigo-600 text-white">All</button>
-      <button data-pos="QB" class="pos-btn px-3 h-11 rounded-xl text-sm font-medium bg-slate-900 border border-white/10 hover:bg-white/5">QB</button>
-      <button data-pos="RB" class="pos-btn px-3 h-11 rounded-xl text-sm font-medium bg-slate-900 border border-white/10 hover:bg-white/5">RB</button>
-      <button data-pos="WR" class="pos-btn px-3 h-11 rounded-xl text-sm font-medium bg-slate-900 border border-white/10 hover:bg-white/5">WR</button>
-      <button data-pos="TE" class="pos-btn px-3 h-11 rounded-xl text-sm font-medium bg-slate-900 border border-white/10 hover:bg-white/5">TE</button>
-    </div>
-  </div>
-</section>
-
-<!-- Table -->
-<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-  <div class="rounded-2xl border border-white/10 bg-slate-950/60 glass shadow-2xl shadow-black/40 overflow-hidden">
-    <div class="overflow-x-auto scrollbar">
-      <table class="w-full text-sm">
-        <thead class="sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-white/10">
-          <tr class="text-left text-slate-400 text-xs uppercase tracking-wider">
-            <th class="px-4 py-3 font-medium cursor-pointer hover:text-slate-200" data-sort="player">Player</th>
-            <th class="px-3 py-3 font-medium cursor-pointer hover:text-slate-200" data-sort="age">Age</th>
-            <th class="px-3 py-3 font-medium cursor-pointer hover:text-slate-200 text-right" data-sort="value">Value</th>
-            <th class="px-3 py-3 font-medium cursor-pointer hover:text-slate-200 text-right" data-sort="sleeper">Sleeper PPG</th>
-            <th class="px-3 py-3 font-medium cursor-pointer hover:text-slate-200 text-right" data-sort="fp">FP PPG</th>
-            <th class="px-3 py-3 font-medium cursor-pointer hover:text-slate-200 text-right" data-sort="avg">Avg PPG</th>
-            <th class="px-4 py-3 font-medium cursor-pointer hover:text-slate-200 text-right" data-sort="vpp">Value / PPG</th>
-          </tr>
-        </thead>
-        <tbody id="tbody" class="divide-y divide-white/5">
-          <!-- rows injected -->
-        </tbody>
-      </table>
-    </div>
-    <div id="emptyState" class="hidden py-24 text-center">
-      <div class="mx-auto size-12 rounded-2xl bg-white/5 grid place-items-center mb-4">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3.5-3.5"/></svg>
+    <!-- Stats Bar -->
+    <div class="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span id="countLabel">0 players</span>
       </div>
-      <p class="text-slate-300 font-medium">No players match your filters</p>
-      <p class="text-slate-500 text-sm mt-1">Try adjusting search or position</p>
+      <div>Updated <span id="updatedAt">—</span></div>
+      <div class="hidden sm:block">Value / PPG = KTC value ÷ Avg PPG</div>
     </div>
-  </div>
-  <p class="mt-4 text-xs text-slate-500">Values are Superflex. Avg PPG = (Sleeper + FP) / 2. Updated for current scoring profile.</p>
-</section>
+  </header>
+
+  <!-- Table -->
+  <main class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+    <div class="glass rounded-3xl overflow-hidden">
+      <div class="overflow-x-auto scroll-thin">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 z-10 bg-[#0a0e14]/90 backdrop-blur-xl border-b border-white/10">
+            <tr class="text-[11px] uppercase tracking-wider text-slate-400">
+              <th class="text-left font-semibold px-4 py-3 w-[280px] cursor-pointer select-none th" data-sort="player">Player</th>
+              <th class="text-center font-semibold px-3 py-3 cursor-pointer select-none th" data-sort="age">Age</th>
+              <th class="text-right font-semibold px-3 py-3 cursor-pointer select-none th" data-sort="value">Value</th>
+              <th class="text-right font-semibold px-3 py-3 cursor-pointer select-none th" data-sort="sPpg">Sleeper PPG</th>
+              <th class="text-right font-semibold px-3 py-3 cursor-pointer select-none th" data-sort="fPpg">FP PPG</th>
+              <th class="text-right font-semibold px-3 py-3 cursor-pointer select-none th" data-sort="avgPpg">Avg PPG</th>
+              <th class="text-right font-semibold px-4 py-3 cursor-pointer select-none th" data-sort="valPerPpg">Value / PPG</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-white/[0.04]">
+            <!-- Rows injected -->
+          </tbody>
+        </table>
+      </div>
+      <!-- Empty / Loading -->
+      <div id="tableState" class="py-24 text-center">
+        <div class="inline-flex flex-col items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl glass flex items-center justify-center">
+            <svg class="spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+          </div>
+          <div class="text-slate-300 font-medium">Loading rankings...</div>
+          <div class="text-xs text-slate-500">Fetching Values, Sleeper & FantasyPros</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="border-t border-white/10 py-8 text-center text-xs text-slate-500">
+    © <span id="year"></span> The Vault • Built for dynasty degens
+  </footer>
 
 <script>
-/* ---------- CSV CONSTANTS ---------- */
-const PUB = ''; // placeholder for base path
+(() => {
+  const CSV_VALUES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=689232361&single=true&output=csv';
+  const CSV_SLEEPER = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1866730819&single=true&output=csv';
+  const CSV_FP = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=2012227164&single=true&output=csv';
 
-const csvValues = `sleeper_id,name,pos,team,age,val_sf_ppr_tep05,val_sf_ppr_tep,val_1qb_ppr,val_1qb_ppr_tep05,val_1qb_ppr_tep
-1,Patrick Mahomes,QB,KC,29,8900,8900,8900,6200,6200,6200
-2,Josh Allen,QB,BUF,29,8800,8800,8800,6100,6100,6100
-3,Jalen Hurts,QB,PHI,27,8500,8500,8500,5900,5900,5900
-4,CeeDee Lamb,WR,DAL,26,8200,8200,8200,8200,8200,8200
-5,Justin Jefferson,WR,MIN,26,8100,8100,8100,8100,8100,8100
-6,Jahmyr Gibbs,RB,DET,23,7800,7800,7800,7800,7800,7800
-7,Bijan Robinson,RB,ATL,23,7700,7700,7700,7700,7700,7700
-8,Ja'Marr Chase,WR,CIN,25,8000,8000,8000,8000,8000,8000
-9,Amon-Ra St. Brown,WR,DET,25,7600,7600,7600,7600,7600,7600
-10,Puka Nacua,WR,LAR,24,7400,7400,7400,7400,7400,7400
-11,Breece Hall,RB,NYJ,23,7200,7200,7200,7200,7200,7200
-12,Sam LaPorta,TE,DET,24,5500,6100,6700,5500,6100,6700
-13,Trey McBride,TE,ARI,25,5200,5800,6400,5200,5800,6400
-14,Travis Kelce,TE,KC,35,4800,5400,6000,4800,5400,6000
-15,Brock Bowers,TE,LV,22,5600,6200,6800,5600,6200,6800
-16,Malik Nabers,WR,NYG,21,7300,7300,7300,7300,7300,7300
-17,Marvin Harrison Jr.,WR,ARI,22,7500,7500,7500,7500,7500,7500
-18,Jayden Daniels,QB,WAS,24,8000,8000,8000,5400,5400,5400
-19,C.J. Stroud,QB,HOU,23,7900,7900,7900,5300,5300,5300
-20,Christian McCaffrey,RB,SF,29,7000,7000,7000,7000,7000,7000`;
+  const formatSelect = document.getElementById('formatSelect');
+  const searchInput = document.getElementById('searchInput');
+  const tableBody = document.getElementById('tableBody');
+  const tableState = document.getElementById('tableState');
+  const countLabel = document.getElementById('countLabel');
+  const updatedAt = document.getElementById('updatedAt');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const refreshIcon = document.getElementById('refreshIcon');
+  const loadLeagueBtn = document.getElementById('loadLeagueBtn');
+  const leagueInput = document.getElementById('leagueInput');
+  const posButtons = [...document.querySelectorAll('.pos-btn')];
+  const ths = [...document.querySelectorAll('th.th')];
 
-const csvSleeper = `player,pos,team,ppg
-Patrick Mahomes,QB,KC,22.4
-Josh Allen,QB,BUF,24.1
-Jalen Hurts,QB,PHI,23.3
-CeeDee Lamb,WR,DAL,21.2
-Justin Jefferson,WR,MIN,20.8
-Jahmyr Gibbs,RB,DET,18.9
-Bijan Robinson,RB,ATL,17.5
-Ja'Marr Chase,WR,CIN,20.5
-Amon-Ra St. Brown,WR,DET,19.8
-Puka Nacua,WR,LAR,18.2
-Breece Hall,RB,NYJ,17.9
-Sam LaPorta,TE,DET,13.4
-Trey McBride,TE,ARI,12.9
-Travis Kelce,TE,KC,12.1
-Brock Bowers,TE,LV,14.2
-Malik Nabers,WR,NYG,17.6
-Marvin Harrison Jr.,WR,ARI,18.0
-Jayden Daniels,QB,WAS,21.8
-C.J. Stroud,QB,HOU,19.6
-Christian McCaffrey,RB,SF,22.5`;
+  document.getElementById('year').textContent = new Date().getFullYear();
 
-const csvFP = `player,pos,team,ppg
-Patrick Mahomes,QB,KC,22.1
-Josh Allen,QB,BUF,23.8
-Jalen Hurts,QB,PHI,23.0
-CeeDee Lamb,WR,DAL,20.9
-Justin Jefferson,WR,MIN,21.1
-Jahmyr Gibbs,RB,DET,18.5
-Bijan Robinson,RB,ATL,17.8
-Ja'Marr Chase,WR,CIN,20.7
-Amon-Ra St. Brown,WR,DET,19.5
-Puka Nacua,WR,LAR,18.0
-Breece Hall,RB,NYJ,18.2
-Sam LaPorta,TE,DET,13.1
-Trey McBride,TE,ARI,13.3
-Travis Kelce,TE,KC,12.4
-Brock Bowers,TE,LV,13.9
-Malik Nabers,WR,NYG,17.2
-Marvin Harrison Jr.,WR,ARI,17.8
-Jayden Daniels,QB,WAS,21.5
-C.J. Stroud,QB,HOU,19.9
-Christian McCaffrey,RB,SF,22.0`;
+  const state = {
+    valuesRaw: [],
+    sleeperMap: new Map(),
+    fpMap: new Map(),
+    merged: [],
+    filtered: [],
+    format: 'sf_ppr',
+    search: '',
+    pos: 'ALL',
+    sortKey: 'value',
+    sortDir: 'desc',
+    lastUpdated: null,
+    loading: false
+  };
 
-const CSV_VALUES = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvValues);
-const CSV_SLEEPER = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvSleeper);
-const CSV_FP = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvFP);
+  formatSelect.value = state.format;
 
-/* ---------- STATE ---------- */
-const state = {
-  scoring: { sf: true, tep: 0.5 },
-  sort: { key: 'value', dir: 'desc' },
-  filter: { pos: 'ALL', search: '' },
-  players: []
-};
+  const normalize = (name) => {
+    if (!name) return '';
+    return name.toString().toLowerCase()
+      .replace(/['’.]/g,'')
+      .replace(/ jr$| sr$| iii$| ii$| iv$/,'')
+      .replace(/[^a-z0-9]/g,'');
+  };
 
-const fmt = new Intl.NumberFormat('en-US');
-const fmt1 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const posColor = {
+    QB: 'from-rose-500/20 to-rose-500/0 text-rose-300 ring-rose-500/30',
+    RB: 'from-emerald-500/20 to-emerald-500/0 text-emerald-300 ring-emerald-500/30',
+    WR: 'from-sky-500/20 to-sky-500/0 text-sky-300 ring-sky-500/30',
+    TE: 'from-amber-500/20 to-amber-500/0 text-amber-300 ring-amber-500/30'
+  };
 
-/* ---------- UTIL ---------- */
-const normalize = s => s.toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
+  const fmt = (n, d=1) => (n==null || isNaN(n)) ? '—' : Number(n).toLocaleString(undefined,{minimumFractionDigits:d, maximumFractionDigits:d});
+  const fmt0 = (n) => (n==null || isNaN(n)) ? '—' : Math.round(n).toLocaleString();
 
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const headers = lines[0].split(',').map(h => h.trim());
-  return lines.slice(1).filter(Boolean).map(line => {
-    // simple split - sample data has no commas in fields
-    const vals = line.split(',');
-    const obj = {};
-    headers.forEach((h,i)=> obj[h] = (vals[i] ?? '').trim());
-    return obj;
-  });
-}
-
-function toMap(rows, valueKey = 'ppg') {
-  const map = new Map();
-  for (const r of rows) {
-    const playerKey = Object.keys(r).find(k => /player/i.test(k)) || Object.keys(r).find(k => /name/i.test(k));
-    if (!playerKey) continue;
-    const name = normalize(r[playerKey]);
-    const raw = r[valueKey] ?? r.ppg ?? r.PPG ?? '';
-    const val = parseFloat(raw);
-    if (!isNaN(val)) map.set(name, val);
-  }
-  return map;
-}
-
-/* ---------- LOAD ---------- */
-async function load() {
-  try {
-    const [vText, sText, fText] = await Promise.all([
-      fetch(CSV_VALUES).then(r => r.text()),
-      fetch(CSV_SLEEPER).then(r => r.text()),
-      fetch(CSV_FP).then(r => r.text())
-    ]);
-
-    const valuesRows = parseCSV(vText);
-    const sleeperRows = parseCSV(sText);
-    const fpRows = parseCSV(fText);
-
-    const sleeperMap = toMap(sleeperRows, 'ppg');
-    const fpMap = toMap(fpRows, 'ppg');
-
-    const players = valuesRows.map(r => {
-      const name = r.name;
-      const pos = r.pos;
-      const team = r.team;
-      const age = parseFloat(r.age);
-
-      // pick value based on TEP (SF assumed)
-      const tep = state.scoring.tep;
-      let value;
-      if (tep >= 0.9) value = parseFloat(r.val_sf_ppr_tep);
-      else if (tep >= 0.4) value = parseFloat(r.val_sf_ppr_tep05);
-      else value = parseFloat(r.val_sf_ppr);
-
-      const key = normalize(name);
-      const sPpg = sleeperMap.get(key) ?? null;
-      const fPpg = fpMap.get(key) ?? null;
-      const avg = [sPpg, fPpg].filter(v => v != null).reduce((a,b)=>a+b,0) / [sPpg, fPpg].filter(v=>v!=null).length || null;
-      const vpp = avg ? value / avg : null;
-
-      return { name, pos, team, age, value, sPpg, fPpg, avg, vpp };
+  function parseCsv(url) {
+    return fetch(url).then(r=>r.text()).then(txt=> {
+      const parsed = Papa.parse(txt, { header:true, skipEmptyLines:true });
+      return parsed.data;
     });
-
-    state.players = players;
-    render();
-  } catch (e) {
-    console.error('Load error', e);
   }
-}
 
-/* ---------- RENDER ---------- */
-function render() {
-  const tbody = document.getElementById('tbody');
-  const empty = document.getElementById('emptyState');
-  const { pos, search } = state.filter;
-  const q = normalize(search);
+  function extractPpg(row) {
+    const num = v => {
+      const x = parseFloat(String(v||'').replace(/,/g,''));
+      return isFinite(x) ? x : null;
+    };
+    const ppr = num(row['PPR']);
+    const half = num(row['Half']);
+    const std = num(row['Std']);
+    const ppg = ppr ?? half ?? std ?? null;
 
-  let rows = state.players.filter(p => {
-    const posOk = pos === 'ALL' || p.pos === pos;
-    const searchOk = !q || normalize(p.name).includes(q) || normalize(p.team).includes(q);
-    return posOk && searchOk;
-  });
-
-  // sort
-  const { key, dir } = state.sort;
-  const mult = dir === 'asc' ? 1 : -1;
-  const sortFn = {
-    player: (a,b)=> a.name.localeCompare(b.name) * mult,
-    age: (a,b)=> (a.age - b.age) * mult,
-    value: (a,b)=> (a.value - b.value) * mult,
-    sleeper: (a,b)=> ((a.sPpg??0) - (b.sPpg??0)) * mult,
-    fp: (a,b)=> ((a.fPpg??0) - (b.fPpg??0)) * mult,
-    avg: (a,b)=> ((a.avg??0) - (b.avg??0)) * mult,
-    vpp: (a,b)=> ((a.vpp??0) - (b.vpp??0)) * mult,
-  }[key] || (()=>0);
-  rows.sort(sortFn);
-
-  tbody.innerHTML = '';
-  if (rows.length === 0) {
-    empty.classList.remove('hidden');
-    return;
+    const pprTep = num(row['PPR TEP']);
+    const pprTep05 = num(row['PPR 0.5 TEP']);
+    const ppgTep = pprTep ?? pprTep05 ?? ppg;
+    return { ppg, ppgTep };
   }
-  empty.classList.add('hidden');
 
-  const frag = document.createDocumentFragment();
-  rows.forEach((p,i) => {
-    const tr = document.createElement('tr');
-    tr.className = 'fade-in hover:bg-white/[0.03] transition';
-    tr.style.animationDelay = `${i*10}ms`;
-    tr.innerHTML = `
-      <td class="px-4 py-3">
-        <div class="flex items-center gap-3">
-          <div class="size-9 rounded-lg bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 grid place-items-center text-[10px] font-semibold text-slate-400 mono">${p.pos}</div>
-          <div>
-            <div class="font-medium leading-tight">${p.name}</div>
-            <div class="text-xs text-slate-500">${p.team} • ${p.pos}</div>
-          </div>
-        </div>
-      </td>
-      <td class="px-3 py-3 text-slate-300 mono">${p.age ? fmt1.format(p.age) : '—'}</td>
-      <td class="px-3 py-3 text-right mono font-medium text-white">${fmt.format(p.value)}</td>
-      <td class="px-3 py-3 text-right mono text-slate-300">${p.sPpg ? fmt1.format(p.sPpg) : '—'}</td>
-      <td class="px-3 py-3 text-right mono text-slate-300">${p.fPpg ? fmt1.format(p.fPpg) : '—'}</td>
-      <td class="px-3 py-3 text-right mono text-indigo-300 font-medium">${p.avg ? fmt1.format(p.avg) : '—'}</td>
-      <td class="px-4 py-3 text-right mono text-emerald-300">${p.vpp ? fmt.format(Math.round(p.vpp)) : '—'}</td>
-    `;
-    frag.appendChild(tr);
-  });
-  tbody.appendChild(frag);
-  updateBadge();
-}
+  async function loadAll() {
+    if (state.loading) return;
+    state.loading = true;
+    refreshIcon.classList.add('spin');
+    tableState.classList.remove('hidden');
+    tableBody.innerHTML = '';
+    try {
+      const [values, sleeper, fp] = await Promise.all([
+        parseCsv(CSV_VALUES),
+        parseCsv(CSV_SLEEPER),
+        parseCsv(CSV_FP)
+      ]);
 
-function updateBadge() {
-  const badge = document.getElementById('scoringBadge');
-  const tep = state.scoring.tep;
-  badge.innerHTML = `<span class="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span> SF • TEP ${tep}`;
-}
+      state.valuesRaw = values.map(r => ({
+        sleeper_id: r.sleeper_id,
+        name: r.name?.trim(),
+        pos: r.pos?.trim().toUpperCase(),
+        team: r.team?.trim().toUpperCase(),
+        age: parseFloat(r.age) || null,
+        val_sf_ppr: parseFloat(r.val_sf_ppr) || 0,
+        val_sf_ppr_tep05: parseFloat(r.val_sf_ppr_tep05) || 0,
+        val_sf_ppr_tep: parseFloat(r.val_sf_ppr_tep) || 0,
+        val_1qb_ppr: parseFloat(r.val_1qb_ppr) || 0,
+        val_1qb_ppr_tep05: parseFloat(r.val_1qb_ppr_tep05) || 0,
+        val_1qb_ppr_tep: parseFloat(r.val_1qb_ppr_tep) || 0,
+        norm: normalize(r.name)
+      }));
 
-/* ---------- EVENTS ---------- */
-document.addEventListener('DOMContentLoaded', () => {
-  load();
-
-  document.getElementById('search').addEventListener('input', e => {
-    state.filter.search = e.target.value;
-    render();
-  });
-
-  document.querySelectorAll('.pos-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('bg-indigo-600','text-white'));
-      document.querySelectorAll('.pos-btn').forEach(b => b.classList.add('bg-slate-900','border','border-white/10'));
-      btn.classList.add('bg-indigo-600','text-white');
-      btn.classList.remove('bg-slate-900','border','border-white/10');
-      state.filter.pos = btn.dataset.pos;
-      render();
-    });
-  });
-
-  document.querySelectorAll('.tep-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tep-btn').forEach(b => {
-        b.classList.remove('bg-indigo-600','text-white','shadow');
-        b.classList.add('hover:bg-white/5');
+      state.sleeperMap = new Map();
+      sleeper.forEach(r => {
+        const norm = normalize(r.Player);
+        if (!norm) return;
+        const {ppg, ppgTep} = extractPpg(r);
+        state.sleeperMap.set(norm, { ppg, ppgTep });
       });
-      btn.classList.add('bg-indigo-600','text-white','shadow');
-      state.scoring.tep = parseFloat(btn.dataset.tep);
-      load(); // re-compute values
+
+      state.fpMap = new Map();
+      fp.forEach(r => {
+        const norm = normalize(r.Player);
+        if (!norm) return;
+        const {ppg, ppgTep} = extractPpg(r);
+        state.fpMap.set(norm, { ppg, ppgTep });
+      });
+
+      state.lastUpdated = new Date();
+      updatedAt.textContent = state.lastUpdated.toLocaleString();
+      recompute();
+      tableState.classList.add('hidden');
+    } catch (e) {
+      console.error(e);
+      tableState.innerHTML = `<div class="text-rose-400">Failed to load data. Please retry.</div>`;
+    } finally {
+      state.loading = false;
+      refreshIcon.classList.remove('spin');
+    }
+  }
+
+  function recompute() {
+    const fmtKey = `val_${state.format}`;
+    const isTep = state.format.includes('tep');
+    const merged = state.valuesRaw.map(v => {
+      const s = state.sleeperMap.get(v.norm) || {};
+      const f = state.fpMap.get(v.norm) || {};
+      const isTE = v.pos === 'TE';
+      const sPpg = isTE && isTep ? (s.ppgTep ?? s.ppg) : s.ppg;
+      const fPpg = isTE && isTep ? (f.ppgTep ?? f.ppg) : f.ppg;
+      const avgs = [sPpg, fPpg].filter(x => x!=null && isFinite(x));
+      const avgPpg = avgs.length ? avgs.reduce((a,b)=>a+b,0)/avgs.length : null;
+      const value = v[fmtKey] || 0;
+      const valPerPpg = avgPpg ? value / avgPpg : null;
+      return {
+        ...v,
+        value,
+        sPpg,
+        fPpg,
+        avgPpg,
+        valPerPpg
+      };
+    }).filter(r => r.value > 0 || r.avgPpg);
+    state.merged = merged;
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const q = state.search.trim().toLowerCase();
+    let data = state.merged;
+    if (state.pos !== 'ALL') {
+      data = data.filter(r => r.pos === state.pos);
+    }
+    if (q) {
+      data = data.filter(r => 
+        r.name.toLowerCase().includes(q) ||
+        (r.team||'').toLowerCase().includes(q) ||
+        r.norm.includes(normalize(q))
+      );
+    }
+    // sort
+    const key = state.sortKey;
+    const dir = state.sortDir === 'asc' ? 1 : -1;
+    data.sort((a,b) => {
+      let av = a[key], bv = b[key];
+      if (key === 'player') {
+        av = a.name; bv = b.name;
+        return av.localeCompare(bv) * dir;
+      }
+      av = av ?? -Infinity;
+      bv = bv ?? -Infinity;
+      return (av - bv) * dir;
+    });
+    state.filtered = data;
+    render();
+  }
+
+  function render() {
+    countLabel.textContent = `${state.filtered.length.toLocaleString()} players`;
+    if (state.filtered.length === 0) {
+      tableBody.innerHTML = '';
+      tableState.classList.remove('hidden');
+      tableState.innerHTML = `<div class="py-16 text-slate-400">No players match your filters.</div>`;
+      return;
+    }
+    tableState.classList.add('hidden');
+    const rows = state.filtered.slice(0, 500).map(r => {
+      const posCls = posColor[r.pos] || 'from-slate-500/20 to-slate-500/0 text-slate-300 ring-slate-500/30';
+      return `
+      <tr class="hover:bg-white/[0.03] transition">
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${posCls} ring-1 flex items-center justify-center font-bold text-[11px]">${r.pos}</div>
+            <div class="min-w-0">
+              <div class="font-semibold leading-tight truncate">${r.name}</div>
+              <div class="text-xs text-slate-500">${r.team || 'FA'} • ${r.pos}</div>
+            </div>
+          </div>
+        </td>
+        <td class="text-center px-3 py-3 text-slate-300">${r.age ? r.age.toFixed(1) : '—'}</td>
+        <td class="text-right px-3 py-3 font-semibold">${fmt0(r.value)}</td>
+        <td class="text-right px-3 py-3 tabular-nums">${fmt(r.sPpg)}</td>
+        <td class="text-right px-3 py-3 tabular-nums">${fmt(r.fPpg)}</td>
+        <td class="text-right px-3 py-3 tabular-nums font-medium text-white">${fmt(r.avgPpg)}</td>
+        <td class="text-right px-4 py-3 tabular-nums">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-white/5 ring-1 ring-white/10">${fmt(r.valPerPpg,0)}</span>
+        </td>
+      </tr>`;
+    }).join('');
+    tableBody.innerHTML = rows;
+    updateSortIndicators();
+  }
+
+  function updateSortIndicators() {
+    ths.forEach(th => {
+      const k = th.dataset.sort;
+      const span = th.querySelector('.sort-ind');
+      if (span) span.remove();
+      if (k === state.sortKey) {
+        const arrow = state.sortDir === 'asc' ? '↑' : '↓';
+        th.insertAdjacentHTML('beforeend', ` <span class="sort-ind text-violet-400">${arrow}</span>`);
+      }
+    });
+  }
+
+  // Events
+  formatSelect.addEventListener('change', e => {
+    state.format = e.target.value;
+    recompute();
+  });
+
+  searchInput.addEventListener('input', e => {
+    state.search = e.target.value;
+    applyFilters();
+  });
+
+  posButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      posButtons.forEach(b => b.classList.remove('bg-white/10','text-white'));
+      btn.classList.add('bg-white/10','text-white');
+      state.pos = btn.dataset.pos;
+      applyFilters();
     });
   });
 
-  document.querySelectorAll('th[data-sort]').forEach(th => {
+  ths.forEach(th => {
     th.addEventListener('click', () => {
       const key = th.dataset.sort;
-      if (state.sort.key === key) {
-        state.sort.dir = state.sort.dir === 'desc' ? 'asc' : 'desc';
+      if (state.sortKey === key) {
+        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
       } else {
-        state.sort.key = key;
-        state.sort.dir = 'desc';
+        state.sortKey = key;
+        state.sortDir = key === 'player' ? 'asc' : 'desc';
       }
-      // visual indicator
-      document.querySelectorAll('th[data-sort]').forEach(h => h.classList.remove('text-white'));
-      th.classList.add('text-white');
-      render();
+      applyFilters();
     });
   });
-});
+
+  refreshBtn.addEventListener('click', loadAll);
+
+  loadLeagueBtn.addEventListener('click', () => {
+    const id = leagueInput.value.trim();
+    if (!id) {
+      leagueInput.focus();
+      leagueInput.classList.add('ring-2','ring-rose-500/50');
+      setTimeout(()=>leagueInput.classList.remove('ring-2','ring-rose-500/50'), 1000);
+      return;
+    }
+    // Placeholder: integrate league sync here
+    loadLeagueBtn.textContent = 'Loaded';
+    setTimeout(()=> loadLeagueBtn.textContent = 'Load', 1500);
+  });
+
+  // Keyboard shortcut /
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement !== searchInput) {
+      e.preventDefault();
+      searchInput.focus();
+    }
+  });
+
+  // Initial load
+  loadAll();
+})();
 </script>
 <script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
 </body>
