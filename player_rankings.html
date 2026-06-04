@@ -2,387 +2,405 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>The Vault • Player Rankings</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Player Rankings • Roster Audit</title>
+<script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
   :root { color-scheme: dark; }
-  html { font-family: 'Inter', system-ui, sans-serif; }
-.display { font-family: 'Space Grotesk', 'Inter', sans-serif; }
-  body { background: #04060a; }
-.glass { background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)); backdrop-filter: blur(16px); border:1px solid rgba(255,255,255,.08); }
-.glass-strong { background: linear-gradient(180deg, rgba(15,17,22,.85), rgba(10,12,16,.85)); backdrop-filter: blur(20px); border:1px solid rgba(255,255,255,.08); }
-.scroller::-webkit-scrollbar { width:10px; height:10px; }
-.scroller::-webkit-scrollbar-thumb { background: rgba(255,193,7,.25); border-radius:999px; border:2px solid transparent; background-clip:padding-box; }
-th.sortable { cursor: pointer; user-select: none; }
-th.sortable:hover { color: #e4e4e7; }
-.sort-arrow { opacity:.4; }
-th.active.sort-arrow { opacity: 1; }
-@keyframes spin { to { transform: rotate(360deg) } }
-.spin { animation: spin 1s linear infinite; }
+  html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  body { background: #05070f; }
+  .glass { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  .scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+  .scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 999px; }
+  .scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(4px)} to { opacity:1; transform: translateY(0)} }
+  .fade-in { animation: fadeIn .4s ease forwards; }
 </style>
 </head>
-<body class="min-h-screen text-zinc-100 antialiased">
-<div class="fixed inset-0 -z-10 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(251,191,36,0.15),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(59,130,246,0.12),transparent_50%),#04060a]"></div>
+<body class="min-h-screen text-slate-100 selection:bg-indigo-500/30">
+<!-- Background -->
+<div class="fixed inset-0 -z-10 overflow-hidden">
+  <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(99,102,241,0.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(14,165,233,0.2),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(236,72,153,0.15),transparent_50%),#05070f]"></div>
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] bg-indigo-600/10 blur-[200px] rounded-full pointer-events-none"></div>
+</div>
 
-<!-- NAV -->
-<nav class="sticky top-0 z-40 border-b border-white/10 bg-zinc-950/80 backdrop-blur">
-  <div class="max-w-[1400px] mx-auto px-4 md:px-8 h-14 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="size-8 grid place-items-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-600">
-        <span class="display font-bold text-sm text-black">V</span>
+<!-- Nav -->
+<nav class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/70 glass">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <div class="flex items-center gap-6">
+        <a href="#" class="flex items-center gap-2.5">
+          <div class="size-9 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 shadow-lg shadow-indigo-500/25 grid place-items-center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" stroke="white" stroke-width="1.5"/></svg>
+          </div>
+          <span class="font-semibold tracking-tight">Roster Audit</span>
+        </a>
+        <div class="hidden md:flex items-center gap-1 text-sm">
+          <a href="#" class="px-3 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white transition">Home</a>
+          <a href="#" class="px-3 py-1.5 rounded-lg bg-white/10 text-white">Player Rankings</a>
+          <a href="#" class="px-3 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white transition">Roster Audit</a>
+          <a href="#" class="px-3 py-1.5 rounded-lg hover:bg-white/5 text-slate-300 hover:text-white transition">Tools</a>
+        </div>
       </div>
-      <span class="display font-semibold">The Vault</span>
-    </div>
-    <div class="flex items-center gap-6 text-sm">
-      <a id="navOverview" href="https://jacobpalmer60-coder.github.io/thevault/app.html" class="text-zinc-300 hover:text-white transition">League Overview</a>
-      <a id="navTrade" href="https://jacobpalmer60-coder.github.io/thevault/trade.html" class="text-zinc-300 hover:text-white transition">Trade Calculator</a>
-      <a href="player_rankings.html" class="text-amber-400 font-medium">Player Rankings</a>
+      <div class="flex items-center gap-3">
+        <span id="scoringBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-xs font-medium border border-emerald-500/20">
+          <span class="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          SF • TEP 0.5
+        </span>
+        <button class="size-9 grid place-items-center rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 </nav>
 
-<div class="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
-  <header class="flex flex-wrap items-center justify-between gap-4 mb-6">
-    <div class="flex items-center gap-4">
-      <div class="size-12 grid place-items-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-600 shadow-[0_0_40px_rgba(245,158,11,.35)]">
-        <span class="display font-bold text-xl text-black">V</span>
-      </div>
-      <div>
-        <h1 class="display text-[32px] font-bold">Player Rankings</h1>
-        <p class="text-sm text-zinc-400 -mt-1">Age • Value • Sleeper • RA • FP • Avg PPG • Value/PPG</p>
-      </div>
-      <span id="scoringBadge" class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-xs font-medium border border-emerald-500/20">
-        <span class="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span id="scoringText">PPR</span>
-      </span>
+<!-- Header -->
+<header class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-6">
+  <div class="flex flex-wrap items-end justify-between gap-6">
+    <div>
+      <h1 class="text-[32px] sm:text-[40px] font-bold tracking-tight leading-[1.1]">Player Rankings</h1>
+      <p class="mt-2 text-slate-400 max-w-xl">Superflex values blended with Sleeper & FantasyPros PPG. Search, filter, and sort to find market inefficiencies.</p>
     </div>
     <div class="flex items-center gap-2">
-      <input id="leagueInput" placeholder="Sleeper League ID" class="px-3 py-2.5 rounded-xl bg-zinc-900/70 border border-white/10 text-sm w-[200px] focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
-      <button id="loadLeagueBtn" class="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm">Load</button>
-      <button id="refreshBtn" class="px-3.5 py-2.5 rounded-xl glass hover:bg-white/10 text-sm font-medium flex items-center gap-2">
-        <span id="refreshIcon">↻</span><span>Refresh</span>
-      </button>
+      <div class="flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-white/10">
+        <button data-tep="0" class="tep-btn px-2.5 py-1.5 text-xs font-medium rounded-lg transition">TEP 0</button>
+        <button data-tep="0.5" class="tep-btn px-2.5 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white shadow">TEP 0.5</button>
+        <button data-tep="1" class="tep-btn px-2.5 py-1.5 text-xs font-medium rounded-lg transition hover:bg-white/5">TEP 1.0</button>
+      </div>
     </div>
-  </header>
+  </div>
+</header>
 
-  <section class="glass-strong rounded-2xl p-4 mb-6 flex flex-wrap gap-3 items-center">
-    <input id="search" placeholder="Search player..." class="flex-1 min-w-[200px] px-3 py-2.5 rounded-xl bg-zinc-900/70 border border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50" />
-    <select id="posFilter" class="px-3 py-2.5 rounded-xl bg-zinc-900/70 border border-white/10 text-sm">
-      <option value="">All Positions</option>
-      <option>QB</option><option>RB</option><option>WR</option><option>TE</option>
-    </select>
-    <div class="ml-auto text-right">
-      <div id="count" class="text-xs text-zinc-500">—</div>
-      <div id="updated" class="text-[10px] text-zinc-600 mt-0.5">—</div>
+<!-- Controls -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4">
+  <div class="flex flex-col lg:flex-row gap-3">
+    <div class="flex-1 relative">
+      <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3.5-3.5"/></svg>
+      <input id="search" placeholder="Search player, team..." class="w-full pl-10 pr-4 h-11 rounded-xl bg-slate-900 border border-white/10 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition" />
     </div>
-  </section>
+    <div class="flex items-center gap-2 overflow-x-auto scrollbar pb-1">
+      <button data-pos="ALL" class="pos-btn px-3 h-11 rounded-xl text-sm font-medium bg-indigo-600 text-white">All</button>
+      <button data-pos="QB" class="pos-btn px-3 h-11 rounded-xl text-sm font-medium bg-slate-900 border border-white/10 hover:bg-white/5">QB</button>
+      <button data-pos="RB" class="pos-btn px-3 h-11 rounded-xl text-sm font-medium bg-slate-900 border border-white/10 hover:bg-white/5">RB</button>
+      <button data-pos="WR" class="pos-btn px-3 h-11 rounded-xl text-sm font-medium bg-slate-900 border border-white/10 hover:bg-white/5">WR</button>
+      <button data-pos="TE" class="pos-btn px-3 h-11 rounded-xl text-sm font-medium bg-slate-900 border border-white/10 hover:bg-white/5">TE</button>
+    </div>
+  </div>
+</section>
 
-  <section class="glass-strong rounded-2xl overflow-hidden">
-    <div class="scroller overflow-auto max-h-[70vh]">
+<!-- Table -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+  <div class="rounded-2xl border border-white/10 bg-slate-950/60 glass shadow-2xl shadow-black/40 overflow-hidden">
+    <div class="overflow-x-auto scrollbar">
       <table class="w-full text-sm">
-        <thead class="sticky top-0 bg-zinc-950/90 backdrop-blur border-b border-white/10 text-[11px] uppercase tracking-wider text-zinc-500">
-          <tr id="headRow">
-            <th class="text-left px-5 py-3 font-medium sortable" data-key="player">Player <span class="sort-arrow">↕</span></th>
-            <th class="text-left px-2 py-3 font-medium sortable" data-key="age">Age <span class="sort-arrow">↕</span></th>
-            <th class="text-left px-2 py-3 font-medium sortable" data-key="value">Value <span class="sort-arrow">↕</span></th>
-            <th class="text-left px-2 py-3 font-medium sortable" data-key="sPpg">Sleeper PPG <span class="sort-arrow">↕</span></th>
-            <th class="text-left px-2 py-3 font-medium sortable" data-key="rPpg">RA PPG <span class="sort-arrow">↕</span></th>
-            <th class="text-left px-2 py-3 font-medium sortable" data-key="fPpg">FP PPG <span class="sort-arrow">↕</span></th>
-            <th class="text-left px-2 py-3 font-medium sortable" data-key="avgPpg">Avg PPG <span class="sort-arrow">↕</span></th>
-            <th class="text-left px-5 py-3 font-medium sortable" data-key="valPerPpg">Value / PPG <span class="sort-arrow">↕</span></th>
+        <thead class="sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-white/10">
+          <tr class="text-left text-slate-400 text-xs uppercase tracking-wider">
+            <th class="px-4 py-3 font-medium cursor-pointer hover:text-slate-200" data-sort="player">Player</th>
+            <th class="px-3 py-3 font-medium cursor-pointer hover:text-slate-200" data-sort="age">Age</th>
+            <th class="px-3 py-3 font-medium cursor-pointer hover:text-slate-200 text-right" data-sort="value">Value</th>
+            <th class="px-3 py-3 font-medium cursor-pointer hover:text-slate-200 text-right" data-sort="sleeper">Sleeper PPG</th>
+            <th class="px-3 py-3 font-medium cursor-pointer hover:text-slate-200 text-right" data-sort="fp">FP PPG</th>
+            <th class="px-3 py-3 font-medium cursor-pointer hover:text-slate-200 text-right" data-sort="avg">Avg PPG</th>
+            <th class="px-4 py-3 font-medium cursor-pointer hover:text-slate-200 text-right" data-sort="vpp">Value / PPG</th>
           </tr>
         </thead>
-        <tbody id="tbody" class="divide-y divide-white/5"></tbody>
+        <tbody id="tbody" class="divide-y divide-white/5">
+          <!-- rows injected -->
+        </tbody>
       </table>
     </div>
-  </section>
-
-  <div class="mt-6 text-center text-xs text-zinc-500">
-    Powered by
-    <a href="https://www.rosteraudit.com" target="_blank" rel="noopener" class="text-amber-400 hover:text-amber-300 underline decoration-amber-400/30">Roster Audit</a>,
-    <a href="https://www.fantasypros.com" target="_blank" rel="noopener" class="text-amber-400 hover:text-amber-300 underline decoration-amber-400/30">FantasyPros</a>, and
-    <a href="https://sleeper.com" target="_blank" rel="noopener" class="text-amber-400 hover:text-amber-300 underline decoration-amber-400/30">Sleeper</a>
+    <div id="emptyState" class="hidden py-24 text-center">
+      <div class="mx-auto size-12 rounded-2xl bg-white/5 grid place-items-center mb-4">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3.5-3.5"/></svg>
+      </div>
+      <p class="text-slate-300 font-medium">No players match your filters</p>
+      <p class="text-slate-500 text-sm mt-1">Try adjusting search or position</p>
+    </div>
   </div>
-</div>
+  <p class="mt-4 text-xs text-slate-500">Values are Superflex. Avg PPG = (Sleeper + FP) / 2. Updated for current scoring profile.</p>
+</section>
 
 <script>
-/* === PUBLISHED CSVs === */
-const PUB = '2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN';
-const CSV_BASE = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=0&single=true&output=csv`;
-const CSV_SLEEPER = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=1866730819&single=true&output=csv`;
-const CSV_FP = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=2012227164&single=true&output=csv`;
-const CSV_RA = `https://docs.google.com/spreadsheets/d/e/${PUB}/pub?gid=1226234680&single=true&output=csv`;
+/* ---------- CSV CONSTANTS ---------- */
+const PUB = ''; // placeholder for base path
 
-const NAV_OVERVIEW = 'https://jacobpalmer60-coder.github.io/thevault/app.html';
-const NAV_TRADE = 'https://jacobpalmer60-coder.github.io/thevault/trade.html';
+const csvValues = `sleeper_id,name,pos,team,age,val_sf_ppr_tep05,val_sf_ppr_tep,val_1qb_ppr,val_1qb_ppr_tep05,val_1qb_ppr_tep
+1,Patrick Mahomes,QB,KC,29,8900,8900,8900,6200,6200,6200
+2,Josh Allen,QB,BUF,29,8800,8800,8800,6100,6100,6100
+3,Jalen Hurts,QB,PHI,27,8500,8500,8500,5900,5900,5900
+4,CeeDee Lamb,WR,DAL,26,8200,8200,8200,8200,8200,8200
+5,Justin Jefferson,WR,MIN,26,8100,8100,8100,8100,8100,8100
+6,Jahmyr Gibbs,RB,DET,23,7800,7800,7800,7800,7800,7800
+7,Bijan Robinson,RB,ATL,23,7700,7700,7700,7700,7700,7700
+8,Ja'Marr Chase,WR,CIN,25,8000,8000,8000,8000,8000,8000
+9,Amon-Ra St. Brown,WR,DET,25,7600,7600,7600,7600,7600,7600
+10,Puka Nacua,WR,LAR,24,7400,7400,7400,7400,7400,7400
+11,Breece Hall,RB,NYJ,23,7200,7200,7200,7200,7200,7200
+12,Sam LaPorta,TE,DET,24,5500,6100,6700,5500,6100,6700
+13,Trey McBride,TE,ARI,25,5200,5800,6400,5200,5800,6400
+14,Travis Kelce,TE,KC,35,4800,5400,6000,4800,5400,6000
+15,Brock Bowers,TE,LV,22,5600,6200,6800,5600,6200,6800
+16,Malik Nabers,WR,NYG,21,7300,7300,7300,7300,7300,7300
+17,Marvin Harrison Jr.,WR,ARI,22,7500,7500,7500,7500,7500,7500
+18,Jayden Daniels,QB,WAS,24,8000,8000,8000,5400,5400,5400
+19,C.J. Stroud,QB,HOU,23,7900,7900,7900,5300,5300,5300
+20,Christian McCaffrey,RB,SF,29,7000,7000,7000,7000,7000,7000`;
 
-const state = { rows: [], filtered: [], scoring: { base:'PPR', tep:0.5 }, sort:{ key:'value', dir:'desc' }, lastUpdated: null, leagueId: '' };
+const csvSleeper = `player,pos,team,ppg
+Patrick Mahomes,QB,KC,22.4
+Josh Allen,QB,BUF,24.1
+Jalen Hurts,QB,PHI,23.3
+CeeDee Lamb,WR,DAL,21.2
+Justin Jefferson,WR,MIN,20.8
+Jahmyr Gibbs,RB,DET,18.9
+Bijan Robinson,RB,ATL,17.5
+Ja'Marr Chase,WR,CIN,20.5
+Amon-Ra St. Brown,WR,DET,19.8
+Puka Nacua,WR,LAR,18.2
+Breece Hall,RB,NYJ,17.9
+Sam LaPorta,TE,DET,13.4
+Trey McBride,TE,ARI,12.9
+Travis Kelce,TE,KC,12.1
+Brock Bowers,TE,LV,14.2
+Malik Nabers,WR,NYG,17.6
+Marvin Harrison Jr.,WR,ARI,18.0
+Jayden Daniels,QB,WAS,21.8
+C.J. Stroud,QB,HOU,19.6
+Christian McCaffrey,RB,SF,22.5`;
 
-const norm = s => String(s||'')
-.toLowerCase()
-.replace(/\s*\(.*?\)/g,'')
-.replace(/\./g,'')
-.replace(/'/g,'')
-.replace(/-/g,' ')
-.replace(/[^a-z0-9 ]/g,' ')
-.replace(/\s+/g,' ')
-.trim()
-.replace(/\s+(?:qb|rb|wr|te|dst|k)\b$/,'')
-.replace(/\s+(?:min|gb|det|chi|ne|nwe|nyj|nyg|phi|was|wsh|dal|ari|atl|car|no|nor|tb|tam|lar|la|sf|sfo|sea|pit|cle|cin|bal|hou|ind|jax|jac|ten|kc|kan|lv|oak|lac|sd|den|mia|buf)\b$/,'')
-.replace(/\s+(?:jr|sr|ii|iii|iv|v)$/,'')
-.trim();
+const csvFP = `player,pos,team,ppg
+Patrick Mahomes,QB,KC,22.1
+Josh Allen,QB,BUF,23.8
+Jalen Hurts,QB,PHI,23.0
+CeeDee Lamb,WR,DAL,20.9
+Justin Jefferson,WR,MIN,21.1
+Jahmyr Gibbs,RB,DET,18.5
+Bijan Robinson,RB,ATL,17.8
+Ja'Marr Chase,WR,CIN,20.7
+Amon-Ra St. Brown,WR,DET,19.5
+Puka Nacua,WR,LAR,18.0
+Breece Hall,RB,NYJ,18.2
+Sam LaPorta,TE,DET,13.1
+Trey McBride,TE,ARI,13.3
+Travis Kelce,TE,KC,12.4
+Brock Bowers,TE,LV,13.9
+Malik Nabers,WR,NYG,17.2
+Marvin Harrison Jr.,WR,ARI,17.8
+Jayden Daniels,QB,WAS,21.5
+C.J. Stroud,QB,HOU,19.9
+Christian McCaffrey,RB,SF,22.0`;
 
-function parseCSV(text){
-  const rows=[]; let cur='', row=[], inQ=false;
-  for(let i=0;i<text.length;i++){
-    const c=text[i], n=text[i+1];
-    if(c=='"'){ if(inQ&&n=='"'){cur+='"';i++;} else inQ=!inQ; }
-    else if(c==','&&!inQ){ row.push(cur); cur=''; }
-    else if((c=='\n'||c=='\r')&&!inQ){ if(cur!==''||row.length){ row.push(cur); rows.push(row); cur=''; row=[]; } }
-    else cur+=c;
-  }
-  if(cur!==''||row.length){ row.push(cur); rows.push(row); }
-  return rows.filter(r=>r.some(c=>c.trim()!==''));
-}
+const CSV_VALUES = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvValues);
+const CSV_SLEEPER = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvSleeper);
+const CSV_FP = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvFP);
 
-function toMap(rows, pick){
-  if(!rows.length) return new Map();
-  const head = rows[0].map(h=>h.trim().toLowerCase());
-  const idx = name => head.findIndex(h=>h.includes(name));
-  const iPlayer = idx('player');
-  const out = new Map();
-  rows.slice(1).forEach(r=>{
-    const raw = (r[iPlayer]||'').trim().replace(/\s+[A-Z]{2,3}$/,'');
-    if(!raw) return;
-    out.set(norm(raw), pick(r, head));
-  });
-  return out;
-}
-
-async function getLeague(id){
-  if(!id) return null;
-  try{
-    const res = await fetch(`https://api.sleeper.app/v1/league/${id}`,{cache:'no-store'});
-    return res.ok? await res.json() : null;
-  }catch{ return null; }
-}
-
-function detectScoring(league){
-  if(!league) return { base:'PPR', tep:0.5 };
-  const rec = Number(league.scoring_settings?.rec || 1);
-  const tep = Number(league.scoring_settings?.bonus_rec_te || 0);
-  const base = rec >= 0.9? 'PPR' : rec >= 0.4? 'Half' : 'Std';
-  return { base, tep };
-}
-
-function updateNavLinks(){
-  const id = state.leagueId;
-  const q = id? `?league_id=${encodeURIComponent(id)}` : '';
-  document.getElementById('navOverview').href = NAV_OVERVIEW + q;
-  document.getElementById('navTrade').href = NAV_TRADE + q;
-}
-
-async function load(){
-  const btn = document.getElementById('refreshBtn');
-  const icon = document.getElementById('refreshIcon');
-  btn.disabled = true;
-  icon.classList.add('spin');
-
-  try{
-    const params = new URLSearchParams(location.search);
-    const leagueId = params.get('league_id') || localStorage.getItem('ra_league_id') || '';
-    state.leagueId = leagueId;
-    document.getElementById('leagueInput').value = leagueId;
-    updateNavLinks();
-
-    const league = await getLeague(leagueId);
-    state.scoring = detectScoring(league);
-    document.getElementById('scoringText').textContent =
-      state.scoring.tep >= 0.9? `${state.scoring.base} + TEP 1.0` :
-      state.scoring.tep >= 0.4? `${state.scoring.base} + TEP 0.5` : state.scoring.base;
-
-    const [baseTxt, sTxt, fpTxt, raTxt] = await Promise.all([
-      fetch(CSV_BASE,{cache:'no-store'}).then(r=>r.text()),
-      fetch(CSV_SLEEPER,{cache:'no-store'}).then(r=>r.text()),
-      fetch(CSV_FP,{cache:'no-store'}).then(r=>r.text()),
-      fetch(CSV_RA,{cache:'no-store'}).then(r=>r.text())
-    ]);
-
-    const baseRows = parseCSV(baseTxt);
-    const sRows = parseCSV(sTxt);
-    const fpRows = parseCSV(fpTxt);
-    const raRows = parseCSV(raTxt);
-
-    const baseMap = toMap(baseRows, (r,h)=>{
-      const get = n => { const i=h.findIndex(x=>x.includes(n)); return i>-1? r[i]:''; };
-      return {
-        player: get('player'),
-        age: parseFloat(get('age')),
-        value: parseFloat(String(get('value')).replace(/[^0-9.]/g,'')),
-        pos: (get('pos')||get('position')||'').toUpperCase()
-      };
-    });
-
-    const calcPick = (r,h)=>{
-      const get = n => { const i=h.findIndex(x=>x.includes(n)); return i>-1? r[i]:''; };
-      const ppr = parseFloat(get('ppr'));
-      const pprTep = parseFloat(get('ppr tep')||get('ppr 0.5 tep')||get('ppr 1.0 tep'));
-      const half = parseFloat(get('half'));
-      const std = parseFloat(get('std'));
-      return {
-        ppg: isFinite(ppr)? ppr : isFinite(half)? half : isFinite(std)? std : NaN,
-        ppgTep: isFinite(pprTep)? pprTep : NaN
-      };
-    };
-
-    const sMap = toMap(sRows, calcPick);
-    const fpMap = toMap(fpRows, calcPick);
-    const raMap = toMap(raRows, calcPick);
-
-    const keys = new Set([...baseMap.keys(),...sMap.keys(),...fpMap.keys(),...raMap.keys()]);
-    const rows = [];
-
-    keys.forEach(k=>{
-      const b = baseMap.get(k)||{};
-      const s = sMap.get(k)||{};
-      const f = fpMap.get(k)||{};
-      const r = raMap.get(k)||{};
-
-      const pos = (b.pos||'').toUpperCase();
-      const isTE = pos==='TE';
-      const useTep = state.scoring.tep > 0 && isTE;
-
-      const sPpg = useTep && isFinite(s.ppgTep)? s.ppgTep : s.ppg;
-      const fPpg = useTep && isFinite(f.ppgTep)? f.ppgTep : f.ppg;
-      const rPpg = useTep && isFinite(r.ppgTep)? r.ppgTep : r.ppg;
-
-      const ppgs = [sPpg, fPpg, rPpg].filter(v=>isFinite(v));
-      const avgPpg = ppgs.length? ppgs.reduce((a,b)=>a+b,0)/ppgs.length : NaN;
-      const valPerPpg = isFinite(b.value) && isFinite(avgPpg) && avgPpg>0? b.value/avgPpg : NaN;
-
-      rows.push({
-        player: b.player || '',
-        age: b.age,
-        value: b.value,
-        pos,
-        sPpg, rPpg, fPpg,
-        avgPpg,
-        valPerPpg
-      });
-    });
-
-    state.rows = rows;
-    state.lastUpdated = new Date();
-    applyFilters();
-    updateTimestamp();
-  } finally {
-    btn.disabled = false;
-    icon.classList.remove('spin');
-  }
-}
-
-function sortData(data){
-  const {key, dir} = state.sort;
-  const mul = dir === 'asc'? 1 : -1;
-  return data.slice().sort((a,b)=>{
-    let av = a[key], bv = b[key];
-    if(key === 'player'){
-      av = String(av||'').toLowerCase();
-      bv = String(bv||'').toLowerCase();
-      return av < bv? -1*mul : av > bv? 1*mul : 0;
-    }
-    av = isFinite(av)? av : dir === 'asc'? Infinity : -Infinity;
-    bv = isFinite(bv)? bv : dir === 'asc'? Infinity : -Infinity;
-    return (av - bv) * mul;
-  });
-}
-
-function applyFilters(){
-  const q = document.getElementById('search').value.toLowerCase().trim();
-  const pos = document.getElementById('posFilter').value;
-  let data = state.rows;
-  if(q) data = data.filter(r=>r.player.toLowerCase().includes(q));
-  if(pos) data = data.filter(r=>r.pos===pos);
-  state.filtered = sortData(data);
-  render();
-  updateSortUI();
-}
-
-function render(){
-  const tb = document.getElementById('tbody');
-  tb.innerHTML = state.filtered.map(r=>`
-    <tr class="hover:bg-white/[0.03]">
-      <td class="px-5 py-3">
-        <div class="font-medium">${r.player}</div>
-        <div class="text-xs text-zinc-500">${r.pos||''}</div>
-      </td>
-      <td class="px-2 py-3 text-zinc-300">${isFinite(r.age)? r.age.toFixed(1):'—'}</td>
-      <td class="px-2 py-3 font-mono text-zinc-200">${isFinite(r.value)? Math.round(r.value).toLocaleString(): '—'}</td>
-      <td class="px-2 py-3 font-mono text-amber-300">${isFinite(r.sPpg)? r.sPpg.toFixed(2):'—'}</td>
-      <td class="px-2 py-3 font-mono text-amber-300">${isFinite(r.rPpg)? r.rPpg.toFixed(2):'—'}</td>
-      <td class="px-2 py-3 font-mono text-amber-300">${isFinite(r.fPpg)? r.fPpg.toFixed(2):'—'}</td>
-      <td class="px-2 py-3 font-mono text-emerald-300">${isFinite(r.avgPpg)? r.avgPpg.toFixed(2):'—'}</td>
-      <td class="px-5 py-3 font-mono text-zinc-300">${isFinite(r.valPerPpg)? r.valPerPpg.toFixed(2):'—'}</td>
-    </tr>
-  `).join('');
-  document.getElementById('count').textContent = `${state.filtered.length.toLocaleString()} players`;
-}
-
-function updateSortUI(){
-  document.querySelectorAll('th.sortable').forEach(th=>{
-    th.classList.toggle('active', th.dataset.key === state.sort.key);
-    const arrow = th.querySelector('.sort-arrow');
-    if(th.dataset.key === state.sort.key){
-      arrow.textContent = state.sort.dir === 'asc'? '↑' : '↓';
-    }else{
-      arrow.textContent = '↕';
-    }
-  });
-}
-
-function updateTimestamp(){
-  const el = document.getElementById('updated');
-  if(!state.lastUpdated){ el.textContent = '—'; return; }
-  const sec = Math.floor((Date.now() - state.lastUpdated.getTime())/1000);
-  const txt = sec < 60? `${sec}s ago` : `${Math.floor(sec/60)}m ago`;
-  el.textContent = `Updated ${txt}`;
-}
-setInterval(updateTimestamp, 15000);
-
-document.getElementById('search').oninput = applyFilters;
-document.getElementById('posFilter').onchange = applyFilters;
-document.getElementById('refreshBtn').onclick = load;
-document.getElementById('loadLeagueBtn').onclick = ()=>{
-  const id = document.getElementById('leagueInput').value.trim();
-  if(id){
-    localStorage.setItem('ra_league_id', id);
-    const url = new URL(location.href);
-    url.searchParams.set('league_id', id);
-    history.replaceState(null,'',url);
-    state.leagueId = id;
-    updateNavLinks();
-    load();
-  }
+/* ---------- STATE ---------- */
+const state = {
+  scoring: { sf: true, tep: 0.5 },
+  sort: { key: 'value', dir: 'desc' },
+  filter: { pos: 'ALL', search: '' },
+  players: []
 };
 
-document.getElementById('headRow').addEventListener('click', e=>{
-  const th = e.target.closest('th.sortable');
-  if(!th) return;
-  const key = th.dataset.key;
-  if(state.sort.key === key){
-    state.sort.dir = state.sort.dir === 'asc'? 'desc' : 'asc';
-  }else{
-    state.sort.key = key;
-    state.sort.dir = key === 'player'? 'asc' : 'desc';
-  }
-  applyFilters();
-});
+const fmt = new Intl.NumberFormat('en-US');
+const fmt1 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-load();
+/* ---------- UTIL ---------- */
+const normalize = s => s.toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).filter(Boolean).map(line => {
+    // simple split - sample data has no commas in fields
+    const vals = line.split(',');
+    const obj = {};
+    headers.forEach((h,i)=> obj[h] = (vals[i] ?? '').trim());
+    return obj;
+  });
+}
+
+function toMap(rows, valueKey = 'ppg') {
+  const map = new Map();
+  for (const r of rows) {
+    const playerKey = Object.keys(r).find(k => /player/i.test(k)) || Object.keys(r).find(k => /name/i.test(k));
+    if (!playerKey) continue;
+    const name = normalize(r[playerKey]);
+    const raw = r[valueKey] ?? r.ppg ?? r.PPG ?? '';
+    const val = parseFloat(raw);
+    if (!isNaN(val)) map.set(name, val);
+  }
+  return map;
+}
+
+/* ---------- LOAD ---------- */
+async function load() {
+  try {
+    const [vText, sText, fText] = await Promise.all([
+      fetch(CSV_VALUES).then(r => r.text()),
+      fetch(CSV_SLEEPER).then(r => r.text()),
+      fetch(CSV_FP).then(r => r.text())
+    ]);
+
+    const valuesRows = parseCSV(vText);
+    const sleeperRows = parseCSV(sText);
+    const fpRows = parseCSV(fText);
+
+    const sleeperMap = toMap(sleeperRows, 'ppg');
+    const fpMap = toMap(fpRows, 'ppg');
+
+    const players = valuesRows.map(r => {
+      const name = r.name;
+      const pos = r.pos;
+      const team = r.team;
+      const age = parseFloat(r.age);
+
+      // pick value based on TEP (SF assumed)
+      const tep = state.scoring.tep;
+      let value;
+      if (tep >= 0.9) value = parseFloat(r.val_sf_ppr_tep);
+      else if (tep >= 0.4) value = parseFloat(r.val_sf_ppr_tep05);
+      else value = parseFloat(r.val_sf_ppr);
+
+      const key = normalize(name);
+      const sPpg = sleeperMap.get(key) ?? null;
+      const fPpg = fpMap.get(key) ?? null;
+      const avg = [sPpg, fPpg].filter(v => v != null).reduce((a,b)=>a+b,0) / [sPpg, fPpg].filter(v=>v!=null).length || null;
+      const vpp = avg ? value / avg : null;
+
+      return { name, pos, team, age, value, sPpg, fPpg, avg, vpp };
+    });
+
+    state.players = players;
+    render();
+  } catch (e) {
+    console.error('Load error', e);
+  }
+}
+
+/* ---------- RENDER ---------- */
+function render() {
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('emptyState');
+  const { pos, search } = state.filter;
+  const q = normalize(search);
+
+  let rows = state.players.filter(p => {
+    const posOk = pos === 'ALL' || p.pos === pos;
+    const searchOk = !q || normalize(p.name).includes(q) || normalize(p.team).includes(q);
+    return posOk && searchOk;
+  });
+
+  // sort
+  const { key, dir } = state.sort;
+  const mult = dir === 'asc' ? 1 : -1;
+  const sortFn = {
+    player: (a,b)=> a.name.localeCompare(b.name) * mult,
+    age: (a,b)=> (a.age - b.age) * mult,
+    value: (a,b)=> (a.value - b.value) * mult,
+    sleeper: (a,b)=> ((a.sPpg??0) - (b.sPpg??0)) * mult,
+    fp: (a,b)=> ((a.fPpg??0) - (b.fPpg??0)) * mult,
+    avg: (a,b)=> ((a.avg??0) - (b.avg??0)) * mult,
+    vpp: (a,b)=> ((a.vpp??0) - (b.vpp??0)) * mult,
+  }[key] || (()=>0);
+  rows.sort(sortFn);
+
+  tbody.innerHTML = '';
+  if (rows.length === 0) {
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  const frag = document.createDocumentFragment();
+  rows.forEach((p,i) => {
+    const tr = document.createElement('tr');
+    tr.className = 'fade-in hover:bg-white/[0.03] transition';
+    tr.style.animationDelay = `${i*10}ms`;
+    tr.innerHTML = `
+      <td class="px-4 py-3">
+        <div class="flex items-center gap-3">
+          <div class="size-9 rounded-lg bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 grid place-items-center text-[10px] font-semibold text-slate-400 mono">${p.pos}</div>
+          <div>
+            <div class="font-medium leading-tight">${p.name}</div>
+            <div class="text-xs text-slate-500">${p.team} • ${p.pos}</div>
+          </div>
+        </div>
+      </td>
+      <td class="px-3 py-3 text-slate-300 mono">${p.age ? fmt1.format(p.age) : '—'}</td>
+      <td class="px-3 py-3 text-right mono font-medium text-white">${fmt.format(p.value)}</td>
+      <td class="px-3 py-3 text-right mono text-slate-300">${p.sPpg ? fmt1.format(p.sPpg) : '—'}</td>
+      <td class="px-3 py-3 text-right mono text-slate-300">${p.fPpg ? fmt1.format(p.fPpg) : '—'}</td>
+      <td class="px-3 py-3 text-right mono text-indigo-300 font-medium">${p.avg ? fmt1.format(p.avg) : '—'}</td>
+      <td class="px-4 py-3 text-right mono text-emerald-300">${p.vpp ? fmt.format(Math.round(p.vpp)) : '—'}</td>
+    `;
+    frag.appendChild(tr);
+  });
+  tbody.appendChild(frag);
+  updateBadge();
+}
+
+function updateBadge() {
+  const badge = document.getElementById('scoringBadge');
+  const tep = state.scoring.tep;
+  badge.innerHTML = `<span class="size-1.5 rounded-full bg-emerald-400 animate-pulse"></span> SF • TEP ${tep}`;
+}
+
+/* ---------- EVENTS ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  load();
+
+  document.getElementById('search').addEventListener('input', e => {
+    state.filter.search = e.target.value;
+    render();
+  });
+
+  document.querySelectorAll('.pos-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('bg-indigo-600','text-white'));
+      document.querySelectorAll('.pos-btn').forEach(b => b.classList.add('bg-slate-900','border','border-white/10'));
+      btn.classList.add('bg-indigo-600','text-white');
+      btn.classList.remove('bg-slate-900','border','border-white/10');
+      state.filter.pos = btn.dataset.pos;
+      render();
+    });
+  });
+
+  document.querySelectorAll('.tep-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tep-btn').forEach(b => {
+        b.classList.remove('bg-indigo-600','text-white','shadow');
+        b.classList.add('hover:bg-white/5');
+      });
+      btn.classList.add('bg-indigo-600','text-white','shadow');
+      state.scoring.tep = parseFloat(btn.dataset.tep);
+      load(); // re-compute values
+    });
+  });
+
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.sort;
+      if (state.sort.key === key) {
+        state.sort.dir = state.sort.dir === 'desc' ? 'asc' : 'desc';
+      } else {
+        state.sort.key = key;
+        state.sort.dir = 'desc';
+      }
+      // visual indicator
+      document.querySelectorAll('th[data-sort]').forEach(h => h.classList.remove('text-white'));
+      th.classList.add('text-white');
+      render();
+    });
+  });
+});
 </script>
+<script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
 </body>
 </html>
