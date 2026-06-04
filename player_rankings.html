@@ -1,145 +1,142 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>THE VAULT — Player Rankings</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>THE VAULT • Player Rankings</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-:root { color-scheme: dark; }
-html { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-.font-mono { font-family: 'JetBrains Mono', monospace; }
-.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px }
-.scrollbar-thin::-webkit-scrollbar-track { background: transparent }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(139,92,246,.3); border-radius: 4px }
-.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,.5) }
-.glass { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-th.sortable { cursor: pointer; user-select: none; }
-th.sortable:hover { color: #fff; }
+  :root { color-scheme: dark; }
+  body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .scrollbar::-webkit-scrollbar { width: 8px; height: 8px }
+  .scrollbar::-webkit-scrollbar-thumb { background: #2a3342; border-radius: 8px }
+  .scrollbar::-webkit-scrollbar-track { background: #0f141b }
+  .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px) }
 </style>
 </head>
-<body class="min-h-screen bg-[#02040a] text-slate-200 antialiased selection:bg-violet-500/30">
-<div class="fixed inset-0 -z-10">
-<div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(124,58,237,0.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(56,189,248,0.15),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(236,72,153,0.1),transparent_50%),linear-gradient(to_bottom,#02040a,#05070f)]"></div>
-<div class="absolute inset-0 opacity-[0.03] mix-blend-soft-light" style="background-image:repeating-linear-gradient(0deg,white 0 1px,transparent 1px 20px),repeating-linear-gradient(90deg,white 0 1px,transparent 1px 20px)"></div>
-</div>
+<body class="bg-[#070a0f] text-slate-200 min-h-screen">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10">
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-8">
+      <div>
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-[0.12em] text-white">THE VAULT</h1>
+        <p class="mt-2 text-sm md:text-base text-slate-400 max-w-2xl">
+          Player rankings powered by RosterAudit • Values merged with Sleeper & FantasyPros PPG. Dark mode, no avatars, built for speed.
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="statusPill" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-xs font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="statusText">Idle</span>
+        </span>
+        <span id="updatedPill" class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/70 text-slate-300 border border-slate-700 text-xs mono">—</span>
+      </div>
+    </header>
 
-<header class="sticky top-0 z-40 border-b border-white/10 bg-[#02040a]/80 glass">
-<div class="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-<div class="flex h-16 items-center justify-between gap-4">
-<div class="flex items-center gap-8">
-<div class="flex items-center gap-3">
-<div class="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/25 flex items-center justify-center">
-<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>
-</div>
-<div>
-<div class="font-extrabold tracking-tight leading-4 text-[15px]">THE VAULT</div>
-<div class="text-[10px] font-semibold tracking-widest text-violet-300/80 -mt-0.5">DYNASTY INTELLIGENCE</div>
-</div>
-</div>
-<nav class="hidden md:flex items-center gap-1 text-sm">
-<a class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition" href="#">Dashboard</a>
-<a class="px-3 py-2 rounded-lg bg-white/10 text-white font-semibold shadow-inner" href="#">Rankings</a>
-<a class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition" href="#">League</a>
-<a class="px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition" href="#">Tools</a>
-</nav>
-</div>
-<div class="flex items-center gap-3">
-<span id="currentFormatBadge" class="font-mono text-xs px-2.5 py-1 rounded-full bg-violet-500/15 text-violet-200 border border-violet-500/30">SF PPR</span>
-</div>
-</div>
-</div>
-</header>
+    <!-- Controls -->
+    <section class="bg-[#0c121a]/80 glass border border-slate-800 rounded-2xl p-4 md:p-5 mb-6 shadow-2xl shadow-black/30">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+        <!-- Format -->
+        <div class="lg:col-span-3">
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 tracking-wide uppercase">Format</label>
+          <div class="flex items-center gap-2">
+            <select id="formatSelect" class="w-full bg-[#0a0f15] border border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500">
+              <option value="sf_ppr">SuperFlex PPR</option>
+              <option value="sf_ppr_tep05">SuperFlex PPR TEP 0.5</option>
+              <option value="sf_ppr_tep">SuperFlex PPR TEP 1.0</option>
+              <option value="1qb_ppr">1QB PPR</option>
+              <option value="1qb_ppr_tep05">1QB PPR TEP 0.5</option>
+              <option value="1qb_ppr_tep">1QB PPR TEP 1.0</option>
+            </select>
+            <span id="autoBadge" class="hidden px-2 py-1 rounded-lg bg-violet-500/15 text-violet-300 border border-violet-500/30 text-[10px] font-bold tracking-wider">AUTO</span>
+          </div>
+        </div>
 
-<main class="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-<div class="mb-8">
-<h1 class="text-[32px] sm:text-[40px] font-extrabold tracking-tight text-white">Player Rankings</h1>
-<p class="mt-2 text-slate-300/90 max-w-3xl">Merged RosterAudit dynasty values with Sleeper & FantasyPros PPG. TEP formats auto-swap TE scoring.</p>
-</div>
+        <!-- Sleeper League -->
+        <div class="lg:col-span-4">
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 tracking-wide uppercase">Sleeper League ID</label>
+          <div class="flex gap-2">
+            <input id="leagueInput" placeholder="1048031234…" class="flex-1 bg-[#0a0f15] border border-slate-700 rounded-xl px-3 py-2.5 text-sm mono focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500" />
+            <button id="loadLeagueBtn" class="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-sm font-semibold transition">Load</button>
+          </div>
+        </div>
 
-<section class="glass rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] shadow-2xl shadow-black/40">
-<div class="p-4 sm:p-6 border-b border-white/10">
-<div class="flex flex-wrap items-end gap-4">
-<div class="flex-1 min-w-[200px]">
-<label class="block text-xs font-semibold tracking-wide text-slate-400 uppercase mb-2">Format</label>
-<div class="flex items-center gap-2">
-<select id="formatSelect" class="w-full rounded-xl bg-[#0a0f1c] border border-white/10 px-3 py-2.5 text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50">
-<option value="sf_ppr">SF PPR</option>
-<option value="sf_ppr_tep05">SF 0.5 TEP</option>
-<option value="sf_ppr_tep">SF TEP</option>
-<option value="1qb_ppr">1QB PPR</option>
-<option value="1qb_ppr_tep05">1QB 0.5 TEP</option>
-<option value="1qb_ppr_tep">1QB TEP</option>
-</select>
-<span class="font-mono text-[10px] px-2 py-1 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">AUTO</span>
-</div>
-</div>
+        <!-- Search -->
+        <div class="lg:col-span-3">
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 tracking-wide uppercase">Search</label>
+          <div class="relative">
+            <input id="searchInput" placeholder="Player name..." class="w-full bg-[#0a0f15] border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500" />
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 0 0012.15 12.15z"/></svg>
+          </div>
+        </div>
 
-<div class="flex-1 min-w-[260px]">
-<label class="block text-xs font-semibold tracking-wide text-slate-400 uppercase mb-2">Sleeper League ID</label>
-<div class="flex gap-2">
-<input id="leagueIdInput" placeholder="e.g. 123456789012345678" class="flex-1 rounded-xl bg-[#0a0f1c] border border-white/10 px-3 py-2.5 text-sm font-mono placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50" />
-<button id="loadLeagueBtn" class="rounded-xl bg-violet-600 hover:bg-violet-500 active:bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-600/25 transition">Load</button>
-<button id="refreshBtn" class="rounded-xl bg-white/10 hover:bg-white/15 px-3 py-2.5 text-sm font-semibold text-white border border-white/10 transition" title="Reload CSVs">Refresh</button>
-</div>
-</div>
+        <!-- Position -->
+        <div class="lg:col-span-1">
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5 tracking-wide uppercase">Pos</label>
+          <select id="posFilter" class="w-full bg-[#0a0f15] border border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500">
+            <option value="ALL">All</option>
+            <option value="QB">QB</option>
+            <option value="RB">RB</option>
+            <option value="WR">WR</option>
+            <option value="TE">TE</option>
+          </select>
+        </div>
 
-<div class="flex-1 min-w-[200px]">
-<label class="block text-xs font-semibold tracking-wide text-slate-400 uppercase mb-2">Search</label>
-<input id="searchInput" placeholder="Player or team…" class="w-full rounded-xl bg-[#0a0f1c] border border-white/10 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50" />
-</div>
+        <!-- Refresh -->
+        <div class="lg:col-span-1 flex gap-2">
+          <button id="refreshBtn" class="flex-1 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-semibold transition flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            <span class="hidden xl:inline">Refresh</span>
+          </button>
+        </div>
 
-<div class="min-w-[160px]">
-<label class="block text-xs font-semibold tracking-wide text-slate-400 uppercase mb-2">Position</label>
-<div id="posFilter" class="flex items-center gap-1.5 p-1 rounded-xl bg-[#0a0f1c] border border-white/10">
-<button data-pos="ALL" class="pos-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-violet-600 text-white">All</button>
-<button data-pos="QB" class="pos-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-white/5">QB</button>
-<button data-pos="RB" class="pos-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-white/5">RB</button>
-<button data-pos="WR" class="pos-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-white/5">WR</button>
-<button data-pos="TE" class="pos-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg text-slate-300 hover:text-white hover:bg-white/5">TE</button>
-</div>
-</div>
-</div>
-</div>
+        <!-- Counts -->
+        <div class="lg:col-span-12 flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800/80 mt-2">
+          <span id="countValues" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700 text-slate-300 mono">Values: —</span>
+          <span id="countSleeper" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700 text-slate-300 mono">Sleeper: —</span>
+          <span id="countFP" class="text-xs px-2.5 py-1 rounded-lg bg-slate-800/70 border border-slate-700 text-slate-300 mono">FP: —</span>
+          <span class="ml-auto text-[11px] text-slate-500">Sortable columns • Click headers</span>
+        </div>
+      </div>
+    </section>
 
-<div class="px-4 sm:px-6 py-3 flex items-center justify-between text-xs text-slate-400 border-b border-white/10 bg-white/[0.02]">
-<div class="flex items-center gap-4">
-<span id="playerCount" class="font-mono">0 players</span>
-<span class="hidden sm:inline">•</span>
-<span id="statusMsg" class="text-slate-400">Loading data…</span>
-</div>
-<div class="font-mono">
-Updated <span id="updatedAt">—</span>
-</div>
-</div>
+    <!-- Table -->
+    <section class="bg-[#0c121a]/80 glass border border-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/30">
+      <div class="overflow-x-auto scrollbar max-h-[70vh]">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 z-10 bg-[#0c121a]/95 backdrop-blur border-b border-slate-800">
+            <tr class="text-[11px] uppercase tracking-wider text-slate-400">
+              <th class="text-left px-4 py-3 font-semibold cursor-pointer select-none" data-sort="player">Player <span class="sort-ind"></span></th>
+              <th class="text-left px-3 py-3 font-semibold cursor-pointer select-none" data-sort="pos">Pos <span class="sort-ind"></span></th>
+              <th class="text-left px-3 py-3 font-semibold cursor-pointer select-none" data-sort="team">Team <span class="sort-ind"></span></th>
+              <th class="text-right px-3 py-3 font-semibold cursor-pointer select-none" data-sort="age">Age <span class="sort-ind"></span></th>
+              <th class="text-right px-3 py-3 font-semibold cursor-pointer select-none" data-sort="value">Value <span class="sort-ind"></span></th>
+              <th class="text-right px-3 py-3 font-semibold cursor-pointer select-none" data-sort="sleeper_ppg">Sleeper PPG <span class="sort-ind"></span></th>
+              <th class="text-right px-3 py-3 font-semibold cursor-pointer select-none" data-sort="fp_ppg">FP PPG <span class="sort-ind"></span></th>
+              <th class="text-right px-3 py-3 font-semibold cursor-pointer select-none" data-sort="avg_ppg">Avg PPG <span class="sort-ind"></span></th>
+              <th class="text-right px-4 py-3 font-semibold cursor-pointer select-none" data-sort="val_per_ppg">Value / PPG <span class="sort-ind"></span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody" class="divide-y divide-slate-800/60">
+            <!-- rows injected -->
+          </tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="hidden py-20 text-center text-slate-500">
+        <p class="text-lg font-semibold text-slate-400">No players match your filters</p>
+        <p class="text-sm mt-1">Try clearing search or changing format</p>
+      </div>
+    </section>
 
-<div class="overflow-x-auto scrollbar-thin">
-<table class="w-full min-w-[980px]">
-<thead class="sticky top-0 z-10 bg-[#070b15]/90 backdrop-blur border-b border-white/10">
-<tr class="text-[11px] uppercase tracking-wider text-slate-400">
-<th class="text-left font-semibold px-6 py-3 sortable" data-key="player">Player</th>
-<th class="text-right font-semibold px-4 py-3 sortable" data-key="age">Age</th>
-<th class="text-right font-semibold px-4 py-3 sortable" data-key="value">Value</th>
-<th class="text-right font-semibold px-4 py-3 sortable" data-key="sleeper_ppg">Sleeper PPG</th>
-<th class="text-right font-semibold px-4 py-3 sortable" data-key="fp_ppg">FP PPG</th>
-<th class="text-right font-semibold px-4 py-3 sortable" data-key="avg_ppg">Avg PPG</th>
-<th class="text-right font-semibold px-6 py-3 sortable" data-key="val_per_ppg">Value / PPG</th>
-</tr>
-</thead>
-<tbody id="tbody" class="divide-y divide-white/5">
-<tr><td colspan="7" class="px-6 py-16 text-center text-slate-400">Loading rankings…</td></tr>
-</tbody>
-</table>
-</div>
-</section>
-
-<footer class="mt-10 text-center text-xs text-slate-500">
-Built for dynasty grinders. Data merges RosterAudit values + Sleeper/FantasyPros projections.
-</footer>
-</main>
+    <!-- Footer -->
+    <footer class="mt-6 text-[11px] text-slate-600 text-center">
+      Built for THE VAULT • CSV parsing via Papa Parse • Sleeper API auto-detect • Values may be delayed
+    </footer>
+  </div>
 
 <script>
 const CSV_VALUES = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=689232361&single=true&output=csv';
@@ -147,317 +144,303 @@ const CSV_SLEEPER = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6
 const CSV_FP = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=2012227164&single=true&output=csv';
 
 const state = {
-  rawValues: [],
-  rawSleeper: [],
-  rawFP: [],
+  values: [],
+  sleeper: [],
+  fp: [],
   merged: [],
-  view: [],
+  filtered: [],
   format: 'sf_ppr',
-  pos: 'ALL',
-  query: '',
+  autoDetected: false,
   sortKey: 'value',
   sortDir: 'desc',
-  lastUpdated: null
+  search: '',
+  pos: 'ALL',
 };
 
-const formatLabels = {
-  sf_ppr: 'SF PPR',
-  sf_ppr_tep05: 'SF 0.5 TEP',
-  sf_ppr_tep: 'SF TEP',
-  '1qb_ppr': '1QB PPR',
-  '1qb_ppr_tep05': '1QB 0.5 TEP',
-  '1qb_ppr_tep': '1QB TEP'
+const formatMap = {
+  sf_ppr: { valueCol: 'val_sf_ppr', label: 'SuperFlex PPR' },
+  sf_ppr_tep05: { valueCol: 'val_sf_ppr_tep05', label: 'SuperFlex PPR TEP 0.5' },
+  sf_ppr_tep: { valueCol: 'val_sf_ppr_tep', label: 'SuperFlex PPR TEP 1.0' },
+  '1qb_ppr': { valueCol: 'val_1qb_ppr', label: '1QB PPR' },
+  '1qb_ppr_tep05': { valueCol: 'val_1qb_ppr_tep05', label: '1QB PPR TEP 0.5' },
+  '1qb_ppr_tep': { valueCol: 'val_1qb_ppr_tep', label: '1QB PPR TEP 1.0' },
 };
 
-const formatSelect = document.getElementById('formatSelect');
-const currentFormatBadge = document.getElementById('currentFormatBadge');
-const leagueIdInput = document.getElementById('leagueIdInput');
-const loadLeagueBtn = document.getElementById('loadLeagueBtn');
-const refreshBtn = document.getElementById('refreshBtn');
-const searchInput = document.getElementById('searchInput');
-const posFilter = document.getElementById('posFilter');
-const tbody = document.getElementById('tbody');
-const playerCount = document.getElementById('playerCount');
-const statusMsg = document.getElementById('statusMsg');
-const updatedAt = document.getElementById('updatedAt');
+const fmtNum = (n, d=1) => (n==null || isNaN(n) ? '—' : Number(n).toFixed(d).replace(/\.0+$/,''));
+const fmtInt = (n) => (n==null || isNaN(n) ? '—' : Math.round(Number(n)).toLocaleString());
 
-function normalizeName(s) {
-  if (!s) return '';
-  return s.toString().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^a-z0-9\s]/g,'')
-    .replace(/\s+/g,' ')
-    .trim();
+const norm = s => s ? s.toLowerCase().replace(/[^a-z0-9 ]+/g,'').replace(/\s+/g,' ').trim() : '';
+
+function setStatus(text, busy=false) {
+  document.getElementById('statusText').textContent = text;
+  const pill = document.getElementById('statusPill');
+  pill.classList.toggle('bg-emerald-500/10', !busy);
+  pill.classList.toggle('bg-amber-500/10', busy);
+  pill.classList.toggle('text-emerald-300', !busy);
+  pill.classList.toggle('text-amber-300', busy);
 }
 
-function parseCSV(url) {
-  return new Promise((resolve, reject) => {
-    Papa.parse(url, {
-      download: true,
+function setUpdated() {
+  const el = document.getElementById('updatedPill');
+  el.textContent = 'Updated ' + new Date().toLocaleTimeString();
+  el.classList.remove('hidden');
+}
+
+// Robust CSV_VALUES preprocessing
+async function fetchValuesCSV() {
+  const text = await fetch(CSV_VALUES).then(r => r.text());
+  const lines = text.split(/\r?\n/);
+  const cleaned = [];
+  let buffer = '';
+  for (let raw of lines) {
+    const line = raw.trimEnd();
+    if (!line.trim()) continue;
+    if (/^\d+,/.test(line.trim())) {
+      if (buffer) cleaned.push(buffer);
+      buffer = line.trim();
+    } else {
+      // continuation of previous line (broken name)
+      buffer += ' ' + line.trim();
+    }
+  }
+  if (buffer) cleaned.push(buffer);
+  const csv = cleaned.join('\n');
+  return new Promise(resolve => {
+    Papa.parse(csv, {
       header: true,
-      dynamicTyping: true,
       skipEmptyLines: true,
-      complete: res => resolve(res.data),
-      error: err => reject(err)
+      complete: res => resolve(res.data)
     });
   });
 }
 
-function getPpgFromRow(row) {
-  // Prefer PPR, fallback Half, then Std
-  const ppr = row['PPR'] ?? row['ppr'] ?? row['PPR_PPG'];
-  const pprTep = row['PPR TEP'] ?? row['PPR_TEP'] ?? row['TEP'];
-  const half = row['Half'] ?? row['HALF'];
-  const std = row['Std'] ?? row['STD'];
-  const ppg = (ppr != null && ppr !== '') ? +ppr : (half != null && half !== '') ? +half : (std != null && std !== '') ? +std : null;
-  const ppgTep = (pprTep != null && pprTep !== '') ? +pprTep : ppg;
-  return { ppg: isFinite(ppg) ? ppg : null, ppgTep: isFinite(ppgTep) ? ppgTep : null };
+async function fetchCSV(url) {
+  const text = await fetch(url).then(r => r.text());
+  return new Promise(resolve => {
+    Papa.parse(text, {
+      header: true,
+      skipEmptyLines: true,
+      complete: res => resolve(res.data)
+    });
+  });
 }
 
 function buildMaps() {
-  const sleeperMap = new Map();
-  for (const r of state.rawSleeper) {
-    const name = normalizeName(r.Player || r.player || r.Name);
+  const sleeperByName = new Map();
+  for (const r of state.sleeper) {
+    const name = norm(r.player || r.Player || r.name);
     if (!name) continue;
-    const { ppg, ppgTep } = getPpgFromRow(r);
-    sleeperMap.set(name, {
-      ppg,
-      ppgTep,
-      pos: (r.Position || r.Pos || '').toString().toUpperCase(),
-      team: (r.Team || '').toString().toUpperCase()
+    sleeperByName.set(name, {
+      ppg_ppr: parseFloat(r.ppg_ppr || r.PPG || r.ppg),
+      ppg_ppr_tep: parseFloat(r.ppg_ppr_tep || r.ppg_tep || r.ppg_ppr_tep05 || r.ppg_ppr)
     });
   }
-  const fpMap = new Map();
-  for (const r of state.rawFP) {
-    const name = normalizeName(r.Player || r.player || r.Name);
+  const fpByName = new Map();
+  for (const r of state.fp) {
+    const name = norm(r.player || r.Player || r.name);
     if (!name) continue;
-    const { ppg, ppgTep } = getPpgFromRow(r);
-    fpMap.set(name, {
-      ppg,
-      ppgTep,
-      pos: (r.Position || r.Pos || '').toString().toUpperCase(),
-      team: (r.Team || '').toString().toUpperCase()
+    fpByName.set(name, {
+      ppg_ppr: parseFloat(r.ppg_ppr || r.PPG || r.ppg),
+      ppg_ppr_tep: parseFloat(r.ppg_ppr_tep || r.ppg_tep || r.ppg_ppr_tep05 || r.ppg_ppr)
     });
   }
-  return { sleeperMap, fpMap };
+  return { sleeperByName, fpByName };
 }
 
 function mergeData() {
-  const { sleeperMap, fpMap } = buildMaps();
-  const isTep = state.format.includes('tep');
-  const out = [];
+  const { sleeperByName, fpByName } = buildMaps();
+  const format = state.format;
+  const isTep = format.includes('tep');
+  const valueCol = formatMap[format].valueCol;
 
-  for (const v of state.rawValues) {
-    const nameRaw = v.name || v.Name || v.player;
-    if (!nameRaw) continue;
-    const nameNorm = normalizeName(nameRaw);
-    const pos = (v.pos || v.Pos || v.position || '').toString().toUpperCase();
-    const team = (v.team || v.Team || '').toString().toUpperCase();
-    const age = v.age != null ? +v.age : null;
+  const merged = [];
+  for (const r of state.values) {
+    const player = r.player || r.Player || r.name || '';
+    const n = norm(player);
+    if (!n) continue;
 
-    const valCol = 'val_' + state.format;
-    const value = v[valCol] != null ? +v[valCol] : null;
+    const pos = (r.pos || r.POS || '').toUpperCase();
+    const team = (r.team || r.TEAM || '').toUpperCase();
+    const age = parseFloat(r.age || r.Age);
+    const value = parseFloat(r[valueCol] || r[valueCol.toUpperCase()] || r.val || 0);
 
-    const s = sleeperMap.get(nameNorm) || {};
-    const f = fpMap.get(nameNorm) || {};
+    const s = sleeperByName.get(n) || {};
+    const f = fpByName.get(n) || {};
 
-    const useTep = isTep && pos === 'TE';
-    const sleeper_ppg = useTep ? (s.ppgTep ?? s.ppg) : s.ppg;
-    const fp_ppg = useTep ? (f.ppgTep ?? f.ppg) : f.ppg;
+    const useTepForTE = isTep && pos === 'TE';
+    const sleeper_ppg = useTepForTE ? s.ppg_ppr_tep : s.ppg_ppr;
+    const fp_ppg = useTepForTE ? f.ppg_ppr_tep : f.ppg_ppr;
 
-    const ppgs = [sleeper_ppg, fp_ppg].filter(x => x != null && isFinite(x));
-    const avg_ppg = ppgs.length ? ppgs.reduce((a,b)=>a+b,0)/ppgs.length : null;
-    const val_per_ppg = (value != null && avg_ppg) ? value / avg_ppg : null;
+    const avg_ppg = (sleeper_ppg && fp_ppg) ? (sleeper_ppg + fp_ppg)/2 : (sleeper_ppg || fp_ppg || null);
+    const val_per_ppg = (value && avg_ppg) ? value / avg_ppg : null;
 
-    out.push({
-      sleeper_id: v.sleeper_id,
-      player: nameRaw,
-      pos: pos || s.pos || f.pos || '',
-      team: team || s.team || f.team || '',
+    merged.push({
+      player,
+      pos,
+      team,
       age: isFinite(age) ? age : null,
-      value: isFinite(value) ? value : null,
-      sleeper_ppg: isFinite(sleeper_ppg) ? +sleeper_ppg.toFixed(2) : null,
-      fp_ppg: isFinite(fp_ppg) ? +fp_ppg.toFixed(2) : null,
-      avg_ppg: avg_ppg != null ? +avg_ppg.toFixed(2) : null,
-      val_per_ppg: val_per_ppg != null ? +val_per_ppg.toFixed(1) : null,
-      search: `${nameRaw} ${team}`.toLowerCase()
+      value: isFinite(value) ? value : 0,
+      sleeper_ppg: isFinite(sleeper_ppg) ? sleeper_ppg : null,
+      fp_ppg: isFinite(fp_ppg) ? fp_ppg : null,
+      avg_ppg,
+      val_per_ppg,
+      norm: n
     });
   }
-
-  state.merged = out;
-  state.lastUpdated = new Date();
+  state.merged = merged;
 }
 
 function applyFilters() {
-  const q = state.query.trim().toLowerCase();
-  let arr = state.merged;
-  if (state.pos !== 'ALL') {
-    arr = arr.filter(r => r.pos === state.pos);
-  }
-  if (q) {
-    arr = arr.filter(r => r.search.includes(q));
-  }
-  // sort
-  const key = state.sortKey;
-  const dir = state.sortDir === 'asc' ? 1 : -1;
-  arr = arr.slice().sort((a,b) => {
-    let av = a[key], bv = b[key];
-    // player sort by name
-    if (key === 'player') {
-      av = a.player || ''; bv = b.player || '';
-      return av.localeCompare(bv) * dir;
-    }
-    // nulls last
-    if (av == null && bv == null) return 0;
-    if (av == null) return 1;
-    if (bv == null) return -1;
-    return (av < bv ? -1 : av > bv ? 1 : 0) * dir;
+  const q = norm(state.search);
+  state.filtered = state.merged.filter(r => {
+    if (state.pos !== 'ALL' && r.pos !== state.pos) return false;
+    if (q && !r.norm.includes(q)) return false;
+    return true;
   });
-  state.view = arr;
+  sortData();
 }
 
-function render() {
-  applyFilters();
-  playerCount.textContent = `${state.view.length.toLocaleString()} players`;
-  currentFormatBadge.textContent = formatLabels[state.format] || state.format.toUpperCase();
-  formatSelect.value = state.format;
-  updatedAt.textContent = state.lastUpdated ? state.lastUpdated.toLocaleTimeString() : '—';
+function sortData() {
+  const k = state.sortKey;
+  const dir = state.sortDir === 'asc' ? 1 : -1;
+  state.filtered.sort((a,b) => {
+    const av = a[k] ?? -Infinity;
+    const bv = b[k] ?? -Infinity;
+    if (typeof av === 'string') return av.localeCompare(bv) * dir;
+    return (av - bv) * dir;
+  });
+  renderTable();
+}
 
-  if (!state.view.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-16 text-center text-slate-500">No results. Try adjusting filters.</td></tr>`;
+function renderTable() {
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  if (!state.filtered.length) {
+    document.getElementById('emptyState').classList.remove('hidden');
     return;
   }
-
-  const rows = state.view.map(r => {
-    const posColor = r.pos === 'QB' ? 'text-rose-300 bg-rose-500/10 border-rose-500/20' :
-                     r.pos === 'RB' ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20' :
-                     r.pos === 'WR' ? 'text-sky-300 bg-sky-500/10 border-sky-500/20' :
-                     r.pos === 'TE' ? 'text-amber-300 bg-amber-500/10 border-amber-500/20' :
-                     'text-slate-300 bg-white/5 border-white/10';
-    const val = r.value != null ? Math.round(r.value).toLocaleString() : '—';
-    const sp = r.sleeper_ppg != null ? r.sleeper_ppg.toFixed(1) : '—';
-    const fp = r.fp_ppg != null ? r.fp_ppg.toFixed(1) : '—';
-    const avg = r.avg_ppg != null ? r.avg_ppg.toFixed(1) : '—';
-    const vpp = r.val_per_ppg != null ? r.val_per_ppg.toFixed(0) : '—';
-    const age = r.age != null ? r.age.toFixed(1) : '—';
-    return `
-    <tr class="hover:bg-white/[0.03] transition">
-      <td class="px-6 py-3">
-        <div class="flex items-center gap-3">
-          <span class="inline-flex items-center justify-center h-7 min-w-[2.25rem] px-2 rounded-lg border text-[11px] font-mono font-semibold ${posColor}">${r.pos || '-'}</span>
-          <div>
-            <div class="font-semibold text-white leading-tight">${escapeHtml(r.player)}</div>
-            <div class="text-xs text-slate-400 font-mono">${escapeHtml(r.team || 'FA')}</div>
-          </div>
+  document.getElementById('emptyState').classList.add('hidden');
+  const frag = document.createDocumentFragment();
+  for (const r of state.filtered.slice(0, 1000)) {
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-800/40 transition';
+    tr.innerHTML = `
+      <td class="px-4 py-2.5 font-medium text-slate-100">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 text-[10px] font-bold text-slate-400">${r.pos || '—'}</span>
+          <span>${escapeHtml(r.player)}</span>
         </div>
       </td>
-      <td class="px-4 py-3 text-right font-mono text-sm text-slate-300">${age}</td>
-      <td class="px-4 py-3 text-right font-mono text-sm font-semibold text-white">${val}</td>
-      <td class="px-4 py-3 text-right font-mono text-sm text-slate-200">${sp}</td>
-      <td class="px-4 py-3 text-right font-mono text-sm text-slate-200">${fp}</td>
-      <td class="px-4 py-3 text-right font-mono text-sm text-violet-200">${avg}</td>
-      <td class="px-6 py-3 text-right font-mono text-sm font-semibold text-fuchsia-200">${vpp}</td>
-    </tr>`;
-  }).join('');
-  tbody.innerHTML = rows;
+      <td class="px-3 py-2.5 text-slate-300">${r.pos || '—'}</td>
+      <td class="px-3 py-2.5 text-slate-400 mono text-xs">${r.team || '—'}</td>
+      <td class="px-3 py-2.5 text-right mono text-slate-300">${r.age ? r.age.toFixed(1) : '—'}</td>
+      <td class="px-3 py-2.5 text-right mono font-semibold text-white">${fmtInt(r.value)}</td>
+      <td class="px-3 py-2.5 text-right mono text-slate-300">${fmtNum(r.sleeper_ppg,1)}</td>
+      <td class="px-3 py-2.5 text-right mono text-slate-300">${fmtNum(r.fp_ppg,1)}</td>
+      <td class="px-3 py-2.5 text-right mono text-violet-300 font-semibold">${fmtNum(r.avg_ppg,1)}</td>
+      <td class="px-4 py-2.5 text-right mono text-emerald-300 font-semibold">${fmtNum(r.val_per_ppg,0)}</td>
+    `;
+    frag.appendChild(tr);
+  }
+  tbody.appendChild(frag);
+  updateSortIndicators();
+}
+
+function updateSortIndicators() {
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    const ind = th.querySelector('.sort-ind');
+    ind.textContent = '';
+    th.classList.remove('text-violet-300');
+  });
+  const active = document.querySelector(`th[data-sort="${state.sortKey}"]`);
+  if (active) {
+    active.classList.add('text-violet-300');
+    active.querySelector('.sort-ind').textContent = state.sortDir === 'asc' ? '▲' : '▼';
+  }
 }
 
 function escapeHtml(s) {
-  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
 async function loadAll() {
   try {
-    statusMsg.textContent = 'Fetching CSVs…';
-    const [vals, sleep, fp] = await Promise.all([
-      parseCSV(CSV_VALUES),
-      parseCSV(CSV_SLEEPER),
-      parseCSV(CSV_FP)
+    setStatus('Loading CSVs…', true);
+    const [values, sleeper, fp] = await Promise.all([
+      fetchValuesCSV(),
+      fetchCSV(CSV_SLEEPER),
+      fetchCSV(CSV_FP)
     ]);
-    state.rawValues = vals;
-    state.rawSleeper = sleep;
-    state.rawFP = fp;
-    statusMsg.textContent = `Loaded ${vals.length} values, ${sleep.length} sleeper, ${fp.length} FP`;
+    state.values = values;
+    state.sleeper = sleeper;
+    state.fp = fp;
+    document.getElementById('countValues').textContent = `Values: ${values.length}`;
+    document.getElementById('countSleeper').textContent = `Sleeper: ${sleeper.length}`;
+    document.getElementById('countFP').textContent = `FP: ${fp.length}`;
     mergeData();
-    render();
+    applyFilters();
+    setStatus('Ready');
+    setUpdated();
   } catch (e) {
     console.error(e);
-    statusMsg.textContent = 'Failed to load data';
-    tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-16 text-center text-rose-300">Error loading CSV data. Please refresh.</td></tr>`;
+    setStatus('Error loading');
+    alert('Failed to load CSV data. Check console.');
   }
 }
 
-async function loadLeague() {
-  const id = leagueIdInput.value.trim();
-  if (!id) {
-    statusMsg.textContent = 'Enter a Sleeper League ID';
-    return;
-  }
+async function detectLeague() {
+  const id = document.getElementById('leagueInput').value.trim();
+  if (!id) return;
   try {
-    statusMsg.textContent = 'Detecting league format…';
-    const res = await fetch(`https://api.sleeper.app/v1/league/${id}`);
-    if (!res.ok) throw new Error('League not found');
-    const league = await res.json();
-    const positions = league.roster_positions || [];
-    const isSF = positions.includes('SUPER_FLEX');
-    const tep = (league.scoring_settings && +league.scoring_settings.bonus_rec_te) || 0;
-    let format = isSF ? 'sf_ppr' : '1qb_ppr';
-    if (tep >= 1) format += '_tep';
-    else if (tep >= 0.5) format += '_tep05';
-    state.format = format;
+    setStatus('Detecting league…', true);
+    const league = await fetch(`https://api.sleeper.app/v1/league/${id}`).then(r => r.json());
+    const isSF = Array.isArray(league.roster_positions) && league.roster_positions.includes('SUPER_FLEX');
+    const tep = Number(league.scoring_settings?.bonus_rec_te || 0);
+    let key = isSF ? 'sf_ppr' : '1qb_ppr';
+    if (tep >= 0.99) key += '_tep';
+    else if (tep >= 0.49) key += '_tep05';
+    state.format = key;
+    state.autoDetected = true;
+    document.getElementById('formatSelect').value = key;
+    document.getElementById('autoBadge').classList.remove('hidden');
     mergeData();
-    render();
-    statusMsg.textContent = `Auto-detected: ${formatLabels[format]}`;
+    applyFilters();
+    setStatus('Auto-detected');
+    setUpdated();
   } catch (e) {
     console.error(e);
-    statusMsg.textContent = 'League load failed';
+    setStatus('League detect failed');
+    alert('Could not fetch league. Check ID.');
   }
 }
 
 // Events
-formatSelect.addEventListener('change', e => {
+document.getElementById('formatSelect').addEventListener('change', e => {
   state.format = e.target.value;
+  state.autoDetected = false;
+  document.getElementById('autoBadge').classList.add('hidden');
   mergeData();
-  render();
+  applyFilters();
 });
 
-searchInput.addEventListener('input', e => {
-  state.query = e.target.value;
-  render();
-});
+document.getElementById('loadLeagueBtn').addEventListener('click', detectLeague);
+document.getElementById('leagueInput').addEventListener('keydown', e => { if (e.key === 'Enter') detectLeague(); });
+document.getElementById('refreshBtn').addEventListener('click', loadAll);
+document.getElementById('searchInput').addEventListener('input', e => { state.search = e.target.value; applyFilters(); });
+document.getElementById('posFilter').addEventListener('change', e => { state.pos = e.target.value; applyFilters(); });
 
-posFilter.addEventListener('click', e => {
-  const btn = e.target.closest('.pos-btn');
-  if (!btn) return;
-  const pos = btn.dataset.pos;
-  state.pos = pos;
-  [...posFilter.querySelectorAll('.pos-btn')].forEach(b => {
-    b.classList.toggle('bg-violet-600', b === btn);
-    b.classList.toggle('text-white', b === btn);
-    b.classList.toggle('text-slate-300', b !== btn);
-    b.classList.toggle('hover:bg-white/5', b !== btn);
-  });
-  render();
-});
-
-document.querySelectorAll('th.sortable').forEach(th => {
+document.querySelectorAll('th[data-sort]').forEach(th => {
   th.addEventListener('click', () => {
-    const key = th.dataset.key;
+    const key = th.dataset.sort;
     if (state.sortKey === key) {
       state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
     } else {
       state.sortKey = key;
-      state.sortDir = key === 'player' ? 'asc' : 'desc';
+      state.sortDir = key === 'player' || key === 'pos' || key === 'team' ? 'asc' : 'desc';
     }
-    // visual indicator
-    document.querySelectorAll('th.sortable').forEach(h => h.classList.remove('text-white'));
-    th.classList.add('text-white');
-    render();
+    sortData();
   });
 });
-
-loadLeagueBtn.addEventListener('click', loadLeague);
-refreshBtn.addEventListener('click', loadAll);
 
 // Init
 loadAll();
