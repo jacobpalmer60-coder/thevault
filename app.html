@@ -2,468 +2,387 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Fantasy Football Tier Dashboard • Symmetric Bands</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Vault - League Overview</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root { color-scheme: dark; }
-  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background:#0a0a0f; }
-  .display { font-family: 'Space Grotesk', Inter, sans-serif; }
-  .card { background:#141420; border:1px solid rgba(255,255,255,.06) }
-  .scrollbar-thin::-webkit-scrollbar { height:8px; width:8px }
-  .scrollbar-thin::-webkit-scrollbar-track { background:transparent }
-  .scrollbar-thin::-webkit-scrollbar-thumb { background:#2a2a40; border-radius:999px }
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background:#3a3a55 }
-  .glass { backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px) }
-  .sort-btn.active { color:#fff }
-  .pill { border:1px solid transparent }
-  .vault-link { color:#9ca3af; transition:color .15s }
-  .vault-link:hover { color:#facc15 }
-  .suite-nav a { color:#9ca3af; }
-  .suite-nav a:hover { color:#facc15 }
+  html, body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background:#0a0a0f; }
+  * { scrollbar-width: thin; scrollbar-color: #2a2f3d #0a0a0f; }
+  ::-webkit-scrollbar { width:8px; height:8px }
+  ::-webkit-scrollbar-track { background:#0a0a0f }
+  ::-webkit-scrollbar-thumb { background:#2a2f3d; border-radius:4px }
+  .grid-cols-vault { grid-template-columns: minmax(260px,1.8fr) 140px repeat(7, 110px); }
+  @media (max-width:1280px){ .grid-cols-vault { grid-template-columns: minmax(240px,1.6fr) 130px repeat(7, 100px); } }
+  @media (max-width:1024px){ .grid-scroll { overflow-x:auto } }
 </style>
 </head>
-<body class="text-slate-200 min-h-screen antialiased">
-  <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Header -->
-    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-6">
-      <div class="max-w-3xl">
-        <h1 class="display text-[32px] sm:text-[40px] font-semibold tracking-tight text-white leading-[1.1]">Fantasy Tier Dashboard</h1>
-        <p class="mt-3 text-slate-400 text-[15px] leading-relaxed">
-          Production, longevity, and asset value compressed into actionable archetypes. Sorted by archetype precedence then hidden tier score.
-        </p>
+<body class="bg-[#0a0a0f] text-gray-200 antialiased">
+  <!-- Header -->
+  <header class="sticky top-0 z-40 backdrop-blur-xl bg-[#0a0a0f]/80 border-b border-[#1b1f2a]">
+    <div class="max-w-[1440px] mx-auto px-4 md:px-6 h-[64px] flex items-center justify-between gap-4">
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-900/30">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          </div>
+          <span class="text-xl font-extrabold tracking-tight">The Vault</span>
+        </div>
+        <nav class="hidden lg:flex items-center gap-6 text-[13px] font-medium text-gray-400">
+          <a class="text-white">League</a>
+          <a class="hover:text-white transition">Players</a>
+          <a class="hover:text-white transition">Trends</a>
+          <a class="hover:text-white transition">Research</a>
+          <a class="hover:text-white transition">Discord</a>
+        </nav>
       </div>
-      <div class="flex items-center gap-3 shrink-0">
-        <span class="inline-flex items-center gap-2 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 px-3 py-1.5 text-xs font-medium">
-          <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
-          </span>
-          Live sync • 10 teams
-        </span>
-        <button id="exportBtn" class="inline-flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 active:bg-white/20 border border-white/10 px-4 py-2 text-sm font-medium text-white transition">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export CSV
+      <div class="flex items-center gap-3">
+        <div class="relative hidden md:block">
+          <input id="playerSearch" placeholder="Search Player" class="w-[260px] bg-[#12121a] border border-[#1e2430] rounded-full pl-10 pr-4 py-2 text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition" />
+          <svg class="absolute left-3.5 top-2.5 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"/></svg>
+        </div>
+        <button class="w-9 h-9 rounded-full bg-[#12121a] border border-[#1e2430] flex items-center justify-center hover:border-gray-600 transition">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
         </button>
+        <button class="w-9 h-9 rounded-full bg-[#12121a] border border-[#1e2430] flex items-center justify-center hover:border-gray-600 transition">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </button>
+        <img id="userAvatar" class="w-9 h-9 rounded-full border border-[#1e2430] object-cover" src="https://i.pravatar.cc/64" alt="me"/>
       </div>
     </div>
+  </header>
 
-    <!-- Controls -->
-    <div class="card rounded-2xl p-4 sm:p-5 mb-4">
-      <div class="flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
-        <div class="relative flex-1 max-w-xl">
-          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input id="search" type="text" placeholder="Search team or archetype..." class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#0f0f18] border border-white/10 text-[14px] placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition" />
-        </div>
-        <div class="flex items-center gap-2 p-1 rounded-xl bg-[#0f0f18] border border-white/10 w-fit">
-          <button data-filter="all" class="filter-tab px-3.5 py-1.5 text-sm font-medium rounded-lg transition bg-white/10 text-white">All</button>
-          <button data-filter="contenders" class="filter-tab px-3.5 py-1.5 text-sm font-medium rounded-lg transition text-slate-400 hover:text-white">Contenders</button>
-          <button data-filter="rebuilders" class="filter-tab px-3.5 py-1.5 text-sm font-medium rounded-lg transition text-slate-400 hover:text-white">Rebuilders</button>
-        </div>
+  <!-- Subheader -->
+  <div class="border-b border-[#1b1f2a] bg-[#0c0e14]">
+    <div class="max-w-[1440px] mx-auto px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <h1 id="leagueName" class="text-[28px] font-extrabold tracking-tight">Loading League…</h1>
+        <span id="leagueMeta" class="text-sm text-gray-500"></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="px-3 py-1.5 rounded-full bg-[#1a1d27] border border-[#252b3a] text-xs font-semibold hover:bg-[#212634]">Power Rankings</button>
+        <button class="px-3 py-1.5 rounded-full bg-indigo-600 text-xs font-semibold hover:bg-indigo-500">Roster</button>
+        <button class="px-3 py-1.5 rounded-full bg-[#1a1d27] border border-[#252b3a] text-xs font-semibold hover:bg-[#212634]">Matchups</button>
+        <button class="px-3 py-1.5 rounded-full bg-[#1a1d27] border border-[#252b3a] text-xs font-semibold hover:bg-[#212634]">Trades</button>
       </div>
     </div>
-
-    <!-- Suite Navigation -->
-    <div class="suite-nav flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] px-1 mb-4">
-      <span class="text-slate-500 uppercase tracking-wider text-[11px] font-semibold">The Vault Suite</span>
-      <span class="text-slate-700 hidden sm:inline">•</span>
-      <a id="nav-login" href="https://jacobpalmer60-coder.github.io/thevault/" class="vault-link font-medium">Login</a>
-      <span class="text-slate-700">|</span>
-      <a id="nav-overview" href="https://jacobpalmer60-coder.github.io/thevault/" class="vault-link font-medium">League Overview</a>
-      <span class="text-slate-700">|</span>
-      <a id="nav-rankings" href="https://jacobpalmer60-coder.github.io/thevault/" class="vault-link font-medium">Player Rankings</a>
-      <span class="text-slate-700">|</span>
-      <a id="nav-trade" href="https://jacobpalmer60-coder.github.io/thevault/" class="vault-link font-medium">Trade Calc</a>
-    </div>
-
-    <!-- Table Card with Sticky Footer -->
-    <div class="card rounded-2xl overflow-hidden flex flex-col min-h-[600px]">
-      <div class="overflow-x-auto scrollbar-thin flex-1">
-        <table class="w-full min-w-[1100px]">
-          <thead class="bg-[#0f0f18]/80 backdrop-blur sticky top-0 z-10 border-b border-white/10">
-            <tr class="text-[11px] uppercase tracking-wider text-slate-400">
-              <th class="text-left font-semibold px-5 py-3">
-                <button class="sort-btn active flex items-center gap-1 hover:text-white" data-key="rank">Rank <span class="arrow">↓</span></button>
-              </th>
-              <th class="text-left font-semibold px-5 py-3">
-                <button class="sort-btn flex items-center gap-1 hover:text-white" data-key="team">Team <span class="arrow opacity-0">↓</span></button>
-              </th>
-              <th class="text-left font-semibold px-5 py-3">
-                <button class="sort-btn flex items-center gap-1 hover:text-white" data-key="archetype">Archetype <span class="arrow opacity-0">↓</span></button>
-              </th>
-              <th class="text-right font-semibold px-5 py-3">
-                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="ppg">PPG <span class="arrow opacity-0">↓</span></button>
-              </th>
-              <th class="text-right font-semibold px-5 py-3">
-                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="prodDiff">Prod Diff <span class="arrow opacity-0">↓</span></button>
-              </th>
-              <th class="text-right font-semibold px-5 py-3">
-                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="longevity">Longevity <span class="arrow opacity-0">↓</span></button>
-              </th>
-              <th class="text-right font-semibold px-5 py-3">
-                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="value">Value <span class="arrow opacity-0">↓</span></button>
-              </th>
-              <th class="text-right font-semibold px-5 py-3">
-                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="picks">Picks <span class="arrow opacity-0">↓</span></button>
-              </th>
-              <th class="text-right font-semibold px-5 py-3">
-                <button class="sort-btn flex items-center gap-1 ml-auto hover:text-white" data-key="age">Age <span class="arrow opacity-0">↓</span></button>
-              </th>
-            </tr>
-          </thead>
-          <tbody id="tbody" class="divide-y divide-white/[0.06]"></tbody>
-        </table>
-      </div>
-      <!-- Sticky Footer -->
-      <footer class="mt-auto border-t border-[#2a2a3a] px-5 py-3 flex flex-col sm:flex-row items-center justify-between gap-2 text-[12px] text-[#6b7280] bg-[#0f0f18]/60">
-        <div class="flex items-center gap-2">
-          <span>Powered by</span>
-          <a href="https://sleeper.com" target="_blank" rel="noopener" class="vault-link">Sleeper</a>
-          <span class="text-slate-700">•</span>
-          <a id="footer-roster" href="https://jacobpalmer60-coder.github.io/thevault/" target="_blank" rel="noopener" class="vault-link">Roster Audit</a>
-          <span class="text-slate-700">•</span>
-          <a href="https://www.fantasypros.com" target="_blank" rel="noopener" class="vault-link">Fantasy Pros</a>
-        </div>
-        <div class="text-[#6b7280]">© 2026 The Vault</div>
-      </footer>
-    </div>
-
-    <!-- Bottom Cards -->
-    <div class="grid lg:grid-cols-2 gap-6 mt-6">
-      <!-- Archetype Legend -->
-      <div class="card rounded-2xl p-6">
-        <h3 class="display text-lg font-semibold text-white mb-1">Archetype Legend</h3>
-        <p class="text-sm text-slate-400 mb-5">Precedence ordered from championship window to full rebuild.</p>
-        <div class="space-y-3.5">
-          <div class="flex items-start gap-3">
-            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-400/15 text-amber-200 border-amber-400/30 shrink-0 mt-0.5">JUGGERNAUT</span>
-            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Elite production & longevity.</span> Championship favorite with sustained window. Rare dual-Elite profile.</p>
-          </div>
-          <div class="flex items-start gap-3">
-            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border-amber-500/30 shrink-0 mt-0.5">CONTENDER</span>
-            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Strong now with solid future.</span> Playoff lock with upside to win it all.</p>
-          </div>
-          <div class="flex items-start gap-3">
-            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-400/15 text-sky-300 border-sky-400/30 shrink-0 mt-0.5">YOUNG RISER</span>
-            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Average production, strong age curve.</span> Trending up; buy before breakout.</p>
-          </div>
-          <div class="flex items-start gap-3">
-            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-400/15 text-purple-300 border-purple-400/30 shrink-0 mt-0.5">BALANCED CORE</span>
-            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Solid across board.</span> No clear weakness, lacks elite ceiling.</p>
-          </div>
-          <div class="flex items-start gap-3">
-            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-400/15 text-orange-300 border-orange-400/30 shrink-0 mt-0.5">TREADMILL</span>
-            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Middling production, declining longevity.</span> Stuck in middle; pick a direction.</p>
-          </div>
-          <div class="flex items-start gap-3">
-            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-400/15 text-cyan-300 border-cyan-400/30 shrink-0 mt-0.5">PICK-RICH REBUILDER</span>
-            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Weak now, elite future via picks/youth.</span> Asset base to accelerate.</p>
-          </div>
-          <div class="flex items-start gap-3">
-            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-400/15 text-rose-300 border-rose-400/30 shrink-0 mt-0.5">REBUILDING</span>
-            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Weak production, average longevity.</span> Full reset in progress.</p>
-          </div>
-          <div class="flex items-start gap-3">
-            <span class="pill px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-400/15 text-slate-300 border-slate-400/30 shrink-0 mt-0.5">STRIPPED REBUILDER</span>
-            <p class="text-sm text-slate-300 leading-relaxed"><span class="text-white font-medium">Bottom production & weak longevity.</span> Asset poor; long timeline.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tier System -->
-      <div class="card rounded-2xl p-6">
-        <h3 class="display text-lg font-semibold text-white mb-1">Tier System</h3>
-        <p class="text-sm text-slate-400 mb-5">Symmetric bands centered on league average.</p>
-        
-        <div class="space-y-6">
-          <div>
-            <h4 class="text-[13px] font-semibold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
-              <span class="h-1.5 w-1.5 rounded-full bg-indigo-400"></span> Production Tier vs League Avg PPG
-            </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div class="rounded-xl bg-[#0f0f18] border border-amber-400/20 p-3 flex items-center justify-between">
-                <span class="text-sm font-medium text-amber-200">Elite</span>
-                <span class="text-sm font-mono text-slate-300">+9.0 +</span>
-              </div>
-              <div class="rounded-xl bg-[#0f0f18] border border-amber-500/20 p-3 flex items-center justify-between">
-                <span class="text-sm font-medium text-amber-400">Strong</span>
-                <span class="text-sm font-mono text-slate-300">+3.0 to +8.9</span>
-              </div>
-              <div class="rounded-xl bg-[#0f0f18] border border-sky-400/20 p-3 flex items-center justify-between">
-                <span class="text-sm font-medium text-sky-300">Average</span>
-                <span class="text-sm font-mono text-slate-300">-3.0 to +2.9</span>
-              </div>
-              <div class="rounded-xl bg-[#0f0f18] border border-orange-400/20 p-3 flex items-center justify-between">
-                <span class="text-sm font-medium text-orange-300">Weak</span>
-                <span class="text-sm font-mono text-slate-300">-9.0 to -3.1</span>
-              </div>
-              <div class="rounded-xl bg-[#0f0f18] border border-rose-400/20 p-3 flex items-center justify-between sm:col-span-2">
-                <span class="text-sm font-medium text-rose-300">Rebuild</span>
-                <span class="text-sm font-mono text-slate-300">&lt; -9.0</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h4 class="text-[13px] font-semibold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
-              <span class="h-1.5 w-1.5 rounded-full bg-fuchsia-400"></span> Longevity Tier Age-Adjusted Value
-            </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div class="rounded-xl bg-[#0f0f18] border border-amber-400/20 p-3 flex items-center justify-between">
-                <span class="text-sm font-medium text-amber-200">Elite</span>
-                <span class="text-sm font-mono text-slate-300">+9% +</span>
-              </div>
-              <div class="rounded-xl bg-[#0f0f18] border border-amber-500/20 p-3 flex items-center justify-between">
-                <span class="text-sm font-medium text-amber-400">Strong</span>
-                <span class="text-sm font-mono text-slate-300">+3% to +8.9%</span>
-              </div>
-              <div class="rounded-xl bg-[#0f0f18] border border-sky-400/20 p-3 flex items-center justify-between">
-                <span class="text-sm font-medium text-sky-300">Average</span>
-                <span class="text-sm font-mono text-slate-300">-3% to +2.9%</span>
-              </div>
-              <div class="rounded-xl bg-[#0f0f18] border border-orange-400/20 p-3 flex items-center justify-between">
-                <span class="text-sm font-medium text-orange-300">Weak</span>
-                <span class="text-sm font-mono text-slate-300">-9% to -3.1%</span>
-              </div>
-              <div class="rounded-xl bg-[#0f0f18] border border-rose-400/20 p-3 flex items-center justify-between sm:col-span-2">
-                <span class="text-sm font-medium text-rose-300">Rebuild</span>
-                <span class="text-sm font-mono text-slate-300">&lt; -9%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <footer class="mt-10 text-center text-xs text-slate-600">
-      Dashboard v2.1 • Symmetric Bands • Gold positives • Dynamic league_id
-    </footer>
   </div>
 
+  <main class="max-w-[1440px] mx-auto px-4 md:px-6 py-6">
+    <div class="bg-[#0f111a] rounded-[20px] border border-[#1b1f2a] shadow-2xl overflow-hidden">
+      <!-- Table Header -->
+      <div class="grid-scroll">
+        <div class="grid grid-cols-vault items-center px-5 py-3 border-b border-[#1b1f2a] bg-[#0c0e14] text-[11px] font-semibold tracking-wider uppercase text-gray-500 sticky top-[64px] z-30">
+          <div>Team</div>
+          <div>Contender Tier</div>
+          <div class="flex items-center gap-1">Overall Rank <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7-7 7 7"/></svg></div>
+          <div>Starter Rank</div>
+          <div>QB Rank</div>
+          <div>RB Rank</div>
+          <div>WR Rank</div>
+          <div>TE Rank</div>
+          <div>Draft Rank</div>
+        </div>
+
+        <!-- Teams Container -->
+        <div id="teamsContainer" class="divide-y divide-[#151822]"></div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading" class="p-12 text-center text-gray-500">
+        <div class="inline-flex items-center gap-3">
+          <div class="w-5 h-5 border-2 border-gray-600 border-t-indigo-500 rounded-full animate-spin"></div>
+          Fetching Sleeper league & player values…
+        </div>
+      </div>
+    </div>
+
+    <p class="mt-4 text-center text-xs text-gray-600">Data from Sleeper API • Values from Vault Sheets • Superflex .5 TEP</p>
+  </main>
+
 <script>
-const teams = [
-  { rank:1, team:'Premium MailOrder McBride', archetype:'JUGGERNAUT', ppg:170.0, prodDiff:15.4, prodTier:'Elite', longevity:16, longTier:'Elite', value:63412, picks:'3 • 3,339', picksValue:3339, age:25.3 },
-  { rank:2, team:'Walker Touchdown stRanger', archetype:'CONTENDER', ppg:161.1, prodDiff:6.5, prodTier:'Strong', longevity:3, longTier:'Strong', value:53246, picks:'3 • 3,974', picksValue:3974, age:25.3 },
-  { rank:3, team:'Molon Labe', archetype:'CONTENDER', ppg:157.8, prodDiff:3.2, prodTier:'Strong', longevity:5, longTier:'Strong', value:54998, picks:'3 • 3,742', picksValue:3742, age:25.1 },
-  { rank:4, team:'Puka Boo', archetype:'YOUNG RISER', ppg:156.7, prodDiff:2.2, prodTier:'Average', longevity:3, longTier:'Strong', value:54066, picks:'3 • 3,858', picksValue:3858, age:25.6 },
-  { rank:5, team:'Salt Factory', archetype:'TREADMILL', ppg:156.3, prodDiff:1.8, prodTier:'Average', longevity:-10, longTier:'Rebuild', value:49600, picks:'3 • 4,559', picksValue:4559, age:26.4 },
-  { rank:6, team:"Allen's Creamy Surprise", archetype:'TREADMILL', ppg:152.8, prodDiff:-1.8, prodTier:'Average', longevity:-4, longTier:'Weak', value:52783, picks:'3 • 3,344', picksValue:3344, age:25.7 },
-  { rank:7, team:'TURBONUTZ', archetype:'TREADMILL', ppg:153.9, prodDiff:-0.7, prodTier:'Average', longevity:-19, longTier:'Rebuild', value:45068, picks:'3 • 4,349', picksValue:4349, age:27.4 },
-  { rank:8, team:'Scrooge McDucks', archetype:'PICK-RICH REBUILDER', ppg:149.1, prodDiff:-5.4, prodTier:'Weak', longevity:10, longTier:'Elite', value:58594, picks:'3 • 6,218', picksValue:6218, age:25.3 },
-  { rank:9, team:'Super bo or bust', archetype:'REBUILDING', ppg:146.3, prodDiff:-8.3, prodTier:'Weak', longevity:0, longTier:'Average', value:51875, picks:'3 • 5,161', picksValue:5161, age:25.9 },
-  { rank:10, team:'Athanasios13', archetype:'STRIPPED REBUILDER', ppg:141.8, prodDiff:-12.8, prodTier:'Rebuild', longevity:-4, longTier:'Weak', value:52003, picks:'3 • 4,308', picksValue:4308, age:25.7 },
-];
+const VALUES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
+const PPG_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
 
-const archetypeOrder = {
-  'JUGGERNAUT':0,
-  'CONTENDER':1,
-  'YOUNG RISER':2,
-  'BALANCED CORE':3,
-  'TREADMILL':4,
-  'PICK-RICH REBUILDER':5,
-  'REBUILDING':6,
-  'STRIPPED REBUILDER':7
+const params = new URLSearchParams(location.search);
+const LEAGUE_ID = params.get('league_id') || '1313454100225990656';
+
+const fmt = new Intl.NumberFormat('en-US');
+const rankBg = (rank, total) => {
+  if(rank===1) return '#00e676';
+  if(rank<=3) return '#009653';
+  if(rank<=6) return '#c4a000';
+  if(rank<=8) return '#ff8c00';
+  return '#e53935';
+};
+const tierInfo = (rank, total) => {
+  const pct = rank/total;
+  if(pct<=0.2) return {label:'CONTENDER', cls:'bg-amber-500/15 text-amber-300 border-amber-500/30'};
+  if(pct<=0.5) return {label:'FRISKY', cls:'bg-orange-500/15 text-orange-300 border-orange-500/30'};
+  if(pct<=0.8) return {label:'MID', cls:'bg-slate-500/15 text-slate-300 border-slate-500/30'};
+  return {label:'REBUILD', cls:'bg-rose-500/15 text-rose-300 border-rose-500/30'};
 };
 
-const archetypeStyles = {
-  'JUGGERNAUT':'bg-amber-400/15 text-amber-200 border-amber-400/30',
-  'CONTENDER':'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  'YOUNG RISER':'bg-sky-400/15 text-sky-300 border-sky-400/30',
-  'BALANCED CORE':'bg-purple-400/15 text-purple-300 border-purple-400/30',
-  'TREADMILL':'bg-orange-400/15 text-orange-300 border-orange-400/30',
-  'PICK-RICH REBUILDER':'bg-cyan-400/15 text-cyan-300 border-cyan-400/30',
-  'REBUILDING':'bg-rose-400/15 text-rose-300 border-rose-400/30',
-  'STRIPPED REBUILDER':'bg-slate-400/15 text-slate-300 border-slate-400/30',
-};
-
-let state = {
-  filter:'all',
-  search:'',
-  sortKey:'rank',
-  sortDir:'asc'
-};
-
-const tbody = document.getElementById('tbody');
-const searchInput = document.getElementById('search');
-const filterTabs = document.querySelectorAll('.filter-tab');
-const sortBtns = document.querySelectorAll('.sort-btn');
-
-function formatNumber(n){ return n.toLocaleString('en-US'); }
-function formatPPG(n){ return n.toFixed(1); }
-function formatDiff(n){ return (n>0?'+':'') + n.toFixed(1); }
-function formatLong(n){ return (n>0?'+':'') + n + '%'; }
-function colorDiff(n){
-  if(n>0) return 'text-[#facc15]';
-  if(n<0) return 'text-[#f87171]';
-  return 'text-slate-400';
-}
-
-function getFiltered(){
-  let data = [...teams];
-  if(state.filter==='contenders'){
-    data = data.filter(t=>t.rank<=6);
-  }else if(state.filter==='rebuilders'){
-    data = data.filter(t=>t.rank>=7);
+function parseCSV(text){
+  const lines = text.replace(/\r/g,'').split('\n').filter(l=>l.trim());
+  if(!lines.length) return [];
+  const headers = splitCSVLine(lines[0]);
+  const out=[];
+  for(let i=1;i<lines.length;i++){
+    const vals = splitCSVLine(lines[i]);
+    if(vals.length===0) continue;
+    const obj={};
+    headers.forEach((h, idx)=> obj[h.trim()] = (vals[idx]||'').trim());
+    out.push(obj);
   }
-  if(state.search){
-    const q = state.search.toLowerCase();
-    data = data.filter(t=> t.team.toLowerCase().includes(q) || t.archetype.toLowerCase().includes(q));
+  return out;
+}
+function splitCSVLine(line){
+  const res=[]; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){ inQ=!inQ; continue; }
+    if(c===',' && !inQ){ res.push(cur); cur=''; continue; }
+    cur+=c;
   }
-  const key = state.sortKey;
-  data.sort((a,b)=>{
-    let av, bv;
-    switch(key){
-      case 'rank': av=a.rank; bv=b.rank; break;
-      case 'team': av=a.team.toLowerCase(); bv=b.team.toLowerCase(); break;
-      case 'archetype': av=archetypeOrder[a.archetype]; bv=archetypeOrder[b.archetype]; break;
-      case 'ppg': av=a.ppg; bv=b.ppg; break;
-      case 'prodDiff': av=a.prodDiff; bv=b.prodDiff; break;
-      case 'longevity': av=a.longevity; bv=b.longevity; break;
-      case 'value': av=a.value; bv=b.value; break;
-      case 'picks': av=a.picksValue; bv=b.picksValue; break;
-      case 'age': av=a.age; bv=b.age; break;
-      default: av=a.rank; bv=b.rank;
-    }
-    if(av < bv) return state.sortDir==='asc' ? -1 : 1;
-    if(av > bv) return state.sortDir==='asc' ? 1 : -1;
-    return 0;
-  });
-  return data;
+  res.push(cur);
+  return res;
 }
 
-function render(){
-  const data = getFiltered();
-  tbody.innerHTML = data.map(t=>`
-    <tr class="group hover:bg-white/[0.03] transition">
-      <td class="px-5 py-4 align-top">
-        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-sm font-semibold text-white">${t.rank}</span>
-      </td>
-      <td class="px-5 py-4 align-top">
-        <div class="font-semibold text-white leading-tight">${t.team}</div>
-        <div class="text-xs text-slate-400 mt-1">Prod: ${t.prodTier} • Long: ${t.longTier}</div>
-      </td>
-      <td class="px-5 py-4 align-top">
-        <span class="pill inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${archetypeStyles[t.archetype]}">${t.archetype}</span>
-      </td>
-      <td class="px-5 py-4 text-right align-top">
-        <span class="font-mono text-[15px] text-white">${formatPPG(t.ppg)}</span>
-      </td>
-      <td class="px-5 py-4 text-right align-top">
-        <span class="font-mono text-[15px] font-medium ${colorDiff(t.prodDiff)}">${formatDiff(t.prodDiff)}</span>
-      </td>
-      <td class="px-5 py-4 text-right align-top">
-        <span class="font-mono text-[15px] font-medium ${colorDiff(t.longevity)}">${formatLong(t.longevity)}</span>
-      </td>
-      <td class="px-5 py-4 text-right align-top">
-        <span class="font-mono text-[15px] text-slate-200">${formatNumber(t.value)}</span>
-      </td>
-      <td class="px-5 py-4 text-right align-top">
-        <span class="font-mono text-[14px] text-slate-300">${t.picks}</span>
-      </td>
-      <td class="px-5 py-4 text-right align-top">
-        <span class="font-mono text-[15px] text-slate-200">${t.age.toFixed(1)}</span>
-      </td>
-    </tr>
-  `).join('');
-}
+function avatarUrl(id){ return id ? `https://sleepercdn.com/avatars/thumbs/${id}` : `https://i.pravatar.cc/64?u=na` }
 
-searchInput.addEventListener('input', e=>{
-  state.search = e.target.value.trim();
-  render();
-});
+async function init(){
+  try{
+    const [league, users, rosters, valuesTxt, ppgTxt, traded] = await Promise.all([
+      fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}`).then(r=>r.json()),
+      fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/users`).then(r=>r.json()),
+      fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/rosters`).then(r=>r.json()),
+      fetch(VALUES_URL).then(r=>r.text()),
+      fetch(PPG_URL).then(r=>r.text()),
+      fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/traded_picks`).then(r=>r.json()).catch(()=>[])
+    ]);
 
-filterTabs.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    filterTabs.forEach(b=>{ b.classList.remove('bg-white/10','text-white'); b.classList.add('text-slate-400') });
-    btn.classList.add('bg-white/10','text-white');
-    btn.classList.remove('text-slate-400');
-    state.filter = btn.dataset.filter;
-    render();
-  });
-});
+    document.getElementById('leagueName').textContent = league.name || 'Dynasty League';
+    document.getElementById('leagueMeta').textContent = `${league.season} • ${rosters.length} teams • Superflex`;
 
-sortBtns.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const key = btn.dataset.key;
-    if(state.sortKey===key){
-      state.sortDir = state.sortDir==='asc' ? 'desc' : 'asc';
-    }else{
-      state.sortKey = key;
-      state.sortDir = key==='team' || key==='archetype' ? 'asc' : 'desc';
-      if(key==='rank') state.sortDir='asc';
-    }
-    sortBtns.forEach(b=>{
-      b.classList.remove('active','text-white');
-      b.querySelector('.arrow').classList.add('opacity-0');
+    const values = parseCSV(valuesTxt);
+    const ppg = parseCSV(ppgTxt);
+
+    const playerMap = new Map();
+    values.forEach(v=>{
+      const id = v.sleeper_id || v.player_id || v.id;
+      if(!id) return;
+      playerMap.set(id, {
+        id,
+        name: v.player || v.name || v.full_name || '',
+        pos: (v.pos || v.position || '').toUpperCase(),
+        team: v.team || v.nfl_team || '',
+        age: parseFloat(v.age) || null,
+        value: parseFloat(v.val_sf_ppr_tep05 || v.value || 0) || 0,
+      });
     });
-    btn.classList.add('active','text-white');
-    const arrow = btn.querySelector('.arrow');
-    arrow.classList.remove('opacity-0');
-    arrow.textContent = state.sortDir==='asc' ? '↑' : '↓';
-    render();
-  });
-});
+    ppg.forEach(p=>{
+      const id = p.sleeper_id || p.player_id || p.id;
+      if(!id || !playerMap.has(id)) return;
+      const pm = playerMap.get(id);
+      pm.ppg = parseFloat(p.Avg_PPR_0_5_TEP || p.Avg_PPR_0_5_TEP || p.avg || 0) || 0;
+    });
 
-document.getElementById('exportBtn').addEventListener('click', ()=>{
-  const data = getFiltered();
-  const headers = ['RANK','TEAM','ARCHETYPE','PPG','PROD DIFF','LONGEVITY','VALUE','PICKS','AGE','PROD TIER','LONG TIER'];
-  const rows = data.map(t=>[
-    t.rank,
-    `"${t.team.replace(/"/g,'""')}"`,
-    t.archetype,
-    t.ppg.toFixed(1),
-    (t.prodDiff>=0?'+':'')+t.prodDiff.toFixed(1),
-    (t.longevity>=0?'+':'')+t.longevity+'%',
-    t.value,
-    `"${t.picks}"`,
-    t.age.toFixed(1),
-    t.prodTier,
-    t.longTier
-  ].join(','));
-  const csv = [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], {type:'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'fantasy-tier-dashboard.csv';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-});
+    const userMap = new Map(users.map(u=>[u.user_id, u]));
+    const starterSlots = (league.roster_positions||[]).filter(p=>!['BN','TAXI','IR'].includes(p));
+    const starterCount = starterSlots.length || 10;
 
-// Dynamic league_id handling
-function setupVaultLinks(){
-  const params = new URLSearchParams(window.location.search);
-  let leagueId = params.get('league_id');
-  if(leagueId){
-    localStorage.setItem('vault_league_id', leagueId);
-  } else {
-    leagueId = localStorage.getItem('vault_league_id');
+    // Build picks ownership
+    const season = parseInt(league.season)||2025;
+    const years = [season, season+1, season+2];
+    const rounds = [1,2,3,4];
+    const picksByRoster = {};
+    rosters.forEach(r=> picksByRoster[r.roster_id]=[]);
+    years.forEach(y=> rounds.forEach(rnd=>{
+      rosters.forEach(r=>{
+        picksByRoster[r.roster_id].push({season:y, round:rnd, orig:r.roster_id});
+      });
+    }));
+    (traded||[]).forEach(tp=>{
+      const {season:s, round:r, roster_id:orig, owner_id:own} = tp;
+      if(!picksByRoster[orig] || !picksByRoster[own]) return;
+      const idx = picksByRoster[orig].findIndex(p=>p.season==s && p.round==r);
+      if(idx>=0){
+        const [pk]=picksByRoster[orig].splice(idx,1);
+        picksByRoster[own].push(pk);
+      }
+    });
+    const pickValue = (round)=> [0,5000,2200,900,350][round]||0;
+    const pickColor = (round)=> round===1?'text-emerald-400':round===2?'text-amber-400':round===3?'text-orange-400':'text-rose-400';
+
+    const teams = rosters.map(r=>{
+      const user = userMap.get(r.owner_id)||{};
+      const teamName = user.metadata?.team_name || user.display_name || `Team ${r.roster_id}`;
+      const ownerName = user.display_name || 'Unknown';
+      const playerIds = r.players||[];
+      const players = playerIds.map(pid=> playerMap.get(pid)).filter(Boolean);
+      const totalValue = players.reduce((s,p)=>s+p.value,0);
+      const sortedVals = [...players].sort((a,b)=>b.value-a.value);
+      const starterValue = sortedVals.slice(0,starterCount).reduce((s,p)=>s+p.value,0);
+      const ages = players.map(p=>p.age).filter(a=>a);
+      const avgAge = ages.length? (ages.reduce((a,b)=>a+b,0)/ages.length):null;
+      const posVals = {QB:0,RB:0,WR:0,TE:0};
+      players.forEach(p=>{ if(posVals[p.pos]!=null) posVals[p.pos]+=p.value; });
+      const picks = picksByRoster[r.roster_id]||[];
+      const draftCapital = picks.reduce((s,p)=>s+pickValue(p.round),0);
+      return {
+        roster_id:r.roster_id,
+        owner_id:r.owner_id,
+        teamName,
+        ownerName,
+        avatar:user.avatar,
+        players: players.sort((a,b)=>b.value-a.value),
+        totalValue,
+        starterValue,
+        avgAge,
+        posVals,
+        picks: picks.sort((a,b)=> a.season-b.season || a.round-b.round),
+        draftCapital,
+      };
+    });
+
+    // Ranks
+    const rankBy = (key, dir=-1)=> {
+      const sorted=[...teams].sort((a,b)=> dir*(a[key]-b[key]));
+      sorted.forEach((t,i)=> t[key+'Rank']=i+1);
+    };
+    rankBy('totalValue', -1);
+    rankBy('starterValue', -1);
+    rankBy('draftCapital', -1);
+    ['QB','RB','WR','TE'].forEach(pos=>{
+      const sorted=[...teams].sort((a,b)=> b.posVals[pos]-a.posVals[pos]);
+      sorted.forEach((t,i)=> t[pos+'Rank']=i+1);
+    });
+
+    teams.forEach(t=>{
+      t.overallRank = t.totalValueRank;
+      t.contender = tierInfo(t.overallRank, teams.length);
+      // needs: lowest pos relative to avg
+      const avgPos = {};
+      ['QB','RB','WR','TE'].forEach(p=> avgPos[p]= teams.reduce((s,x)=>s+x.posVals[p],0)/teams.length);
+      const needScores = ['QB','RB','WR','TE'].map(p=>({p, score: t.posVals[p]/(avgPos[p]||1)}));
+      needScores.sort((a,b)=>a.score-b.score);
+      t.needs = needScores.slice(0,2).map(n=>n.p);
+    });
+
+    teams.sort((a,b)=> a.overallRank-b.overallRank);
+
+    render(teams);
+    document.getElementById('loading').remove();
+
+    document.getElementById('playerSearch').addEventListener('input', e=>{
+      const q = e.target.value.toLowerCase().trim();
+      if(!q){ render(teams); return; }
+      const filtered = teams.filter(t=> t.teamName.toLowerCase().includes(q) || t.ownerName.toLowerCase().includes(q) || t.players.some(p=>p.name.toLowerCase().includes(q)));
+      render(filtered, q);
+    });
+
+  }catch(err){
+    console.error(err);
+    document.getElementById('loading').innerHTML = `<div class="text-rose-400">Failed to load league data. ${err.message}</div>`;
   }
-
-  const loginUrl = 'https://jacobpalmer60-coder.github.io/thevault/';
-  const appBase = 'https://jacobpalmer60-coder.github.io/thevault/app.html';
-  const rankingsBase = 'https://jacobpalmer60-coder.github.io/thevault/player_rankings.html';
-  const tradeBase = 'https://jacobpalmer60-coder.github.io/thevault/trade.html';
-
-  const hasId = !!leagueId;
-  const overviewUrl = hasId ? `${appBase}?league_id=${leagueId}` : loginUrl;
-  const rankingsUrl = hasId ? `${rankingsBase}?league_id=${leagueId}` : loginUrl;
-  const tradeUrl = hasId ? `${tradeBase}?league_id=${leagueId}` : loginUrl;
-
-  document.getElementById('nav-login').href = loginUrl;
-  document.getElementById('nav-overview').href = overviewUrl;
-  document.getElementById('nav-rankings').href = rankingsUrl;
-  document.getElementById('nav-trade').href = tradeUrl;
-  document.getElementById('footer-roster').href = hasId ? `${appBase}?league_id=${leagueId}` : appBase;
 }
-setupVaultLinks();
 
-render();
+function render(teams, highlight=''){
+  const container = document.getElementById('teamsContainer');
+  container.innerHTML='';
+  const hl = highlight.toLowerCase();
+  teams.forEach(t=>{
+    const tier = t.contender;
+    const row = document.createElement('div');
+    row.className='group';
+    row.innerHTML=`
+      <div class="grid grid-cols-vault items-center px-5 py-4 hover:bg-[#141824] cursor-pointer transition" data-toggle>
+        <div class="flex items-center gap-3 min-w-0">
+          <img src="${avatarUrl(t.avatar)}" class="w-10 h-10 rounded-full border-[#2a3040] object-cover"/>
+          <div class="min-w-0">
+            <div class="font-semibold text-[15px] leading-tight truncate text-white">${escapeHtml(t.teamName)}</div>
+            <div class="text-xs text-gray-500 truncate">${escapeHtml(t.ownerName)}</div>
+          </div>
+        </div>
+        <div>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-[11px] font-bold border ${tier.cls}">${tier.label}</span>
+        </div>
+        ${['overallRank','starterValueRank','QBRank','RBRank','WRRank','TERank','draftCapitalRank'].map(k=>{
+          const rank = t[k];
+          const bg = rankBg(rank, teams.length);
+          return `<div><span class="inline-flex items-center justify-center min-w-[36px] px-2 py-1 rounded-lg text-xs font-bold" style="background:${bg};color:#000">${rank}</span></div>`;
+        }).join('')}
+      </div>
+      <div class="hidden border-t border-[#1b1f2a] bg-[#0c0e14]" data-expanded>
+        <div class="grid grid-cols-12 gap-6 p-6">
+          <!-- Left Sidebar -->
+          <div class="col-span-12 lg:col-span-3 space-y-5">
+            ${sidebarBlock('Overall Rank', `<div class="text-2xl font-extrabold">${t.overallRank}</div><div class="text-xs text-gray-500">${fmt.format(Math.round(t.totalValue))} value</div>`)}
+            ${sidebarBlock('Starter Rank', `<div class="text-2xl font-extrabold">${t.starterValueRank}</div><div class="text-xs text-gray-500">${fmt.format(Math.round(t.starterValue))} value</div>`)}
+            ${sidebarBlock('Avg Age', `<div class="text-2xl font-extrabold">${t.avgAge? t.avgAge.toFixed(1):'-'}</div>`)}
+            ${sidebarBlock('Team Needs', `<div class="flex gap-2">${t.needs.map(n=>`<span class="px-2 py-0.5 rounded-md bg-[#1a1f2b] text-xs font-semibold">${n}</span>`).join('')}</div>`)}
+            ${sidebarBlock('Picks', `<div class="space-y-1.5 max-h-[160px] overflow-auto pr-1">${t.picks.slice(0,12).map(p=>`<div class="flex justify-between text-xs"><span class="text-gray-400">${p.season} • Round ${p.round}</span><span class="${p.round===1?'text-emerald-400':'text-gray-300'}">${fmt.format(pickValue(p.round))}</span></div>`).join('')||'<div class="text-xs text-gray-600">No picks</div>'}</div>`)}
+            ${sidebarBlock('Useful Links', `<div class="space-y-1 text-xs text-indigo-400"><a href="#" class="block hover:underline">View on Sleeper</a><a href="#" class="block hover:underline">Trade Calculator</a></div>`)}
+          </div>
+          <!-- Position Columns -->
+          <div class="col-span-12 lg:col-span-9">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+              ${['QB','RB','WR','TE'].map(pos=>{
+                const pls = t.players.filter(p=>p.pos===pos).slice(0,10);
+                return `
+                <div>
+                  <h4 class="text-[13px] font-bold tracking-wide text-gray-300 mb-3 uppercase">${pos}</h4>
+                  <div class="space-y-2.5">
+                    ${pls.map(p=>{
+                      const isHi = hl && p.name.toLowerCase().includes(hl);
+                      return `
+                      <div class="flex items-start gap-2 group/player ${isHi?'bg-indigo-500/10 rounded-lg p-1 -m-1 ring-1 ring-indigo-500/30':''}">
+                        <svg class="w-3.5 h-3.5 mt-0.5 text-amber-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        <div class="min-w-0 flex-1">
+                          <div class="flex items-baseline justify-between gap-2">
+                            <span class="text-[13px] font-medium text-gray-200 truncate">${escapeHtml(p.name)}</span>
+                            <span class="text-[12px] font-semibold text-white">${fmt.format(Math.round(p.value))}</span>
+                          </div>
+                          <div class="text-[11px] text-gray-500">${p.team||'FA'} • ${p.age? p.age.toFixed(1)+'y':'-'} ${p.ppg? '• '+p.ppg.toFixed(1)+' ppg':''}</div>
+                        </div>
+                      </div>`;
+                    }).join('') || '<div class="text-xs text-gray-600">No players</div>'}
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    container.appendChild(row);
+  });
+
+  // toggle handlers
+  container.querySelectorAll('[data-toggle]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const exp = el.nextElementSibling;
+      const isOpen = !exp.classList.contains('hidden');
+      container.querySelectorAll('[data-expanded]').forEach(d=>d.classList.add('hidden'));
+      if(!isOpen) exp.classList.remove('hidden');
+    });
+  });
+}
+
+function sidebarBlock(title, inner){
+  return `<div>
+    <div class="text-[11px] uppercase tracking-wider font-semibold text-gray-500 mb-1.5">${title}</div>
+    <div class="bg-[#11131b] border border-[#1e2430] rounded-xl p-3">${inner}</div>
+  </div>`;
+}
+function pickValue(round){ return [0,5000,2200,900,350][round]||0; }
+function escapeHtml(s){ return s.replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+init();
 </script>
 <script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
 </body>
