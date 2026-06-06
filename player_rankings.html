@@ -1,494 +1,428 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dynasty Fantasy Football Vault • Superflex 0.5 TEP</title>
+<title>Dynasty Fantasy Football Vault</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root { color-scheme: dark; }
-* { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-.mono { font-family: 'JetBrains Mono', monospace; }
-.glass {
-  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  border: 1px solid rgba(255,255,255,.10);
-}
-.glass-strong {
-  background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 1px solid rgba(255,255,255,.14);
-}
-.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
-.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 999px; }
-.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.18); }
-.pos-pill { font-size: 11px; font-weight: 700; letter-spacing: .04em; }
-.tier-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
-.shimmer {
-  position: relative; overflow: hidden;
-}
-.shimmer::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
-  transform: translateX(-100%); animation: shimmer 2s infinite;
-}
-@keyframes shimmer { 100% { transform: translateX(100%); } }
-table thead th { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); }
+  :root { color-scheme: dark; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.10);
+  }
+  .glass-strong {
+    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.06));
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.14);
+  }
+  .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 9999px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+  th.sortable { user-select: none; }
+  th.sortable:hover { background: rgba(255,255,255,0.04); }
+  tbody tr:hover { background: rgba(255,255,255,0.04); }
+  .pos-pill { font-weight: 600; letter-spacing: 0.02em; }
+  .pos-QB { background: rgba(168,85,247,0.18); color: rgb(216,180,254); border-color: rgba(168,85,247,0.35); }
+  .pos-RB { background: rgba(34,197,94,0.18); color: rgb(134,239,172); border-color: rgba(34,197,94,0.35); }
+  .pos-WR { background: rgba(59,130,246,0.18); color: rgb(147,197,253); border-color: rgba(59,130,246,0.35); }
+  .pos-TE { background: rgba(245,158,11,0.18); color: rgb(253,224,71); border-color: rgba(245,158,11,0.35); }
+  .tier-badge { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 1s linear infinite; }
 </style>
 </head>
-<body class="min-h-screen bg-[#020617] text-slate-100 antialiased selection:bg-violet-500/30">
-<div class="fixed inset-0 -z-10">
-  <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(124,58,237,.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(56,189,248,.20),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(236,72,153,.18),transparent_50%),#020617]"></div>
-  <div class="absolute inset-0 opacity-[0.03] mix-blend-soft-light" style="background-image:repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 24px),repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 24px)"></div>
-</div>
-
-<main class="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-10">
-  <!-- Header -->
-  <header class="glass-strong rounded-[20px] p-5 md:p-7 mb-6 shadow-2xl shadow-black/40">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-      <div class="min-w-0">
-        <div class="flex items-center gap-3 mb-2">
-          <div class="size-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L20 7v10l-8 5-8-5V7z"/><path d="M12 22V12"/><path d="M20 7L12 12 4 7"/></svg>
-          </div>
-          <h1 class="text-[22px] md:text-[28px] font-bold tracking-tight">Dynasty Fantasy Football Vault</h1>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="px-2.5 py-1 rounded-full bg-violet-500/20 text-violet-200 border border-violet-500/30 text-xs font-semibold tracking-wide">SUPERFLEX</span>
-          <span class="px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-500/30 text-xs font-semibold tracking-wide">0.5 TEP</span>
-          <span id="leagueMeta" class="px-2.5 py-1 rounded-full bg-white/10 text-slate-300 border border-white/10 text-xs font-medium">Loading league…</span>
-        </div>
-      <div class="flex items-center gap-2">
-        <button id="copyLinkBtn" class="group inline-flex items-center gap-2 px-4 h-11 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-sm font-medium transition active:scale-[.98]">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          Copy Link
-          <span class="text-slate-400 group-hover:text-slate-200 transition">⌘C</span>
-        </button>
-        <button id="refreshBtn" class="inline-flex items-center gap-2 px-4 h-11 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-sm font-semibold shadow-lg shadow-violet-600/30 transition active:scale-[.98]">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M21 21v-5h-5"/></svg>
-          Refresh
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <div class="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-6 items-start">
-    <!-- Main Table Card -->
-    <section class="glass rounded-[20px] shadow-2xl shadow-black/40 overflow-hidden">
-      <!-- Controls -->
-      <div class="border-b border-white/10 p-4 md:p-5 flex flex-col md:flex-row gap-4 md:items-center md:justify-between bg-white/[0.02]">
-        <div class="flex items-center gap-2">
-          <div class="relative">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input id="searchInput" type="search" placeholder="Search player, team…" class="w-[260px] h-10 pl-9 pr-3 rounded-xl bg-[#0B1220] border border-white/10 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition" />
-          </div>
-          <div id="posFilters" class="flex items-center gap-1 p-1 rounded-xl bg-[#0B1220] border border-white/10">
-            <!-- buttons injected -->
-          </div>
-        </div>
-        <div class="flex items-center gap-3 text-xs text-slate-400">
-          <div class="hidden sm:flex items-center gap-2">
-            <span class="size-2 rounded-full bg-emerald-500"></span>
-            <span class="mono" id="countLabel">— players</span>
-          </div>
-          <div class="h-4 w-px bg-white/10 hidden sm:block"></div>
-          <div class="mono">TIER GAP 600</div>
-        </div>
-      </div>
-
-      <!-- Table -->
-      <div class="max-h-[72vh] overflow-auto scrollbar-thin">
-        <table class="w-full text-sm">
-          <thead class="bg-[#070e1a]/90">
-            <tr class="text-[11px] uppercase tracking-wider text-slate-400 border-b border-white/10">
-              <th class="text-right pr-3 py-3 font-semibold w-[56px]">#</th>
-              <th class="text-left py-3 font-semibold">Player</th>
-              <th class="text-left py-3 font-semibold w-[70px]">Pos</th>
-              <th class="text-left py-3 font-semibold w-[70px]">Team</th>
-              <th class="text-right py-3 font-semibold w-[70px]">Age</th>
-              <th class="text-right py-3 font-semibold w-[110px]">Value</th>
-              <th class="text-right py-3 font-semibold w-[90px]">PPG</th>
-              <th class="text-center py-3 font-semibold w-[80px]">Tier</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody" class="divide-y divide-white/[0.04]">
-            <!-- rows -->
-          </tbody>
-        </table>
-        <div id="emptyState" class="hidden py-24 text-center">
-          <div class="inline-flex size-14 rounded-2xl bg-white/5 items-center justify-center mb-4">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          </div>
-          <p class="text-slate-300 font-medium">No players match your filters</p>
-          <p class="text-slate-500 text-sm mt-1">Try clearing search or changing position</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- Side Panel -->
-    <aside class="space-y-6">
-      <!-- Status Log -->
-      <div class="glass rounded-[20px] p-5 shadow-xl shadow-black/30">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="font-semibold tracking-tight flex items-center gap-2">
-            <span class="size-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Status Log
-          </h2>
-          <span class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Live</span>
-        </div>
-        <div id="statusLog" class="h-[220px] overflow-auto scrollbar-thin pr-2 space-y-1.5 text-[12.5px] leading-relaxed font-medium"></div>
-      </div>
-
-      <!-- Info Cards -->
-      <div class="grid grid-cols-2 gap-3">
-        <div class="glass rounded-2xl p-4">
-          <div class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-1">Data Source</div>
-          <div class="text-sm font-semibold text-slate-200">Google Sheets</div>
-          <div class="text-xs text-slate-500 mt-0.5">Direct fetch, no proxy</div>
-        </div>
-        <div class="glass rounded-2xl p-4">
-          <div class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-1">Scoring</div>
-          <div class="text-sm font-semibold text-slate-200">SF PPR</div>
-          <div class="text-xs text-slate-500 mt-0.5">0.5 TE Premium</div>
-        </div>
-        <div class="glass rounded-2xl p-4">
-          <div class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-1">Players</div>
-          <div id="statPlayers" class="text-2xl font-bold mono text-white">—</div>
-        </div>
-        <div class="glass rounded-2xl p-4">
-          <div class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-1">PPG Match</div>
-          <div id="statPpg" class="text-2xl font-bold mono text-white">—</div>
-        </div>
-      </div>
-
-      <!-- Legend -->
-      <div class="glass rounded-[20px] p-5">
-        <h3 class="font-semibold mb-3">Tier Legend</h3>
-        <div class="space-y-2 text-sm">
-          <div class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="tier-dot bg-violet-400"></span>Tier 1</span><span class="mono text-slate-400">Elite</span></div>
-          <div class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="tier-dot bg-cyan-400"></span>Tier 2-3</span><span class="mono text-slate-400">Core</span></div>
-          <div class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="tier-dot bg-emerald-400"></span>Tier 4-6</span><span class="mono text-slate-400">Starter</span></div>
-          <div class="flex items-center justify-between"><span class="flex items-center gap-2"><span class="tier-dot bg-amber-400"></span>Tier 7+</span><span class="mono text-slate-400">Depth</span></div>
-        </div>
-      </div>
-    </aside>
+<body class="min-h-screen bg-[#020617] text-slate-100 antialiased">
+  <div class="fixed inset-0 -z-10">
+    <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(56,189,248,0.15),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(168,85,247,0.12),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(34,197,94,0.10),transparent_50%),#020617]"></div>
+    <div class="absolute inset-0 opacity-[0.04] mix-blend-soft-light" style="background-image:repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 24px),repeating-linear-gradient(90deg, #fff 0 1px, transparent 1px 24px)"></div>
   </div>
 
-  <footer class="mt-10 text-center text-xs text-slate-600">
-    Built for dynasty grinders • Values from SF PPR 0.5 TEP • PPG merged by normalized name
-  </footer>
-</main>
+  <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <!-- Header -->
+    <header class="glass-strong rounded-3xl p-6 sm:p-8 mb-6">
+      <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-400 to-violet-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Dynasty Fantasy Football Vault</h1>
+          </div>
+          <p class="text-slate-300 text-sm sm:text-base max-w-2xl">SF • PPR • TEP 0.5. Values merged with 2024 PPG. Sortable, searchable, live from Google Sheets.</p>
+          
+          <div class="mt-4 flex flex-wrap items-center gap-3 text-xs">
+            <div id="leaguePill" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="mono text-slate-300" id="leagueName">Loading league…</span>
+            </div>
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/></svg>
+              <span class="mono text-slate-300" id="playerCount">— players</span>
+            </div>
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+              <span class="mono text-slate-300" id="lastUpdated">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Log -->
+        <div class="lg:w-[380px] w-full">
+          <div class="glass rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Status Log</h3>
+              <span id="statusDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            </div>
+            <div id="statusLog" class="mono text-[11px] leading-relaxed text-slate-300 h-[88px] overflow-y-auto scrollbar-thin pr-2"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Controls -->
+    <div class="glass rounded-3xl p-4 sm:p-5 mb-6 sticky top-4 z-30 shadow-2xl shadow-black/30">
+      <div class="flex flex-col lg:flex-row gap-4 lg:items-center">
+        <!-- Search -->
+        <div class="relative flex-1">
+          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="searchInput" type="text" placeholder="Search players..." class="w-full pl-10 pr-4 h-11 rounded-xl bg-black/30 border border-white/10 focus:border-cyan-400/50 focus:ring-4 focus:ring-cyan-400/10 outline-none text-sm placeholder-slate-500 transition" />
+        </div>
+
+        <!-- Position Filters -->
+        <div class="flex items-center gap-1.5 p-1 rounded-xl bg-black/30 border border-white/10">
+          <button data-pos="ALL" class="pos-btn px-3.5 h-9 rounded-lg text-xs font-semibold transition bg-white/10 text-white">ALL</button>
+          <button data-pos="QB" class="pos-btn px-3.5 h-9 rounded-lg text-xs font-semibold transition text-slate-300 hover:bg-white/5">QB</button>
+          <button data-pos="RB" class="pos-btn px-3.5 h-9 rounded-lg text-xs font-semibold transition text-slate-300 hover:bg-white/5">RB</button>
+          <button data-pos="WR" class="pos-btn px-3.5 h-9 rounded-lg text-xs font-semibold transition text-slate-300 hover:bg-white/5">WR</button>
+          <button data-pos="TE" class="pos-btn px-3.5 h-9 rounded-lg text-xs font-semibold transition text-slate-300 hover:bg-white/5">TE</button>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2">
+          <button id="refreshBtn" class="inline-flex items-center gap-2 px-3.5 h-11 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="glass-strong rounded-3xl overflow-hidden">
+      <div class="overflow-x-auto scrollbar-thin">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 z-20 bg-[#0b1220]/90 backdrop-blur-xl border-b border-white/10">
+            <tr class="text-[11px] uppercase tracking-wider text-slate-400">
+              <th class="sortable text-left px-4 sm:px-6 py-3 font-semibold cursor-pointer select-none w-[70px]" data-key="#"># <span class="sort-indicator ml-1 opacity-60"></span></th>
+              <th class="sortable text-left px-4 py-3 font-semibold cursor-pointer select-none min-w-[200px]" data-key="Player">Player <span class="sort-indicator ml-1 opacity-60"></span></th>
+              <th class="sortable text-left px-4 py-3 font-semibold cursor-pointer select-none w-[80px]" data-key="Pos">Pos <span class="sort-indicator ml-1 opacity-60"></span></th>
+              <th class="sortable text-left px-4 py-3 font-semibold cursor-pointer select-none w-[80px]" data-key="Team">Team <span class="sort-indicator ml-1 opacity-60"></span></th>
+              <th class="sortable text-right px-4 py-3 font-semibold cursor-pointer select-none w-[80px]" data-key="Age">Age <span class="sort-indicator ml-1 opacity-60"></span></th>
+              <th class="sortable text-right px-4 py-3 font-semibold cursor-pointer select-none w-[110px]" data-key="Value">Value <span class="sort-indicator ml-1 opacity-60"></span></th>
+              <th class="sortable text-right px-4 py-3 font-semibold cursor-pointer select-none w-[100px]" data-key="PPG">PPG <span class="sort-indicator ml-1 opacity-60"></span></th>
+              <th class="sortable text-right px-4 sm:px-6 py-3 font-semibold cursor-pointer select-none w-[90px]" data-key="Tier">Tier <span class="sort-indicator ml-1 opacity-60"></span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-white/[0.06]">
+            <tr>
+              <td colspan="8" class="px-6 py-20 text-center">
+                <div class="inline-flex flex-col items-center gap-3">
+                  <svg class="spin text-cyan-400" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                  <p class="text-slate-400 text-sm">Loading vault data...</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 text-center text-xs text-slate-500 mono">
+      Dynasty Vault • SF PPR TEP 0.5 • Data from Google Sheets • <span id="footerLeague"></span>
+    </footer>
+  </div>
 
 <script>
-const VALUES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
-const PPG_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
+(() => {
+  const VALUES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
+  const PPG_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
 
-const state = {
-  leagueId: new URLSearchParams(location.search).get('league_id') || '1313454100225990656',
-  rawValues: [],
-  ppgMap: new Map(),
-  players: [],
-  filtered: [],
-  posFilter: 'ALL',
-  search: '',
-  tierGap: 600,
-  valueKey: 'val_sf_ppr_tep05',
-  logs: [],
-};
-
-const $ = sel => document.querySelector(sel);
-const statusLogEl = $('#statusLog');
-const tableBody = $('#tableBody');
-const countLabel = $('#countLabel');
-const statPlayers = $('#statPlayers');
-const statPpg = $('#statPpg');
-const leagueMeta = $('#leagueMeta');
-const emptyState = $('#emptyState');
-
-function log(msg, type='info') {
-  const time = new Date().toLocaleTimeString();
-  const colors = {
-    info: 'text-slate-300',
-    ok: 'text-emerald-400',
-    warn: 'text-amber-400',
-    err: 'text-rose-400'
+  const state = {
+    raw: [],
+    filtered: [],
+    sortKey: 'Value',
+    sortDir: 'desc',
+    posFilter: 'ALL',
+    search: '',
+    leagueId: new URLSearchParams(location.search).get('league_id') || '1313454100225990656'
   };
-  const line = document.createElement('div');
-  line.className = `flex gap-2 ${colors[type]||colors.info}`;
-  line.innerHTML = `<span class="mono text-[10px] text-slate-600 mt-[2px]">${time}</span><span>${msg}</span>`;
-  statusLogEl.appendChild(line);
-  statusLogEl.scrollTop = statusLogEl.scrollHeight;
-}
 
-function normalizeName(s) {
-  return (s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
-}
+  const els = {
+    log: document.getElementById('statusLog'),
+    dot: document.getElementById('statusDot'),
+    body: document.getElementById('tableBody'),
+    search: document.getElementById('searchInput'),
+    posBtns: [...document.querySelectorAll('.pos-btn')],
+    leagueName: document.getElementById('leagueName'),
+    playerCount: document.getElementById('playerCount'),
+    lastUpdated: document.getElementById('lastUpdated'),
+    footerLeague: document.getElementById('footerLeague'),
+    refreshBtn: document.getElementById('refreshBtn')
+  };
 
-// CSV parser
-function splitCsvLine(line) {
-  const out = [];
-  let cur = '', inQ = false;
-  for (let i=0;i<line.length;i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
-      else inQ = !inQ;
-    } else if (ch === ',' && !inQ) {
-      out.push(cur); cur = '';
-    } else {
-      cur += ch;
-    }
+  const POS_ORDER = { QB:0, RB:1, WR:2, TE:3 };
+
+  function log(msg, type='info') {
+    const time = new Date().toLocaleTimeString();
+    const color = type==='error' ? 'text-red-400' : type==='success' ? 'text-emerald-400' : 'text-slate-300';
+    els.log.insertAdjacentHTML('beforeend', `<div class="${color}">[${time}] ${msg}</div>`);
+    els.log.scrollTop = els.log.scrollHeight;
   }
-  out.push(cur);
-  return out.map(v => v.replace(/^"|"$/g,'').trim());
-}
 
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  if (!lines.length) return [];
-  const header = splitCsvLine(lines[0]);
-  const rows = [];
-  for (let i=1;i<lines.length;i++) {
-    if (!lines[i].trim()) continue;
-    const cols = splitCsvLine(lines[i]);
-    if (cols.length < header.length) continue;
-    const obj = {};
-    header.forEach((h,idx)=> obj[h.trim()] = cols[idx] ?? '');
-    rows.push(obj);
+  function setStatus(ok) {
+    els.dot.className = `w-2 h-2 rounded-full ${ok ? 'bg-emerald-400' : 'bg-amber-400'}`;
   }
-  return rows;
-}
 
-function preprocessPPG(csvText) {
-  const lines = csvText.split(/\r?\n/);
-  const out = [];
-  for (let i=0;i<lines.length;i++) {
-    let line = lines[i];
-    if (!line.trim()) continue;
-    // count commas
-    const commas = (line.match(/,/g)||[]).length;
-    // heuristic: header has many commas, data rows should have >=10
-    if (commas < 10 && i+1 < lines.length) {
-      // merge with next line adding space between potential split name
-      line = line.trimEnd() + ' ' + lines[i+1].trimStart();
-      i++;
-    }
-    out.push(line);
-  }
-  return out.join('\n');
-}
+  const normalizeName = (s='') => s.toLowerCase().replace(/\./g,'').replace(/'/g,'').replace(/[^a-z0-9]/g,'').replace(/(jr|sr|ii|iii|iv|v)$/,'').trim();
 
-async function fetchText(url, label) {
-  log(`Fetching ${label}…`);
-  try {
+  async function fetchText(url) {
     const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    const txt = await res.text();
-    log(`${label} fetched (${(txt.length/1024).toFixed(1)} KB)`, 'ok');
-    return txt;
-  } catch (e) {
-    log(`${label} failed: ${e.message}`, 'err');
-    throw e;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.text();
   }
-}
 
-async function loadLeague() {
-  const id = state.leagueId;
-  try {
-    const res = await fetch(`https://api.sleeper.app/v1/league/${id}`);
-    if (!res.ok) throw new Error('League not found');
-    const data = await res.json();
-    leagueMeta.textContent = `${data.name} • ${data.total_rosters} teams • ${data.season}`;
-    log(`League loaded: ${data.name}`, 'ok');
-  } catch(e) {
-    leagueMeta.textContent = `League ${id.slice(0,8)}… • load failed`;
-    log(`League fetch failed: ${e.message}`, 'warn');
+  function parseCsv(text) {
+    // Papa handles quoted newlines = line-merge fix for split names
+    const parsed = Papa.parse(text, { header:true, skipEmptyLines:true, dynamicTyping:false });
+    return parsed.data;
   }
-}
 
-async function loadData() {
-  state.logs = [];
-  statusLogEl.innerHTML = '';
-  log('Initializing vault...');
-  await loadLeague();
-
-  // Values
-  const valuesTxt = await fetchText(VALUES_URL, 'Values CSV');
-  const valuesRows = parseCSV(valuesTxt);
-  state.rawValues = valuesRows.filter(r => r.sleeper_id && r.name);
-  log(`Parsed ${state.rawValues.length} value rows`, 'ok');
-
-  // PPG
-  const ppgRawTxt = await fetchText(PPG_URL, 'PPG CSV');
-  const ppgCleanTxt = preprocessPPG(ppgRawTxt);
-  const ppgRows = parseCSV(ppgCleanTxt);
-  log(`Parsed ${ppgRows.length} PPG rows after cleaning`, 'ok');
-
-  // Build PPG map
-  state.ppgMap.clear();
-  const ppgCol = Object.keys(ppgRows[0]||{}).find(k => k.toLowerCase().replace(/[^a-z0-9]/g,'') === 'avgppr05tep' || k.toLowerCase().includes('avg_ppr_0.5_tep') || k.toLowerCase().includes('avg_ppr'));
-  const nameCol = Object.keys(ppgRows[0]||{}).find(k => k.toLowerCase().includes('player') || k.toLowerCase().includes('name')) || Object.keys(ppgRows[0]||{})[0];
-  let matches = 0;
-  ppgRows.forEach(r => {
-    const name = r[nameCol];
-    const val = parseFloat((r[ppgCol]||'').replace(/,/g,''));
-    if (name && !isNaN(val)) {
-      state.ppgMap.set(normalizeName(name), val);
+  async function loadLeague() {
+    try {
+      log(`Loading Sleeper league ${state.leagueId}…`);
+      const res = await fetch(`https://api.sleeper.app/v1/league/${state.leagueId}`);
+      if (!res.ok) throw new Error('League fetch failed');
+      const league = await res.json();
+      els.leagueName.textContent = `${league.name} • ${league.season} • ${league.total_rosters} teams`;
+      els.footerLeague.textContent = league.name;
+      log(`League loaded: ${league.name}`, 'success');
+    } catch (e) {
+      els.leagueName.textContent = `League ${state.leagueId}`;
+      log(`League load failed: ${e.message}`, 'error');
     }
-  });
-  log(`PPG column detected: "${ppgCol}" • Name column: "${nameCol}"`, 'info');
+  }
 
-  // Merge
-  const players = state.rawValues.map(r => {
-    const value = parseFloat((r[state.valueKey]||'0').replace(/,/g,'')) || 0;
-    const norm = normalizeName(r.name);
-    const ppg = state.ppgMap.get(norm);
-    if (ppg != null) matches++;
-    return {
-      sleeper_id: r.sleeper_id,
-      name: r.name,
-      pos: r.pos,
-      team: r.team || 'FA',
-      age: r.age ? parseFloat(r.age).toFixed(1) : '—',
-      value,
-      ppg: ppg != null ? ppg : null,
-      norm
-    };
-  });
+  async function loadData() {
+    try {
+      setStatus(false);
+      log('Fetching Values CSV…');
+      const [valuesTxt, ppgTxt] = await Promise.all([
+        fetchText(VALUES_URL),
+        fetchText(PPG_URL)
+      ]);
+      log(`Values CSV ${valuesTxt.length.toLocaleString()} bytes`);
+      log(`PPG CSV ${ppgTxt.length.toLocaleString()} bytes`);
 
-  // Sort by value desc
-  players.sort((a,b) => b.value - a.value);
+      const valuesRows = parseCsv(valuesTxt);
+      const ppgRows = parseCsv(ppgTxt);
 
-  // Tiering
-  let tier = 1;
-  let lastVal = players[0]?.value ?? 0;
-  players.forEach((p,i) => {
-    if (i>0 && (lastVal - p.value) >= state.tierGap) {
-      tier++;
-      lastVal = p.value;
+      // Build PPG map
+      const ppgMap = new Map();
+      for (const r of ppgRows) {
+        const name = r.Player || r.player || r.NAME || '';
+        const key = normalizeName(name);
+        if (!key) continue;
+        const val = r.Avg_PPR_0_5_TEP || r['Avg_PPR_0.5_TEP'] || r.Avg_PPR_05_TEP || r['Avg PPR'] || r.PPG || '';
+        ppgMap.set(key, val);
+      }
+
+      // Build merged
+      const merged = [];
+      for (const r of valuesRows) {
+        const player = r.player || r.Player || r.name || '';
+        if (!player) continue;
+        const pos = (r.pos || r.Pos || r.position || '').toUpperCase();
+        const team = (r.team || r.Team || r.tm || '').toUpperCase();
+        const age = parseFloat(r.age || r.Age) || null;
+        const value = parseFloat(r.val_sf_ppr_tep05 || r.value || r.Value) || 0;
+        const tier = parseInt(r.tier || r.Tier) || null;
+
+        const key = normalizeName(player);
+        const ppgRaw = ppgMap.get(key) ?? '-';
+        const ppg = ppgRaw === '-' || ppgRaw === '' ? '-' : parseFloat(String(ppgRaw).replace(/,/g,''));
+        
+        merged.push({
+          Player: player,
+          Pos: pos,
+          Team: team,
+          Age: age,
+          Value: value,
+          PPG: isNaN(ppg) ? '-' : ppg,
+          Tier: tier
+        });
+      }
+
+      // Rank by value desc for # column baseline
+      merged.sort((a,b) => b.Value - a.Value);
+      merged.forEach((r,i)=> r._rank = i+1);
+
+      state.raw = merged;
+      els.playerCount.textContent = `${merged.length.toLocaleString()} players`;
+      els.lastUpdated.textContent = new Date().toLocaleString();
+      log(`Merged ${merged.length} players`, 'success');
+      setStatus(true);
+      applyFilters();
+    } catch (e) {
+      log(`Data load error: ${e.message}`, 'error');
+      els.body.innerHTML = `<tr><td colspan="8" class="px-6 py-16 text-center text-red-400">Failed to load data: ${e.message}</td></tr>`;
     }
-    p.tier = tier;
-    p.rank = i+1;
-  });
-
-  state.players = players;
-  state.filtered = players.slice();
-
-  statPlayers.textContent = players.length.toLocaleString();
-  statPpg.textContent = matches.toLocaleString();
-  log(`Merged PPG for ${matches} / ${players.length} players (${((matches/players.length)*100).toFixed(1)}%)`, matches? 'ok':'warn');
-  if (players[0]) log(`Top player: ${players[0].name} (${players[0].value.toLocaleString()})`, 'ok');
-
-  render();
-}
-
-function formatValue(v) {
-  return v.toLocaleString(undefined, { maximumFractionDigits:0 });
-}
-
-function posColor(pos) {
-  switch(pos) {
-    case 'QB': return 'bg-violet-500/20 text-violet-200 border-violet-500/30';
-    case 'RB': return 'bg-emerald-500/20 text-emerald-200 border-emerald-500/30';
-    case 'WR': return 'bg-cyan-500/20 text-cyan-200 border-cyan-500/30';
-    case 'TE': return 'bg-amber-500/20 text-amber-200 border-amber-500/30';
-    default: return 'bg-white/10 text-slate-300 border-white/10';
   }
-}
 
-function tierColor(t) {
-  if (t===1) return 'bg-violet-500';
-  if (t<=3) return 'bg-cyan-500';
-  if (t<=6) return 'bg-emerald-500';
-  return 'bg-amber-500';
-}
-
-function render() {
-  // filter
-  const q = state.search.trim().toLowerCase();
-  state.filtered = state.players.filter(p => {
-    if (state.posFilter !== 'ALL' && p.pos !== state.posFilter) return false;
-    if (!q) return true;
-    return p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q) || p.pos.toLowerCase().includes(q);
-  });
-
-  countLabel.textContent = `${state.filtered.length.toLocaleString()} players`;
-  emptyState.classList.toggle('hidden', state.filtered.length>0);
-  tableBody.innerHTML = '';
-
-  const frag = document.createDocumentFragment();
-  state.filtered.forEach(p => {
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-white/[0.03] transition';
-    tr.innerHTML = `
-      <td class="text-right pr-3 py-2.5 mono text-slate-500">${p.rank}</td>
-      <td class="py-2.5">
-        <div class="font-semibold text-slate-100 leading-tight">${p.name}</div>
-        <div class="text-[11px] text-slate-500 mono">${p.sleeper_id.slice(0,8)}…</div>
-      </td>
-      <td class="py-2.5"><span class="pos-pill px-2 py-0.5 rounded-md border ${posColor(p.pos)}">${p.pos}</span></td>
-      <td class="py-2.5 text-slate-300 font-medium">${p.team}</td>
-      <td class="py-2.5 text-right mono text-slate-400">${p.age}</td>
-      <td class="py-2.5 text-right mono font-semibold text-white">${formatValue(p.value)}</td>
-      <td class="py-2.5 text-right mono ${p.ppg!=null?'text-slate-200':'text-slate-600'}">${p.ppg!=null? p.ppg.toFixed(2) : '—'}</td>
-      <td class="py-2.5 text-center">
-        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
-          <span class="tier-dot ${tierColor(p.tier)}"></span>
-          <span class="mono text-xs font-bold text-slate-200">${p.tier}</span>
-        </span>
-      </td>
-    `;
-    frag.appendChild(tr);
-  });
-  tableBody.appendChild(frag);
-}
-
-// Position filters UI
-function initPosFilters() {
-  const posFilters = $('#posFilters');
-  const poses = ['ALL','QB','RB','WR','TE'];
-  posFilters.innerHTML = '';
-  poses.forEach(pos => {
-    const btn = document.createElement('button');
-    btn.textContent = pos;
-    btn.className = `px-3 h-8 rounded-lg text-xs font-semibold transition ${pos===state.posFilter?'bg-violet-600 text-white shadow':'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`;
-    btn.onclick = () => {
-      state.posFilter = pos;
-      initPosFilters();
-      render();
-    };
-    posFilters.appendChild(btn);
-  });
-}
-
-// Search
-$('#searchInput').addEventListener('input', e => {
-  state.search = e.target.value;
-  render();
-});
-
-// Copy link
-$('#copyLinkBtn').addEventListener('click', async () => {
-  const url = new URL(location.href);
-  url.searchParams.set('league_id', state.leagueId);
-  try {
-    await navigator.clipboard.writeText(url.toString());
-    log('Link copied to clipboard', 'ok');
-  } catch {
-    log('Clipboard permission denied', 'warn');
+  function applyFilters() {
+    const search = state.search.trim().toLowerCase();
+    const pos = state.posFilter;
+    let data = state.raw;
+    if (pos !== 'ALL') data = data.filter(r => r.Pos === pos);
+    if (search) data = data.filter(r => r.Player.toLowerCase().includes(search));
+    state.filtered = data;
+    sortAndRender();
   }
-});
 
-$('#refreshBtn').addEventListener('click', () => loadData());
+  function sortData() {
+    const key = state.sortKey;
+    const dir = state.sortDir === 'asc' ? 1 : -1;
+    const arr = [...state.filtered];
 
-initPosFilters();
-loadData().catch(e => log('Fatal error: '+e.message, 'err'));
+    arr.sort((a,b) => {
+      let av, bv;
+      switch(key) {
+        case '#': av = a._rank; bv = b._rank; break;
+        case 'Player': av = a.Player.toLowerCase(); bv = b.Player.toLowerCase(); return av.localeCompare(bv) * dir;
+        case 'Pos': 
+          av = POS_ORDER[a.Pos] ?? 99; bv = POS_ORDER[b.Pos] ?? 99;
+          if (av !== bv) return (av - bv) * dir;
+          av = a.Player.toLowerCase(); bv = b.Player.toLowerCase();
+          return av.localeCompare(bv) * dir;
+        case 'Team': av = a.Team; bv = b.Team; return av.localeCompare(bv) * dir;
+        case 'Age': av = a.Age ?? -1; bv = b.Age ?? -1; break;
+        case 'Value': av = a.Value; bv = b.Value; break;
+        case 'PPG': av = a.PPG === '-' ? -1 : a.PPG; bv = b.PPG === '-' ? -1 : b.PPG; break;
+        case 'Tier': av = a.Tier ?? 999; bv = b.Tier ?? 999; break;
+        default: av = 0; bv = 0;
+      }
+      return (av - bv) * dir;
+    });
+
+    state.filtered = arr;
+  }
+
+  function sortAndRender() {
+    sortData();
+    renderTable();
+    updateSortIndicators();
+  }
+
+  function renderTable() {
+    if (!state.filtered.length) {
+      els.body.innerHTML = `<tr><td colspan="8" class="px-6 py-16 text-center text-slate-500">No players match filters</td></tr>`;
+      return;
+    }
+    const rows = state.filtered.map((r,i) => {
+      const posClass = `pos-${r.Pos}`;
+      const valueFormatted = r.Value >= 1000 ? (r.Value/1000).toFixed(1)+'k' : Math.round(r.Value).toLocaleString();
+      const ppgFormatted = r.PPG === '-' ? '–' : Number(r.PPG).toFixed(1);
+      const age = r.Age ? r.Age.toFixed(1) : '–';
+      const tier = r.Tier ? `<span class="tier-badge px-2 py-0.5 rounded-md text-[11px] font-medium">${r.Tier}</span>` : '–';
+      return `
+      <tr class="transition">
+        <td class="px-4 sm:px-6 py-3 mono text-slate-400 text-xs">${i+1}</td>
+        <td class="px-4 py-3">
+          <div class="font-medium text-slate-100">${escapeHtml(r.Player)}</div>
+        </td>
+        <td class="px-4 py-3">
+          <span class="pos-pill inline-flex items-center px-2 py-0.5 rounded-md text-[11px] border ${posClass}">${r.Pos || '–'}</span>
+        </td>
+        <td class="px-4 py-3 mono text-slate-300 text-xs">${r.Team || 'FA'}</td>
+        <td class="px-4 py-3 text-right mono text-slate-300 text-xs">${age}</td>
+        <td class="px-4 py-3 text-right mono font-medium text-white">${valueFormatted}</td>
+        <td class="px-4 py-3 text-right mono ${r.PPG==='-'?'text-slate-600':'text-cyan-300'}">${ppgFormatted}</td>
+        <td class="px-4 sm:px-6 py-3 text-right">${tier}</td>
+      </tr>`;
+    }).join('');
+    els.body.innerHTML = rows;
+  }
+
+  function updateSortIndicators() {
+    document.querySelectorAll('th.sortable').forEach(th => {
+      const key = th.dataset.key;
+      const indicator = th.querySelector('.sort-indicator');
+      if (key === state.sortKey) {
+        indicator.textContent = state.sortDir === 'asc' ? '▲' : '▼';
+        indicator.classList.add('opacity-100');
+        th.classList.add('text-white');
+      } else {
+        indicator.textContent = '';
+        indicator.classList.remove('opacity-100');
+        th.classList.remove('text-white');
+      }
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // Events
+  els.search.addEventListener('input', e => {
+    state.search = e.target.value;
+    applyFilters();
+  });
+
+  els.posBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      els.posBtns.forEach(b => b.classList.remove('bg-white/10','text-white'));
+      btn.classList.add('bg-white/10','text-white');
+      state.posFilter = btn.dataset.pos;
+      applyFilters();
+    });
+  });
+
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (state.sortKey === key) {
+        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.sortKey = key;
+        // sensible defaults
+        state.sortDir = ['Player','Pos','Team'].includes(key) ? 'asc' : 'desc';
+      }
+      sortAndRender();
+    });
+  });
+
+  els.refreshBtn.addEventListener('click', () => {
+    loadData();
+  });
+
+  // Init
+  (async () => {
+    await loadLeague();
+    await loadData();
+  })();
+})();
 </script>
 <script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
 </body>
