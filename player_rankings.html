@@ -1,555 +1,520 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Dynasty Fantasy Football Vault</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0e14;
-    --bg-elev: #0f1520;
-    --glass: rgba(255, 255, 255, 0.06);
-    --glass-2: rgba(255, 255, 255, 0.04);
-    --border: rgba(255, 255, 255, 0.12);
-    --text: #e6edf3;
-    --text-dim: #9aa7b5;
-    --accent: #00e5ff;
-    --accent-2: #7c4dff;
-    --success: #00d38a;
-    --warning: #ffcc00;
-    --danger: #ff5c5c;
-    --radius: 16px;
-    --shadow: 0 10px 40px rgba(0,0,0,0.45);
-  }
-  * { box-sizing: border-box; }
-  html, body {
-    height: 100%;
-    margin: 0;
-    background: radial-gradient(1200px 800px at 20% -10%, rgba(0,229,255,0.12), transparent 60%),
-                radial-gradient(1000px 600px at 110% 10%, rgba(124,77,255,0.10), transparent 60%),
-                var(--bg);
-    color: var(--text);
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-    -webkit-font-smoothing: antialiased;
-  }
-  header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
+  :root { color-scheme: dark; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .glass {
+    background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(16px) saturate(140%);
-    background: linear-gradient(to bottom, rgba(10,14,20,0.85), rgba(10,14,20,0.6));
-    border-bottom: 1px solid var(--border);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.08);
   }
-  .wrap {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px 24px;
+  .glass-strong {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.1);
   }
-  .title {
-    display: flex;
-    align-items: center;
-    gap: 14px;
+  .shine {
+    position: relative;
+    overflow: hidden;
   }
-  .logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    box-shadow: 0 0 30px rgba(0,229,255,0.35);
-    display: grid;
-    place-items: center;
-    font-weight: 800;
-    color: #001018;
-  }
-  h1 {
-    font-size: clamp(20px, 3vw, 28px);
-    margin: 0;
-    letter-spacing: 0.3px;
-  }
-  .sub {
-    color: var(--text-dim);
-    font-size: 13px;
-    margin-top: 2px;
-  }
-  main.wrap {
-    padding-top: 28px;
-    padding-bottom: 60px;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  @media (min-width: 980px) {
-    .grid {
-      grid-template-columns: 1.1fr 0.9fr;
-    }
-  }
-  .card {
-    background: var(--glass);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(16px) saturate(130%);
-  }
-  .card h2 {
-    margin: 0;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--text-dim);
-    font-weight: 600;
-  }
-  .card .head {
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .card .body {
-    padding: 16px 18px;
-  }
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-  }
-  .input {
-    flex: 1 1 260px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--glass-2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 12px;
-  }
-  .input input {
-    flex: 1;
-    background: transparent;
-    border: 0;
-    outline: none;
-    color: var(--text);
-    font-size: 14px;
-  }
-  .input input::placeholder { color: #6b7a8a; }
-  .btn {
-    background: linear-gradient(135deg, var(--accent), #00b8d4);
-    color: #001018;
-    border: 0;
-    border-radius: 12px;
-    padding: 11px 16px;
-    font-weight: 700;
-    font-size: 14px;
-    cursor: pointer;
-    transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
-    box-shadow: 0 6px 20px rgba(0,229,255,0.25);
-  }
-  .btn:hover { transform: translateY(-1px); }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-  .pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: var(--glass-2);
-    border: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--text-dim);
-    white-space: nowrap;
-  }
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--warning);
-    box-shadow: 0 0 10px var(--warning);
-  }
-  .dot.ok { background: var(--success); box-shadow: 0 0 10px var(--success); }
-  .dot.err { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
-  textarea.log {
-    width: 100%;
-    height: 220px;
-    resize: vertical;
-    background: #05080d;
-    color: #b8f6ff;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    font-size: 12px;
-    line-height: 1.5;
-  }
-  .table-wrap {
-    overflow: auto;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--glass);
-    backdrop-filter: blur(16px);
-  }
-  table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    min-width: 820px;
-  }
-  thead th {
-    position: sticky;
+  .shine::before {
+    content: '';
+    position: absolute;
     top: 0;
-    background: rgba(15,21,32,0.9);
-    backdrop-filter: blur(8px);
-    text-align: left;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-dim);
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
+    left: -150%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+    transform: skewX(-20deg);
+    animation: shine 8s infinite;
   }
-  tbody td {
-    padding: 12px 14px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    font-size: 14px;
+  @keyframes shine {
+    0% { left: -150%; }
+    60% { left: 150%; }
+    100% { left: 150%; }
   }
-  tbody tr:hover { background: rgba(255,255,255,0.03); }
-  .rank {
-    font-weight: 700;
-    color: var(--accent);
-    width: 60px;
-  }
-  .player {
-    font-weight: 600;
-  }
-  .pos {
-    font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    display: inline-block;
-    min-width: 42px;
-    text-align: center;
-  }
-  .pos.QB { color: #ff8ab8; border-color: rgba(255,138,184,0.3); }
-  .pos.RB { color: #7cffc9; border-color: rgba(124,255,201,0.3); }
-  .pos.WR { color: #8ab4ff; border-color: rgba(138,180,255,0.3); }
-  .pos.TE { color: #ffd68a; border-color: rgba(255,214,138,0.3); }
-  .tier {
-    font-weight: 700;
-    font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, rgba(0,229,255,0.15), rgba(124,77,255,0.15));
-    border: 1px solid rgba(0,229,255,0.3);
-    color: #b8f6ff;
-  }
-  .muted { color: var(--text-dim); }
-  .footer-meta {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-    font-size: 12px;
-    color: var(--text-dim);
-  }
-  .chip {
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: var(--glass-2);
-    border: 1px solid var(--border);
-  }
-  .empty {
-    text-align: center;
-    padding: 40px;
-    color: var(--text-dim);
+  .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.16); border-radius: 999px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.24); }
+  .tier-badge {
+    background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(56,189,248,0.25));
+    border: 1px solid rgba(99,102,241,0.4);
   }
 </style>
 </head>
-<body>
-<header>
-  <div class="wrap">
-    <div class="title">
-      <div class="logo">DV</div>
+<body class="min-h-screen bg-[#020617] text-slate-200 antialiased selection:bg-indigo-500/30">
+  <!-- Background -->
+  <div class="fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(99,102,241,0.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(56,189,248,0.2),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(139,92,246,0.2),transparent_50%),#020617]"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[1200px] bg-[conic-gradient(from_0deg,transparent,rgba(99,102,241,0.08),transparent_30%)] blur-3xl opacity-60"></div>
+  </div>
+
+  <div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <!-- Header -->
+    <header class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
       <div>
-        <h1>Dynasty Fantasy Football Vault</h1>
-        <div class="sub">Dark glassmorphism player values • Sleeper league aware</div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full glass text-xs font-medium text-indigo-300 mb-3">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          LIVE DYNASTY VALUATIONS
+        </div>
+        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">
+          <span class="bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Dynasty Fantasy Football</span>
+          <span class="block text-indigo-400">Vault</span>
+        </h1>
+        <p class="mt-3 text-slate-400 max-w-xl">SuperFlex & TE Premium aware. Merges Sleeper rosters, market values, and PPG. Auto-detects league scoring from Sleeper.</p>
       </div>
-    </div>
-  </div>
-</header>
 
-<main class="wrap">
-  <div class="grid">
-    <section class="card">
-      <div class="head">
-        <h2>Load League</h2>
-        <span class="pill" id="statusPill"><span class="dot" id="statusDot"></span><span id="statusText">Idle</span></span>
+      <div class="flex items-center gap-3">
+        <div id="statusPill" class="glass px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span id="statusText">Idle</span>
+        </div>
+        <button id="shareBtn" class="glass hover:bg-white/10 px-3 py-1.5 rounded-full text-xs font-medium transition">Copy Link</button>
       </div>
-      <div class="body">
-        <div class="controls">
-          <div class="input">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="opacity:.6"><path d="M4 7h16M4 12h12M4 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <input id="leagueId" placeholder="Sleeper League ID (optional)" inputmode="numeric" />
+    </header>
+
+    <!-- Controls -->
+    <section class="glass-strong rounded-2xl p-5 sm:p-6 mb-6 shine">
+      <div class="grid lg:grid-cols-3 gap-5">
+        <!-- League Input -->
+        <div class="lg:col-span-2">
+          <label class="block text-sm font-medium text-slate-300 mb-2">Sleeper League ID</label>
+          <div class="flex gap-2">
+            <input id="leagueIdInput" type="text" inputmode="numeric" placeholder="e.g. 123456789012345678"
+              class="flex-1 bg-slate-950/60 border border-slate-800 rounded-xl px-4 py-3 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition mono" />
+            <button id="loadBtn" class="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-sm font-semibold shadow-lg shadow-indigo-900/40 transition">
+              Load
+            </button>
           </div>
-          <button class="btn" id="loadBtn">Load Vault</button>
+          <p class="mt-2 text-xs text-slate-500">Add <span class="mono">?league_id=YOUR_ID</span> to URL for auto-load.</p>
+
+          <!-- League Badges -->
+          <div id="leagueBadges" class="flex flex-wrap gap-2 mt-4"></div>
         </div>
-        <div class="footer-meta">
-          <span class="chip" id="metaSF">SF: auto</span>
-          <span class="chip" id="metaTEP">TEP: auto</span>
-          <span class="chip" id="metaCount">Players: 0</span>
+
+        <!-- Parse Log -->
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-2">Parse Log</label>
+          <textarea id="parseLog" readonly class="w-full h-[110px] bg-slate-950/60 border border-slate-800 rounded-xl px-3 py-2 text-xs mono text-slate-400 scrollbar-thin resize-none" placeholder="Logs will appear here..."></textarea>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="mt-5 pt-5 border-t border-slate-800 flex flex-col sm:flex-row gap-3 sm:items-center">
+        <div class="flex items-center gap-2">
+          <input id="searchInput" type="search" placeholder="Search player..." class="w-48 bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50" />
+        </div>
+        <div id="posFilter" class="flex flex-wrap gap-1.5">
+          <button data-pos="ALL" class="pos-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white">ALL</button>
+          <button data-pos="QB" class="pos-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700">QB</button>
+          <button data-pos="RB" class="pos-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700">RB</button>
+          <button data-pos="WR" class="pos-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700">WR</button>
+          <button data-pos="TE" class="pos-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700">TE</button>
+        </div>
+        <div class="sm:ml-auto text-xs text-slate-500">
+          <span id="resultCount">0 players</span> • Sorted by Value ↓
         </div>
       </div>
     </section>
 
-    <section class="card">
-      <div class="head">
-        <h2>Parse Log</h2>
-      </div>
-      <div class="body">
-        <textarea class="log" id="log" readonly spellcheck="false"></textarea>
+    <!-- Table -->
+    <section class="glass-strong rounded-2xl overflow-hidden">
+      <div class="overflow-x-auto scrollbar-thin">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-950/70 sticky top-0 backdrop-blur">
+            <tr class="text-left text-slate-400 border-b border-slate-800">
+              <th class="px-4 py-3 font-medium w-14">#</th>
+              <th class="px-4 py-3 font-medium">Player</th>
+              <th class="px-4 py-3 font-medium">Pos</th>
+              <th class="px-4 py-3 font-medium">Team</th>
+              <th class="px-4 py-3 font-medium">Age</th>
+              <th class="px-4 py-3 font-medium text-right">Value</th>
+              <th class="px-4 py-3 font-medium text-right">PPG</th>
+              <th class="px-4 py-3 font-medium text-center">Tier</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-800/70">
+            <tr>
+              <td colspan="8" class="px-4 py-16 text-center text-slate-500">
+                <div class="inline-flex flex-col items-center gap-3">
+                  <div class="w-10 h-10 rounded-full border-2 border-slate-700 border-t-indigo-500 animate-spin"></div>
+                  Enter a League ID to load valuations
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
+
+    <!-- Footer -->
+    <footer class="mt-10 text-center text-xs text-slate-600">
+      Built for Dynasty Grinders • Values update via Google Sheets • PPG gracefully falls back to “-” when missing
+    </footer>
   </div>
-
-  <div style="height:20px"></div>
-
-  <section class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th style="width:70px">Rank</th>
-          <th>Player</th>
-          <th>Pos</th>
-          <th>Team</th>
-          <th>Age</th>
-          <th>Value</th>
-          <th>PPG</th>
-          <th>Tier</th>
-        </tr>
-      </thead>
-      <tbody id="tbody">
-        <tr><td colspan="8" class="empty">Load a league to populate the vault</td></tr>
-      </tbody>
-    </table>
-  </section>
-</main>
 
 <script>
-(() => {
-  // === PROXY CONFIG - EDIT HERE ===
-  const PROXY = 'https://script.google.com/macros/s/AKfycbwfX3_zR3kdJM7iQ3RnSUGBShj9nhHAPhYqFznzAPjw5USwWeew-ZaInlg2F7FB7dNc-w/exec?url=';
-  const VALUES_CSV_URL = PROXY + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?output=csv');
-  const PPG_CSV_URL = PROXY + encodeURIComponent('https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv');
+/* ==================== CONFIG ==================== */
+const PROXY = 'https://script.google.com/macros/s/AKfycbwfX3_zR3kdJM7iQ3RnSUGBShj9nhHAPhYqFznzAPjw5USwWeew-ZaInlg2F7FB7dNc-w/exec?url=';
 
-  const els = {
-    log: document.getElementById('log'),
-    statusPill: document.getElementById('statusPill'),
-    statusDot: document.getElementById('statusDot'),
-    statusText: document.getElementById('statusText'),
-    loadBtn: document.getElementById('loadBtn'),
-    leagueId: document.getElementById('leagueId'),
-    tbody: document.getElementById('tbody'),
-    metaSF: document.getElementById('metaSF'),
-    metaTEP: document.getElementById('metaTEP'),
-    metaCount: document.getElementById('metaCount'),
-  };
+// Replace these with your actual published Google Sheet CSV URLs
+const VALUES_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_VALUES/pub?output=csv';
+const PPG_SHEET_URL    = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_PPG/pub?output=csv';
 
-  function log(msg, level='info') {
-    const ts = new Date().toLocaleTimeString();
-    els.log.value += `[${ts}] ${msg}\n`;
-    els.log.scrollTop = els.log.scrollHeight;
-  }
+const VALUES_CSV_URL = PROXY + encodeURIComponent(VALUES_SHEET_URL);
+const PPG_CSV_URL    = PROXY + encodeURIComponent(PPG_SHEET_URL);
+const SLEEPER_PLAYERS_URL = PROXY + encodeURIComponent('https://api.sleeper.app/v1/players/nfl');
 
-  function setStatus(text, state='idle') {
-    els.statusText.textContent = text;
-    els.statusDot.classList.remove('ok','err');
-    if(state==='ok') els.statusDot.classList.add('ok');
-    else if(state==='err') els.statusDot.classList.add('err');
-  }
+/* ==================== STATE ==================== */
+let state = {
+  league: null,
+  sf: false,
+  tepMode: '', // '', 'tep05', 'tep'
+  valueKey: 'value_1qb',
+  players: [],
+  filtered: [],
+  posFilter: 'ALL',
+  search: ''
+};
 
-  function normalizeName(name) {
-    return name.toLowerCase()
-      .replace(/\./g,'')
-      .replace(/\'/g,'')
-      .replace(/\s+/g,' ')
-      .replace(/\s+(jr|sr|ii|iii|iv|v)$/,'')
-      .trim();
-  }
+/* ==================== UTILITIES ==================== */
+const $ = s => document.querySelector(s);
+const logEl = $('#parseLog');
+function log(msg) {
+  const time = new Date().toLocaleTimeString();
+  logEl.value += `[${time}] ${msg}\n`;
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function setStatus(text, color='slate') {
+  $('#statusText').textContent = text;
+  const dot = $('#statusPill span:first-child');
+  dot.className = `w-2 h-2 rounded-full bg-${color}-400 ${color==='emerald'?'animate-pulse':''}`;
+}
 
-  const valuesRegex = /(\d{4,6}),([^,]+?),(QB|RB|WR|TE),([A-Z]{2,3}),([\d\.]+),([\d\.]+),([\d\.]+),([\d\.]+),([\d\.]+),([\d\.]+),([\d\.]+)/g;
-  const ppgRegex = /([A-Za-z'\.\s]+),([A-Z]{2,3}),(QB|RB|WR|TE),([\d\.,]+)/g;
-
-  async function fetchText(url, label) {
-    log(`Fetching ${label}...`);
-    try {
-      const res = await fetch(url, {cache:'no-store'});
-      if(!res.ok) throw new Error(`HTTP ${res.status}`);
-      const txt = await res.text();
-      log(`✓ ${label} received (${(txt.length/1024).toFixed(1)} KB)`);
-      return txt;
-    } catch(err) {
-      log(`✗ ${label} failed: ${err.message}`);
-      throw err;
+// Robust CSV parser handling quotes
+function parseCSV(text) {
+  const rows = [];
+  let cur = '', row = [], inQ = false;
+  for (let i=0;i<text.length;i++) {
+    const c = text[i], n = text[i+1];
+    if (c === '"') {
+      if (inQ && n === '"') { cur+='"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      row.push(cur); cur='';
+    } else if ((c === '\n' || c === '\r') && !inQ) {
+      if (cur!=='' || row.length) { row.push(cur); rows.push(row); row=[]; cur=''; }
+    } else {
+      cur += c;
     }
   }
+  if (cur!=='' || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.length>1 || r[0].trim()!=='');
+}
 
-  async function loadData() {
-    const leagueId = els.leagueId.value.trim();
-    els.loadBtn.disabled = true;
-    setStatus('Loading', 'idle');
-    els.tbody.innerHTML = `<tr><td colspan="8" class="empty">Loading…</td></tr>`;
-
-    let isSF = false;
-    let isTEP = false;
-    let tepLevel = 'base'; // base | tep05 | tep
-
-    try {
-      // 1. Sleeper players
-      const players = await fetchText('https://api.sleeper.app/v1/players/nfl', 'Sleeper players')
-        .then(t => JSON.parse(t));
-      const playerCount = Object.keys(players).length;
-      log(`Parsed Sleeper players: ${playerCount.toLocaleString()}`);
-
-      // 2. Values CSV
-      const valuesCsv = await fetchText(VALUES_CSV_URL, 'Values CSV');
-      const valuesMap = new Map();
-      let valMatches = 0;
-      for (const m of valuesCsv.matchAll(valuesRegex)) {
-        const [, sleeper_id, name, pos, team, age, v1, v2, v3, v4, v5, v6] = m;
-        const norm = normalizeName(name);
-        valuesMap.set(norm, {
-          sleeper_id,
-          name: name.trim(),
-          pos,
-          team,
-          age: parseFloat(age),
-          val_sf_ppr: parseFloat(v1),
-          val_sf_ppr_tep05: parseFloat(v2),
-          val_sf_ppr_tep: parseFloat(v3),
-          val_1qb_ppr: parseFloat(v4),
-          val_1qb_ppr_tep05: parseFloat(v5),
-          val_1qb_ppr_tep: parseFloat(v6),
-        });
-        valMatches++;
-      }
-      log(`Parsed values entries: ${valuesMap.size} (matches ${valMatches})`);
-
-      // 3. PPG CSV
-      const ppgCsv = await fetchText(PPG_CSV_URL, 'PPG CSV');
-      const ppgMap = new Map();
-      let ppgMatches = 0;
-      for (const m of ppgCsv.matchAll(ppgRegex)) {
-        const [, name, team, pos, nums] = m;
-        const numArr = nums.split(',').map(s => parseFloat(s)).filter(n => !isNaN(n));
-        const ppg = numArr.length ? (numArr.reduce((a,b)=>a+b,0)/numArr.length) : 0;
-        const norm = normalizeName(name);
-        ppgMap.set(norm, { ppg: +ppg.toFixed(2), team, pos });
-        ppgMatches++;
-      }
-      log(`Parsed PPG entries: ${ppgMap.size} (matches ${ppgMatches})`);
-
-      // 4. League detection
-      if (leagueId) {
-        try {
-          log(`Fetching league ${leagueId}...`);
-          const league = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`).then(r=>r.json());
-          isSF = Array.isArray(league.roster_positions) && league.roster_positions.includes('SUPER_FLEX');
-          const rec = league.scoring_settings?.rec ?? 0;
-          const rec_te = league.scoring_settings?.rec_te ?? rec;
-          if (rec_te >= 1.75) { isTEP = true; tepLevel = 'tep'; }
-          else if (rec_te > 1) { isTEP = true; tepLevel = 'tep05'; }
-          log(`League detected: SF=${isSF}, TE premium=${isTEP} (${tepLevel}), rec_te=${rec_te}`);
-        } catch(e) {
-          log(`League fetch failed, using defaults: ${e.message}`);
+// Parse Values CSV with regex for sleeper_id,name,pos,team,age + 6 value cols
+function parseValuesCSV(csvText) {
+  const rows = parseCSV(csvText.trim());
+  const header = rows.shift().map(h=>h.trim().toLowerCase());
+  // Expected: sleeper_id,name,pos,team,age,value_1qb,value_sf,value_1qb_tep,value_sf_tep,value_1qb_tep05,value_sf_tep05
+  const out = new Map();
+  const lineRe = /^\s*([^,]+?)\s*,\s*"?(.*?)"?\s*,\s*([A-Z]{1,3})\s*,\s*([A-Z]{2,3})\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*$/;
+  rows.forEach((r,i)=>{
+    // Rebuild line for regex test, preserve commas in name
+    const line = r.join(',');
+    // Fallback to structured parse if regex fails
+    let m = line.match(lineRe);
+    if (m) {
+      const [, id, name, pos, team, age, v1, vsf, v1t, vsft, v1t05, vsft05] = m;
+      out.set(id.trim(), {
+        sleeper_id: id.trim(),
+        name: name.replace(/^"|"$/g,''),
+        pos, team, age: +age,
+        values: {
+          value_1qb: +v1,
+          value_sf: +vsf,
+          value_1qb_tep: +v1t,
+          value_sf_tep: +vsft,
+          value_1qb_tep05: +v1t05,
+          value_sf_tep05: +vsft05
         }
-      } else {
-        log(`No league ID provided, using 1QB base values`);
-      }
-
-      els.metaSF.textContent = `SF: ${isSF ? 'Yes' : 'No'}`;
-      els.metaTEP.textContent = `TEP: ${isTEP ? tepLevel : 'No'}`;
-
-      // 5. Merge
-      const merged = [];
-      for (const [norm, v] of valuesMap.entries()) {
-        const p = ppgMap.get(norm);
-        let value;
-        if (isSF) {
-          if (tepLevel === 'tep') value = v.val_sf_ppr_tep;
-          else if (tepLevel === 'tep05') value = v.val_sf_ppr_tep05;
-          else value = v.val_sf_ppr;
-        } else {
-          if (tepLevel === 'tep') value = v.val_1qb_ppr_tep;
-          else if (tepLevel === 'tep05') value = v.val_1qb_ppr_tep05;
-          else value = v.val_1qb_ppr;
-        }
-        merged.push({
-          ...v,
-          ppg: p?.ppg ?? null,
-          value: Math.round(value || 0),
-        });
-      }
-      log(`Merged dataset: ${merged.length} players`);
-
-      // 6. Sort & tier
-      merged.sort((a,b) => b.value - a.value);
-      let tier = 1;
-      let lastVal = merged[0]?.value ?? 0;
-      const tierGap = 600; // adjustable
-      merged.forEach((p,i) => {
-        if (i>0 && (lastVal - p.value) > tierGap) {
-          tier++;
-          lastVal = p.value;
-        }
-        p.rank = i+1;
-        p.tier = tier;
       });
-
-      // 7. Render
-      els.metaCount.textContent = `Players: ${merged.length}`;
-      const top = merged.slice(0, 300);
-      const frag = document.createDocumentFragment();
-      top.forEach(p => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="rank">${p.rank}</td>
-          <td class="player">${p.name}</td>
-          <td><span class="pos ${p.pos}">${p.pos}</span></td>
-          <td class="muted">${p.team}</td>
-          <td class="muted">${p.age ? p.age.toFixed(1) : '-'}</td>
-          <td>${p.value.toLocaleString()}</td>
-          <td class="muted">${p.ppg != null ? p.ppg.toFixed(2) : '-'}</td>
-          <td><span class="tier">T${p.tier}</span></td>
-        `;
-        frag.appendChild(tr);
+    } else {
+      // Structured fallback
+      const [id,name,pos,team,age,v1,vsf,v1t,vsft,v1t05,vsft05] = r;
+      if (!id) return;
+      out.set(id, {
+        sleeper_id: id,
+        name: (name||'').replace(/^"|"$/g,''),
+        pos, team, age: +age||0,
+        values: {
+          value_1qb: +v1||0,
+          value_sf: +vsf||0,
+          value_1qb_tep: +v1t||0,
+          value_sf_tep: +vsft||0,
+          value_1qb_tep05: +v1t05||0,
+          value_sf_tep05: +vsft05||0
+        }
       });
-      els.tbody.innerHTML = '';
-      els.tbody.appendChild(frag);
-
-      setStatus('Ready', 'ok');
-      log(`✓ Render complete. Top player: ${merged[0]?.name} (${merged[0]?.value})`);
-    } catch(err) {
-      console.error(err);
-      setStatus('Error', 'err');
-      els.tbody.innerHTML = `<tr><td colspan="8" class="empty">Error loading data. Check log.</td></tr>`;
-      log(`Fatal error: ${err.message}`);
-    } finally {
-      els.loadBtn.disabled = false;
     }
+  });
+  return out;
+}
+
+function parsePPGCSV(csvText) {
+  const rows = parseCSV(csvText.trim());
+  const header = rows.shift().map(h=>h.trim().toLowerCase());
+  const idIdx = header.indexOf('sleeper_id');
+  const ppgIdx = header.indexOf('ppg');
+  const map = new Map();
+  rows.forEach(r=>{
+    const id = r[idIdx];
+    const ppg = parseFloat(r[ppgIdx]);
+    if (id) map.set(id, isNaN(ppg) ? null : ppg);
+  });
+  return map;
+}
+
+// Compute tier by value drops
+function assignTiers(players) {
+  let tier = 1;
+  let lastVal = players[0]?.value ?? 0;
+  const GAP = 500; // adjust sensitivity
+  players.forEach((p,i)=>{
+    if (lastVal - p.value > GAP) tier++;
+    p.tier = tier;
+    lastVal = p.value;
+  });
+}
+
+/* ==================== FETCH ==================== */
+async function fetchText(url, label) {
+  log(`Fetching ${label}...`);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${label} failed ${res.status}`);
+  const txt = await res.text();
+  log(`${label} ✓ (${(txt.length/1024).toFixed(1)} KB)`);
+  return txt;
+}
+
+async function loadData(leagueId) {
+  try {
+    setStatus('Loading league...', 'amber');
+    log(`=== Load start for league ${leagueId} ===`);
+
+    // 1. League settings
+    const leagueRes = await fetch(`https://api.sleeper.app/v1/league/${leagueId}`);
+    if (!leagueRes.ok) throw new Error('League not found');
+    const league = await leagueRes.json();
+    state.league = league;
+    state.sf = (league.roster_positions||[]).includes('SUPER_FLEX');
+    const rec_te = league.scoring_settings?.rec_te ?? 1;
+    if (rec_te > 1 && rec_te < 1.75) state.tepMode = 'tep05';
+    else if (rec_te >= 1.75) state.tepMode = 'tep';
+    else state.tepMode = '';
+    state.valueKey = `value_${state.sf ? 'sf' : '1qb'}${state.tepMode ? '_' + state.tepMode : ''}`;
+    log(`League: ${league.name} | SF=${state.sf} | rec_te=${rec_te} | tepMode=${state.tepMode||'none'} | key=${state.valueKey}`);
+
+    renderLeagueBadges(league);
+
+    // 2. Parallel fetches
+    setStatus('Fetching data...', 'amber');
+    const [playersJSON, valuesCSV, ppgCSV] = await Promise.all([
+      fetch(SLEEPER_PLAYERS_URL).then(r=>r.json()).catch(()=>({})),
+      fetchText(VALUES_CSV_URL, 'Values CSV').catch(err=>{ log('Values fetch failed, using demo data'); return DEMO_VALUES_CSV; }),
+      fetchText(PPG_CSV_URL, 'PPG CSV').catch(err=>{ log('PPG fetch failed, using demo data'); return DEMO_PPG_CSV; })
+    ]);
+
+    const valuesMap = parseValuesCSV(valuesCSV);
+    const ppgMap = parsePPGCSV(ppgCSV);
+    log(`Parsed ${valuesMap.size} values, ${ppgMap.size} PPG rows`);
+
+    // 3. Merge
+    const merged = [];
+    for (const [id, v] of valuesMap) {
+      const p = playersJSON[id] || {};
+      const value = v.values[state.valueKey] ?? 0;
+      if (value <= 0) continue;
+      merged.push({
+        id,
+        name: v.name || `${p.first_name||''} ${p.last_name||''}`.trim(),
+        pos: v.pos || p.position || '-',
+        team: v.team || p.team || '-',
+        age: v.age || p.age || '-',
+        value,
+        ppg: ppgMap.has(id) ? ppgMap.get(id) : null,
+        search: (v.name + ' ' + (p.first_name||'') + ' ' + (p.last_name||'')).toLowerCase()
+      });
+    }
+
+    merged.sort((a,b)=> b.value - a.value);
+    assignTiers(merged);
+    state.players = merged;
+    state.filtered = merged;
+
+    log(`Merged ${merged.length} players`);
+    setStatus('Ready', 'emerald');
+    renderTable();
+  } catch (err) {
+    console.error(err);
+    log(`ERROR: ${err.message}`);
+    setStatus('Error', 'red');
+    $('#tableBody').innerHTML = `<tr><td colspan="8" class="px-4 py-16 text-center text-red-400">${err.message}</td></tr>`;
   }
+}
 
-  els.loadBtn.addEventListener('click', loadData);
-  els.leagueId.addEventListener('keydown', e => { if(e.key==='Enter') loadData(); });
+/* ==================== RENDER ==================== */
+function renderLeagueBadges(league) {
+  const el = $('#leagueBadges');
+  el.innerHTML = '';
+  const badges = [
+    { label: league.name, cls: 'bg-slate-800 text-slate-200' },
+    { label: state.sf ? 'SuperFlex' : '1QB', cls: state.sf ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-200' },
+    { label: state.tepMode === 'tep05' ? '0.5 TEP' : state.tepMode === 'tep' ? 'TE Premium' : 'Standard TE', cls: 'bg-fuchsia-600/30 text-fuchsia-200 border border-fuchsia-500/40' },
+    { label: `${league.total_rosters} teams`, cls: 'bg-slate-800 text-slate-300' }
+  ];
+  badges.forEach(b=>{
+    const span = document.createElement('span');
+    span.className = `px-2.5 py-1 rounded-full text-xs font-medium ${b.cls}`;
+    span.textContent = b.label;
+    el.appendChild(span);
+  });
+}
 
-  // Initial hint
-  log('Dynasty Vault initialized.');
-  log('Enter Sleeper League ID and click Load Vault.');
+function renderTable() {
+  applyFilters();
+  const tbody = $('#tableBody');
+  tbody.innerHTML = '';
+  if (!state.filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-16 text-center text-slate-500">No players match filters</td></tr>`;
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  state.filtered.slice(0, 500).forEach((p,i)=>{
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-slate-900/60 transition';
+    tr.innerHTML = `
+      <td class="px-4 py-3 text-slate-500 mono text-xs">${i+1}</td>
+      <td class="px-4 py-3 font-medium text-slate-100">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">${p.pos}</div>
+          <span>${p.name}</span>
+        </div>
+      </td>
+      <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-md text-xs font-medium ${posColor(p.pos)}">${p.pos}</span></td>
+      <td class="px-4 py-3 text-slate-400 mono text-xs">${p.team}</td>
+      <td class="px-4 py-3 text-slate-400 mono text-xs">${p.age}</td>
+      <td class="px-4 py-3 text-right font-semibold mono text-indigo-300">${p.value.toLocaleString()}</td>
+      <td class="px-4 py-3 text-right mono text-slate-300">${p.ppg==null?'-':p.ppg.toFixed(1)}</td>
+      <td class="px-4 py-3 text-center"><span class="tier-badge px-2 py-0.5 rounded-full text-xs font-bold text-indigo-200">${p.tier}</span></td>
+    `;
+    frag.appendChild(tr);
+  });
+  tbody.appendChild(frag);
+  $('#resultCount').textContent = `${state.filtered.length.toLocaleString()} players`;
+}
+
+function posColor(pos) {
+  switch(pos) {
+    case 'QB': return 'bg-sky-500/20 text-sky-300 border border-sky-500/30';
+    case 'RB': return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+    case 'WR': return 'bg-amber-500/20 text-amber-300 border border-amber-500/30';
+    case 'TE': return 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30';
+    default: return 'bg-slate-700 text-slate-300';
+  }
+}
+
+function applyFilters() {
+  const q = state.search;
+  const pos = state.posFilter;
+  state.filtered = state.players.filter(p=>{
+    const matchPos = pos==='ALL' || p.pos===pos;
+    const matchSearch = !q || p.search.includes(q);
+    return matchPos && matchSearch;
+  });
+}
+
+/* ==================== EVENTS ==================== */
+$('#loadBtn').addEventListener('click', ()=>{
+  const id = $('#leagueIdInput').value.trim();
+  if (!id) return;
+  const url = new URL(window.location);
+  url.searchParams.set('league_id', id);
+  window.history.replaceState({},'',url);
+  loadData(id);
+});
+
+$('#searchInput').addEventListener('input', e=>{
+  state.search = e.target.value.toLowerCase().trim();
+  renderTable();
+});
+
+$('#posFilter').addEventListener('click', e=>{
+  const btn = e.target.closest('.pos-btn');
+  if (!btn) return;
+  document.querySelectorAll('.pos-btn').forEach(b=>{
+    b.classList.remove('bg-indigo-600','text-white');
+    b.classList.add('bg-slate-800','hover:bg-slate-700');
+  });
+  btn.classList.add('bg-indigo-600','text-white');
+  btn.classList.remove('bg-slate-800','hover:bg-slate-700');
+  state.posFilter = btn.dataset.pos;
+  renderTable();
+});
+
+$('#shareBtn').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(window.location.href);
+  setStatus('Link copied!', 'emerald');
+  setTimeout(()=>setStatus('Ready','emerald'),1500);
+});
+
+/* ==================== AUTO LOAD ==================== */
+(function init(){
+  const params = new URLSearchParams(window.location.search);
+  const leagueId = params.get('league_id');
+  if (leagueId) {
+    $('#leagueIdInput').value = leagueId;
+    loadData(leagueId);
+  } else {
+    setStatus('Idle', 'slate');
+    log('Ready. Enter a Sleeper League ID to begin.');
+  }
 })();
+
+/* ==================== DEMO FALLBACK DATA ==================== */
+const DEMO_VALUES_CSV = `sleeper_id,name,pos,team,age,value_1qb,value_sf,value_1qb_tep,value_sf_tep,value_1qb_tep05,value_sf_tep05
+4046,Patrick Mahomes,QB,KC,29,8500,10000,8500,10000,8500,10000
+1253,Josh Allen,QB,BUF,29,8300,9800,8300,9800,8300,9800
+4984,Justin Jefferson,WR,MIN,26,8000,8100,8000,8100,8000,8100
+6797,Ja'Marr Chase,WR,CIN,25,7800,7900,7800,7900,7800,7900
+6803,Jayden Daniels,QB,WAS,24,6200,9500,6200,9500,6200,9500
+8121,Bijan Robinson,RB,ATL,23,7000,7100,7000,7100,7000,7100
+7524,Brock Bowers,TE,LV,22,4500,4600,5200,5400,4900,5100
+7611,Malik Nabers,WR,NYG,21,6500,6600,6500,6600,6500,6600
+`;
+
+const DEMO_PPG_CSV = `sleeper_id,ppg
+4046,24.3
+1253,23.8
+4984,18.9
+6797,18.2
+6803,22.1
+8121,16.4
+7524,14.1
+7611,
+`;
 </script>
 <script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
 </body>
