@@ -18,8 +18,12 @@ body{font-family:Inter,system-ui;background:#0a0703}
 .scrollbar::-webkit-scrollbar{height:8px;width:8px}
 .scrollbar::-webkit-scrollbar-thumb{background:#3a2e12;border-radius:8px}
 th.sortable{cursor:pointer;user-select:none}
-th.sortable.arrow{opacity:.4;transition:.15s}
 th.sortable.active.arrow{opacity:1}
+.arrow{opacity:.4;transition:.15s}
+.rank-pill{min-width:2.5rem}
+tr.team-row{cursor:pointer}
+tr.team-row:hover{background:rgba(120,80,20,.12)}
+tr.expanded{box-shadow:inset 0 1px rgba(250,204,21,.25);background:rgba(120,80,20,.08)}
 </style>
 </head>
 <body class="text-amber-50 antialiased leading-tight">
@@ -48,7 +52,7 @@ th.sortable.active.arrow{opacity:1}
 <main class="max-w-[1400px] mx-auto px-6 py-8">
   <div id="status" class="mb-6 flex items-center gap-2 text-amber-200/80 text-sm">
     <div class="size-2 rounded-full bg-amber-400 animate-pulse"></div>
-    <span>Loading league 1313454100225990656 • values & PPG from Google Sheets…</span>
+    <span>Loading league 1313454100225990656…</span>
   </div>
 
   <div class="overflow-hidden rounded-[24px] border gold-border bg-[#110c05]/80 shadow-[0_0_80px_-20px_rgba(250,204,21,0.4)]">
@@ -56,7 +60,7 @@ th.sortable.active.arrow{opacity:1}
       <table class="w-full text-[13px]">
         <thead class="bg-[#1a1307]/90 backdrop-blur sticky top-0 z-10 border-b border-amber-900/50">
           <tr class="text-[11px] uppercase tracking-widest text-amber-200/70">
-            <th class="text-left px-4 py-3 whitespace-nowrap">Rank</th>
+            <th class="text-left px-4 py-3 w-10"></th>
             <th class="text-left px-4 py-3 min-w-[220px]">Team</th>
             <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="total">Total Value <span class="arrow">▲▼</span></th>
             <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="qb">QB <span class="arrow">▲▼</span></th>
@@ -77,27 +81,24 @@ th.sortable.active.arrow{opacity:1}
   <div class="mt-8 grid gap-4 lg:grid-cols-2">
     <div class="rounded-2xl border border-amber-900/50 bg-[#110c05]/70 p-5">
       <h2 class="display text-lg gold-text gold-solid mb-3">How We Calculate</h2>
-      <div class="space-y-3 text-[13px] leading-relaxed text-amber-100/90">
-        <div><strong class="text-amber-200">Total Value, QB/RB/WR/TE:</strong> Sum of <code>val_sf_ppr_tep05</code> matched by <code>sleeper_id</code> from your Values sheet.</div>
-        <div><strong class="text-amber-200">Avg Age:</strong> Value-weighted average of player ages.</div>
-        <div><strong class="text-amber-200">Opt PPG:</strong> Fill league slots (QB, RB, WR, TE, FLEX, SUPER_FLEX, WRRB_FLEX, REC_FLEX) with highest remaining <code>Avg_PPR_0.5_TEP</code>. <em>Hover the Opt PPG pill for slot-by-slot breakdown.</em></div>
-        <div><strong class="text-amber-200">Productivity:</strong> <code>team Opt PPG ÷ league-best Opt PPG × 100</code></div>
-        <div><strong class="text-amber-200">Longevity:</strong> <code>100 − ((avg_age − 23) × 8)</code> clamped 0-100</div>
+      <div class="space-y-2 text-[13px] leading-relaxed text-amber-100/90">
+        <div><strong>Total/QB/RB/WR/TE:</strong> Sum of <code>val_sf_ppr_tep05</code> matched by <code>sleeper_id</code>.</div>
+        <div><strong>Age:</strong> Value-weighted average age.</div>
+        <div><strong>Opt PPG:</strong> Fill league slots with highest remaining <code>Avg_PPR_0.5_TEP</code>. Hover the Opt PPG pill for slot breakdown.</div>
+        <div><strong>Productivity:</strong> <code>Opt PPG ÷ league max Opt PPG × 100</code></div>
+        <div><strong>Longevity:</strong> <code>100 − ((age − 23) × 8)</code> clamped 0-100</div>
       </div>
     </div>
     <div class="rounded-2xl border border-amber-900/50 bg-[#110c05]/70 p-5">
-      <h2 class="display text-lg gold-text gold-solid mb-3">Archetypes</h2>
-      <ul class="text-[12.5px] space-y-1.5 text-amber-100/85 list-disc pl-4">
-        <li><strong>Elite Contender:</strong> valP ≥75, ppgP ≥75, age 24-27.5</li>
-        <li><strong>Aging Contender:</strong> ppgP ≥70, age ≥27.5</li>
-        <li><strong>Win-Now Fringe:</strong> 60 ≤ ppgP <75, age ≥26</li>
-        <li><strong>Young Riser / Ascending:</strong> age <25.5, valP ≥45, 40 ≤ ppgP <65</li>
-        <li><strong>Pick-Rich Rebuilder:</strong> ppgP <40, age <26, valP ≥35</li>
-        <li><strong>Balanced Core:</strong> positional balance ≥70th percentile</li>
-        <li><strong>Volatile / High-Variance:</strong> valP ≥70 and ppgP ≤45</li>
-        <li><strong>Stripped Rebuilder:</strong> valP ≤25 and ppgP ≤25</li>
-        <li><strong>Stuck in the Middle / Purgatory:</strong> all others</li>
-      </ul>
+      <h2 class="display text-lg gold-text gold-solid mb-3">Ranks & Colors</h2>
+      <p class="text-[13px] text-amber-100/85 mb-2">Each cell shows <code>#rank value</code>. Age rank is ascending (1 = youngest). Others are descending (1 = highest).</p>
+      <div class="flex flex-wrap gap-2 text-[11px]">
+        <span class="px-2 py-1 rounded border bg-amber-400/25 text-amber-100 border-amber-400/70">#1 Gold</span>
+        <span class="px-2 py-1 rounded border bg-emerald-600/25 text-emerald-200 border-emerald-700">Top 25%</span>
+        <span class="px-2 py-1 rounded border bg-sky-600/25 text-sky-200 border-sky-700">25-50%</span>
+        <span class="px-2 py-1 rounded border bg-amber-700/25 text-amber-200 border-amber-800">50-75%</span>
+        <span class="px-2 py-1 rounded border bg-rose-700/30 text-rose-200 border-rose-800">Bottom 25%</span>
+      </div>
     </div>
   </div>
 </main>
@@ -109,9 +110,17 @@ const LEAGUE_ID = '1313454100225990656';
 const VALUES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
 const PPG_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
 
-let teams = [];
-let sort = {key:'total',dir:-1};
+let teams = [], sort = {key:'total',dir:-1}, expanded = new Set();
 const norm = s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+
+function rankClass(rank, total = teams.length) {
+  if (rank === 1) return 'bg-amber-400/25 text-amber-100 border-amber-400/70';
+  const pct = rank / total;
+  if (pct <= 0.25) return 'bg-emerald-600/25 text-emerald-200 border-emerald-700';
+  if (pct <= 0.50) return 'bg-sky-600/25 text-sky-200 border-sky-700';
+  if (pct <= 0.75) return 'bg-amber-700/25 text-amber-200 border-amber-800';
+  return 'bg-rose-700/30 text-rose-200 border-rose-800';
+}
 
 function archetype(t){
   const {valP,ppgP,age,bal} = t;
@@ -138,114 +147,123 @@ async function load(){
   const values = Papa.parse(valuesCsv,{header:true,skipEmptyLines:true}).data;
   const ppgs = Papa.parse(ppgCsv,{header:true,skipEmptyLines:true}).data;
 
-  const valMap = new Map();
-  values.forEach(r=>{ const sid = String(r.sleeper_id||'').trim(); if(sid) valMap.set(sid, parseFloat(r.val_sf_ppr_tep05)||0); });
-  const ppgMap = new Map();
-  ppgs.forEach(r=>{ const name = r.Player || r.player || ''; const ppg = parseFloat(r['Avg_PPR_0.5_TEP'])||0; if(name) ppgMap.set(norm(name), ppg); });
+  const valMap = new Map(); values.forEach(r=>{const sid=String(r.sleeper_id||'').trim(); if(sid) valMap.set(sid, parseFloat(r.val_sf_ppr_tep05)||0);});
+  const ppgMap = new Map(); ppgs.forEach(r=>{const name=r.Player||r.player||''; const ppg=parseFloat(r['Avg_PPR_0.5_TEP'])||0; if(name) ppgMap.set(norm(name),ppg);});
 
   const userMap = new Map(users.map(u=>[u.user_id,u]));
   const slots = (league.roster_positions||[]).filter(s=>!['BN','IR','TAXI'].includes(s));
 
   function optimal(plist){
-    const pool = [...plist].sort((a,b)=>b.ppg-a.ppg);
-    const used = new Set(); let total=0; const starters=[];
+    const pool=[...plist].sort((a,b)=>b.ppg-a.ppg); const used=new Set(); let total=0; const starters=[];
     for(const slot of slots){
       let allowed=[slot];
       if(slot==='FLEX') allowed=['RB','WR','TE'];
       if(slot==='SUPER_FLEX') allowed=['QB','RB','WR','TE'];
       if(slot==='WRRB_FLEX') allowed=['RB','WR'];
       if(slot==='REC_FLEX') allowed=['WR','TE'];
-      const idx = pool.findIndex(p=>!used.has(p.id)&&allowed.includes(p.pos));
-      if(idx>=0){ const p=pool[idx]; used.add(p.id); total+=p.ppg; starters.push({...p,slot}); pool.splice(idx,1); }
+      const idx=pool.findIndex(p=>!used.has(p.id)&&allowed.includes(p.pos));
+      if(idx>=0){const p=pool[idx]; used.add(p.id); total+=p.ppg; starters.push({...p,slot}); pool.splice(idx,1);}
     }
     return {total,starters};
   }
 
   const built = rosters.map(r=>{
-    const u = userMap.get(r.owner_id)||{};
-    const teamName = u.metadata?.team_name || u.display_name || 'Team';
-    const username = u.username || u.display_name || '';
-    const plist = (r.players||[]).map(pid=>{
-      const pidS = String(pid); const p = players[pidS]||{};
-      const name = `${p.first_name||''} ${p.last_name||''}`.trim() || p.full_name || pidS;
-      const value = valMap.get(pidS)||0;
-      const ppg = ppgMap.get(norm(name))||0;
-      return {id:pidS,name,pos:p.position||'',age:p.age||0,value,ppg,team:p.team||''};
+    const u=userMap.get(r.owner_id)||{};
+    const teamName=u.metadata?.team_name||u.display_name||'Team';
+    const username=u.username||u.display_name||'';
+    const plist=(r.players||[]).map(pid=>{
+      const pidS=String(pid); const p=players[pidS]||{};
+      const name=`${p.first_name||''} ${p.last_name||''}`.trim()||p.full_name||pidS;
+      return {id:pidS,name,pos:p.position||'',age:p.age||0,value:valMap.get(pidS)||0,ppg:ppgMap.get(norm(name))||0,team:p.team||''};
     });
-    const total = plist.reduce((s,p)=>s+p.value,0);
-    const qb = plist.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0);
-    const rb = plist.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0);
-    const wr = plist.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0);
-    const te = plist.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0);
-    const ages = plist.map(p=>p.age).filter(a=>a>0);
-    const age = ages.length? ages.reduce((a,b)=>a+b)/ages.length : 0;
-    const {total:opt,starters} = optimal(plist);
-    const sumPos = qb+rb+wr+te || 1;
-    const shares = [qb,rb,wr,te].map(v=>v/sumPos);
-    const mean = shares.reduce((a,b)=>a+b)/4;
-    const std = Math.sqrt(shares.reduce((s,x)=>s+(x-mean)**2,0)/4);
-    const bal = 100 - std*200;
-    return {rosterId:r.roster_id,teamName,username,total,qb,rb,wr,te,age,opt,starters,plist,bal,picks:(r.settings?.total_moves||0)};
+    const total=plist.reduce((s,p)=>s+p.value,0);
+    const qb=plist.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0);
+    const rb=plist.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0);
+    const wr=plist.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0);
+    const te=plist.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0);
+    const ages=plist.map(p=>p.age).filter(a=>a>0); const age=ages.length?ages.reduce((a,b)=>a+b)/ages.length:0;
+    const {total:opt,starters}=optimal(plist);
+    const sumPos=qb+rb+wr+te||1; const shares=[qb,rb,wr,te].map(v=>v/sumPos); const mean=shares.reduce((a,b)=>a+b)/4;
+    const std=Math.sqrt(shares.reduce((s,x)=>s+(x-mean)**2,0)/4); const bal=100-std*200;
+    return {rosterId:r.roster_id,teamName,username,total,qb,rb,wr,te,age,opt,starters,plist,bal};
   });
 
-  const maxOpt = Math.max(...built.map(t=>t.opt));
-  built.forEach(t=>{
-    t.productivity = maxOpt? t.opt/maxOpt : 0;
-    t.longevity = Math.max(0,Math.min(100,100-((t.age-23)*8)));
-  });
-  const vals = built.map(t=>t.total).sort((a,b)=>a-b);
-  const ppgsArr = built.map(t=>t.opt).sort((a,b)=>a-b);
-  built.forEach(t=>{
-    t.valP = vals.indexOf(t.total)/(vals.length-1)*100;
-    t.ppgP = ppgsArr.indexOf(t.opt)/(ppgsArr.length-1)*100;
-    const [label,cls] = archetype(t);
-    t.arch = label; t.archCls = cls;
-  });
-  built.sort((a,b)=>b.total-a.total);
-  built.forEach((t,i)=>t.rank=i+1);
-  teams = built;
-  render();
-  document.getElementById('status').innerHTML = `<div class="size-2 rounded-full bg-emerald-400"></div><span>Live • ${teams.length} teams loaded</span>`;
+  const maxOpt=Math.max(...built.map(t=>t.opt));
+  built.forEach(t=>{ t.productivity=maxOpt?t.opt/maxOpt:0; t.longevity=Math.max(0,Math.min(100,100-((t.age-23)*8))); });
+  const vals=built.map(t=>t.total).sort((a,b)=>a-b); const ppgsArr=built.map(t=>t.opt).sort((a,b)=>a-b);
+  built.forEach(t=>{ t.valP=vals.indexOf(t.total)/(vals.length-1)*100; t.ppgP=ppgsArr.indexOf(t.opt)/(ppgsArr.length-1)*100; const [label,cls]=archetype(t); t.arch=label; t.archCls=cls; });
+  teams=built; render(); document.getElementById('status').innerHTML=`<div class="size-2 rounded-full bg-emerald-400"></div><span>Live • ${teams.length} teams loaded</span>`;
+}
+
+function rankMap(key, asc=false){
+  const sorted=[...teams].sort((a,b)=> asc? a[key]-b[key] : b[key]-a[key]);
+  const map=new Map(); sorted.forEach((t,i)=>map.set(t.rosterId,i+1)); return map;
 }
 
 function render(){
-  const tbody = document.getElementById('tbody');
-  const data = [...teams].sort((a,b)=>{
-    const av = a[sort.key], bv = b[sort.key];
-    return sort.dir * (av > bv? 1 : av < bv? -1 : 0);
-  });
+  const tbody=document.getElementById('tbody');
+  const data=[...teams].sort((a,b)=>{const av=a[sort.key],bv=b[sort.key]; return sort.dir*(av>bv?1:av<bv?-1:0);});
+
+  const rankTotal = rankMap('total');
+  const rankQB = rankMap('qb');
+  const rankRB = rankMap('rb');
+  const rankWR = rankMap('wr');
+  const rankTE = rankMap('te');
+  const rankAge = rankMap('age', true);
+  const rankOpt = rankMap('opt');
+
   document.querySelectorAll('th.sortable').forEach(th=>th.classList.toggle('active', th.dataset.sort===sort.key));
-  tbody.innerHTML = data.map(t=>`
-    <tr class="hover:bg-amber-950/30 transition">
-      <td class="px-4 py-3 font-mono text-amber-300/80 whitespace-nowrap">${t.rank}</td>
+
+  tbody.innerHTML = data.map(t=>{
+    const isExp = expanded.has(t.rosterId);
+    return `
+    <tr class="team-row ${isExp?'expanded':''} hover:bg-amber-950/30 transition" data-id="${t.rosterId}">
+      <td class="px-4 py-3"><svg class="size-4 text-amber-400 transition-transform ${isExp?'rotate-90':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 18 6-6-6" stroke-width="2"/></svg></td>
       <td class="px-4 py-3">
-        <div class="font-semibold text-amber-50 whitespace-nowrap leading-tight">${t.teamName}</div>
-        <div class="text-[11px] text-amber-200/60 whitespace-nowrap leading-tight">@${t.username} • ${t.picks} picks</div>
+        <div class="font-semibold whitespace-nowrap leading-tight">${t.teamName}</div>
+        <div class="text-[11px] text-amber-200/60 whitespace-nowrap leading-tight">@${t.username}</div>
         <div class="mt-1.5 flex gap-3">
-          <div class="w-24">
-            <div class="h-1.5 rounded-full bg-amber-950 overflow-hidden"><div class="h-full bg-amber-400" style="width:${Math.round(t.productivity*100)}%"></div></div>
-            <div class="text-[9px] uppercase tracking-wider text-amber-200/50 mt-0.5">Productivity</div>
+          <div class="w-24"><div class="h-1.5 rounded-full bg-amber-950 overflow-hidden"><div class="h-full bg-amber-400" style="width:${Math.round(t.productivity*100)}%"></div></div><div class="text-[9px] uppercase tracking-wider text-amber-200/50 mt-0.5">Productivity</div></div>
+          <div class="w-24"><div class="h-1.5 rounded-full bg-amber-950 overflow-hidden"><div class="h-full bg-yellow-500" style="width:${Math.round(t.longevity)}%"></div></div><div class="text-[9px] uppercase tracking-wider text-amber-200/50 mt-0.5">Longevity</div></div>
+        </div>
+      </td>
+      <td class="px-3 py-3 text-right whitespace-nowrap"><span class="rank-pill mr-2 inline-flex items-center justify-center px-1.5 py-0.5 rounded border text-[10px] ${rankClass(rankTotal.get(t.rosterId))}">#${rankTotal.get(t.rosterId)}</span><span class="font-mono font-semibold">${Math.round(t.total).toLocaleString()}</span></td>
+      <td class="px-3 py-3 text-right whitespace-nowrap"><span class="rank-pill mr-2 inline-flex items-center justify-center px-1.5 py-0.5 rounded border text-[10px] ${rankClass(rankQB.get(t.rosterId))}">#${rankQB.get(t.rosterId)}</span><span class="font-mono text-sky-300">${Math.round(t.qb).toLocaleString()}</span></td>
+      <td class="px-3 py-3 text-right whitespace-nowrap"><span class="rank-pill mr-2 inline-flex items-center justify-center px-1.5 py-0.5 rounded border text-[10px] ${rankClass(rankRB.get(t.rosterId))}">#${rankRB.get(t.rosterId)}</span><span class="font-mono text-emerald-300">${Math.round(t.rb).toLocaleString()}</span></td>
+      <td class="px-3 py-3 text-right whitespace-nowrap"><span class="rank-pill mr-2 inline-flex items-center justify-center px-1.5 py-0.5 rounded border text-[10px] ${rankClass(rankWR.get(t.rosterId))}">#${rankWR.get(t.rosterId)}</span><span class="font-mono text-fuchsia-300">${Math.round(t.wr).toLocaleString()}</span></td>
+      <td class="px-3 py-3 text-right whitespace-nowrap"><span class="rank-pill mr-2 inline-flex items-center justify-center px-1.5 py-0.5 rounded border text-[10px] ${rankClass(rankTE.get(t.rosterId))}">#${rankTE.get(t.rosterId)}</span><span class="font-mono text-amber-300">${Math.round(t.te).toLocaleString()}</span></td>
+      <td class="px-3 py-3 text-right whitespace-nowrap"><span class="rank-pill mr-2 inline-flex items-center justify-center px-1.5 py-0.5 rounded border text-[10px] ${rankClass(rankAge.get(t.rosterId))}">#${rankAge.get(t.rosterId)}</span><span class="font-mono">${t.age.toFixed(1)}</span></td>
+      <td class="px-3 py-3 text-right whitespace-nowrap"><span class="opt inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-950/60 border border-amber-800 hover:bg-amber-900/60 cursor-help" data-id="${t.rosterId}"><span class="rank-pill mr-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded border text-[10px] ${rankClass(rankOpt.get(t.rosterId))}">#${rankOpt.get(t.rosterId)}</span><span class="font-mono font-semibold text-amber-100">${t.opt.toFixed(1)}</span></td>
+      <td class="px-4 py-3 whitespace-nowrap"><span class="inline-flex px-2.5 py-1 rounded-full text-[11px] border bg-gradient-to-r ${t.archCls}">${t.arch}</span></td>
+    </tr>
+    ${isExp? `
+    <tr class="bg-[#0e0a05] border-y border-amber-900/40">
+      <td colspan="10" class="p-0">
+        <div class="p-4">
+          <div class="grid grid-cols-12 gap-2 text-[11px] uppercase tracking-wider text-amber-200/60 px-2 pb-2">
+            <div class="col-span-5">Player</div><div class="col-span-2">Pos</div><div class="col-span-1 text-right">Age</div><div class="col-span-2 text-right">Value</div><div class="col-span-2 text-right">PPG</div>
           </div>
-          <div class="w-24">
-            <div class="h-1.5 rounded-full bg-amber-950 overflow-hidden"><div class="h-full bg-yellow-500" style="width:${Math.round(t.longevity)}%"></div></div>
-            <div class="text-[9px] uppercase tracking-wider text-amber-200/50 mt-0.5">Longevity</div>
+          <div class="max-h-[300px] overflow-auto divide-y divide-amber-950/60 border border-amber-900/30 rounded-xl">
+            ${t.plist.sort((a,b)=>b.value-a.value).map(p=>`
+              <div class="grid grid-cols-12 gap-2 items-center px-3 py-2 hover:bg-amber-950/20">
+                <div class="col-span-5 truncate">${p.name} <span class="text-amber-200/50">• ${p.team||'FA'}</span></div>
+                <div class="col-span-2"><span class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-800 text-[10px]">${p.pos||'—'}</span></div>
+                <div class="col-span-1 text-right font-mono">${p.age? p.age.toFixed(1) : '—'}</div>
+                <div class="col-span-2 text-right font-mono">${Math.round(p.value).toLocaleString()}</div>
+                <div class="col-span-2 text-right font-mono text-emerald-300">${p.ppg.toFixed(1)}</div>
+              </div>
+            `).join('')}
           </div>
         </div>
       </td>
-      <td class="px-3 py-3 text-right font-mono font-semibold whitespace-nowrap">${Math.round(t.total).toLocaleString()}</td>
-      <td class="px-3 py-3 text-right font-mono text-sky-300 whitespace-nowrap">${Math.round(t.qb).toLocaleString()}</td>
-      <td class="px-3 py-3 text-right font-mono text-emerald-300 whitespace-nowrap">${Math.round(t.rb).toLocaleString()}</td>
-      <td class="px-3 py-3 text-right font-mono text-fuchsia-300 whitespace-nowrap">${Math.round(t.wr).toLocaleString()}</td>
-      <td class="px-3 py-3 text-right font-mono text-amber-300 whitespace-nowrap">${Math.round(t.te).toLocaleString()}</td>
-      <td class="px-3 py-3 text-right font-mono whitespace-nowrap">${t.age.toFixed(1)}</td>
-      <td class="px-3 py-3 text-right whitespace-nowrap">
-        <span class="opt inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-950/60 border border-amber-800 hover:bg-amber-900/60 cursor-help" data-id="${t.rosterId}">
-          <span class="font-mono font-semibold text-amber-100">${t.opt.toFixed(1)}</span>
-        </span>
-      </td>
-      <td class="px-4 py-3 whitespace-nowrap"><span class="inline-flex px-2.5 py-1 rounded-full text-[11px] border bg-gradient-to-r ${t.archCls}">${t.arch}</span></td>
     </tr>
-  `).join('');
+    ` : ''}
+    `;
+  }).join('');
+
+  tbody.querySelectorAll('tr.team-row').forEach(row=>{
+    row.addEventListener('click',()=>{ const id=Number(row.dataset.id); expanded.has(id)?expanded.delete(id):expanded.add(id); render(); });
+  });
   bindTip();
 }
 
@@ -254,35 +272,16 @@ function bindTip(){
   document.querySelectorAll('.opt').forEach(el=>{
     el.addEventListener('mouseenter',e=>{
       const t = teams.find(x=>String(x.rosterId)===el.dataset.id);
-      tip.innerHTML = `
-        <div class="text-[11px] uppercase tracking-wider text-amber-200/70 mb-2">Optimal Starters • ${t.teamName}</div>
-        <div class="space-y-1 max-h-[240px] overflow-auto pr-1">
-          ${t.starters.map(s=>`
-            <div class="grid grid-cols-[50px_1fr_auto] gap-2 items-center text-[12px]">
-              <span class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-800 text-amber-200 text-[10px]">${s.slot}</span>
-              <span class="truncate">${s.name} <span class="text-amber-200/50">• ${s.pos}</span></span>
-              <span class="font-mono text-emerald-300">${s.ppg.toFixed(1)}</span>
-              <span class="font-mono text-amber-300">${Math.round(s.value).toLocaleString()}</span>
-            </div>
-          `).join('')}
-        </div>
-      `;
+      tip.innerHTML = `<div class="text-[11px] uppercase tracking-wider text-amber-200/70 mb-2">Optimal Starters • ${t.teamName}</div><div class="space-y-1 max-h-[240px] overflow-auto pr-1">${t.starters.map(s=>`<div class="grid grid-cols-[50px_1fr_auto] gap-2 items-center text-[12px]"><span class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-800 text-amber-200 text-[10px]">${s.slot}</span><span class="truncate">${s.name} <span class="text-amber-200/50">• ${s.pos}</span></span><span class="font-mono text-emerald-300">${s.ppg.toFixed(1)}</span></div>`).join('')}</div>`;
       tip.classList.remove('hidden');
     });
     el.addEventListener('mouseleave',()=>tip.classList.add('hidden'));
-    el.addEventListener('mousemove',e=>{
-      tip.style.left = Math.min(window.innerWidth-360, e.clientX+14)+'px';
-      tip.style.top = e.clientY+14+'px';
-    });
+    el.addEventListener('mousemove',e=>{ tip.style.left = Math.min(window.innerWidth-360, e.clientX+14)+'px'; tip.style.top = e.clientY+14+'px'; });
   });
 }
 
 document.querySelectorAll('th.sortable').forEach(th=>{
-  th.addEventListener('click',()=>{
-    const key = th.dataset.sort;
-    if(sort.key===key) sort.dir*=-1; else {sort.key=key; sort.dir=-1;}
-    render();
-  });
+  th.addEventListener('click',()=>{ const key=th.dataset.sort; if(sort.key===key) sort.dir*=-1; else {sort.key=key; sort.dir=-1;} render(); });
 });
 document.getElementById('refresh').addEventListener('click',load);
 load();
