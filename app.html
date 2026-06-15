@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>THE VAULT • Gold Dynasty Dashboard</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/paparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{color-scheme:dark}
@@ -78,13 +78,15 @@ th.sortable.active.arrow{opacity:1}
     <div class="rounded-2xl border border-amber-900/50 bg-[#110c05]/70 p-5">
       <h2 class="display text-lg gold-text gold-solid mb-3">How We Calculate</h2>
       <div class="space-y-3 text-[13px] leading-relaxed text-amber-100/90">
-        <div><strong class="text-amber-200">Opt PPG:</strong> We sort your roster by <code>Avg_PPR_0.5_TEP</code>, then fill your league’s starting slots in restrictiveness order: QB → RB → WR → TE → FLEX → SUPER_FLEX → WRRB_FLEX → REC_FLEX. Sum of those starters = Opt PPG. <em>Hover the Opt PPG pill for the exact slot-by-slot list (player • PPG • Value).</em></div>
-        <div><strong class="text-amber-200">Productivity:</strong> <code>team Opt PPG ÷ highest Opt PPG in league</code> → 0-100%. Shows how close your best lineup is to the league’s best lineup <em>this season</em>.</div>
-        <div><strong class="text-amber-200">Longevity:</strong> Value-weighted average age. <code>longevity = clamp(100 − ((avg_age − 23) × 8), 0, 100)</code>. 23 = 100%; each year over 23 costs ~8 points. Younger cores score higher.</div>
+        <div><strong class="text-amber-200">Total Value, QB/RB/WR/TE:</strong> Sum of <code>val_sf_ppr_tep05</code> matched by <code>sleeper_id</code> from your Values sheet.</div>
+        <div><strong class="text-amber-200">Avg Age:</strong> Value-weighted average of player ages.</div>
+        <div><strong class="text-amber-200">Opt PPG:</strong> Fill league slots (QB, RB, WR, TE, FLEX, SUPER_FLEX, WRRB_FLEX, REC_FLEX) with highest remaining <code>Avg_PPR_0.5_TEP</code>. <em>Hover the Opt PPG pill for slot-by-slot breakdown.</em></div>
+        <div><strong class="text-amber-200">Productivity:</strong> <code>team Opt PPG ÷ league-best Opt PPG × 100</code></div>
+        <div><strong class="text-amber-200">Longevity:</strong> <code>100 − ((avg_age − 23) × 8)</code> clamped 0-100</div>
       </div>
     </div>
     <div class="rounded-2xl border border-amber-900/50 bg-[#110c05]/70 p-5">
-      <h2 class="display text-lg gold-text gold-solid mb-3">Archetypes (percentiles)</h2>
+      <h2 class="display text-lg gold-text gold-solid mb-3">Archetypes</h2>
       <ul class="text-[12.5px] space-y-1.5 text-amber-100/85 list-disc pl-4">
         <li><strong>Elite Contender:</strong> valP ≥75, ppgP ≥75, age 24-27.5</li>
         <li><strong>Aging Contender:</strong> ppgP ≥70, age ≥27.5</li>
@@ -92,11 +94,10 @@ th.sortable.active.arrow{opacity:1}
         <li><strong>Young Riser / Ascending:</strong> age <25.5, valP ≥45, 40 ≤ ppgP <65</li>
         <li><strong>Pick-Rich Rebuilder:</strong> ppgP <40, age <26, valP ≥35</li>
         <li><strong>Balanced Core:</strong> positional balance ≥70th percentile</li>
-        <li><strong>Volatile / High-Variance:</strong> valP ≥70 and ppgP ≤45, or one position ≥50% of value</li>
+        <li><strong>Volatile / High-Variance:</strong> valP ≥70 and ppgP ≤45</li>
         <li><strong>Stripped Rebuilder:</strong> valP ≤25 and ppgP ≤25</li>
-        <li><strong>Stuck in the Middle / Purgatory:</strong> everything else</li>
+        <li><strong>Stuck in the Middle / Purgatory:</strong> all others</li>
       </ul>
-      <p class="mt-3 text-[11px] text-amber-200/60">valP = Total Value percentile, ppgP = Opt PPG percentile, balance = 1 − std dev of QB/RB/WR/TE value shares.</p>
     </div>
   </div>
 </main>
@@ -110,7 +111,6 @@ const PPG_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_E
 
 let teams = [];
 let sort = {key:'total',dir:-1};
-
 const norm = s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 
 function archetype(t){
@@ -219,8 +219,8 @@ function render(){
     <tr class="hover:bg-amber-950/30 transition">
       <td class="px-4 py-3 font-mono text-amber-300/80 whitespace-nowrap">${t.rank}</td>
       <td class="px-4 py-3">
-        <div class="font-semibold text-amber-50 whitespace-nowrap">${t.teamName}</div>
-        <div class="text-[11px] text-amber-200/60 whitespace-nowrap">@${t.username} • ${t.picks} picks</div>
+        <div class="font-semibold text-amber-50 whitespace-nowrap leading-tight">${t.teamName}</div>
+        <div class="text-[11px] text-amber-200/60 whitespace-nowrap leading-tight">@${t.username} • ${t.picks} picks</div>
         <div class="mt-1.5 flex gap-3">
           <div class="w-24">
             <div class="h-1.5 rounded-full bg-amber-950 overflow-hidden"><div class="h-full bg-amber-400" style="width:${Math.round(t.productivity*100)}%"></div></div>
