@@ -1,383 +1,110 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>The Vault • Fantasy Football League Overview</title>
+<title>Vault Dynasty — Opt PPG Tool</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: dark; }
-  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-  .display { font-family: 'Space Grotesk', sans-serif; }
-  .glass { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-  .pos-QB { @apply bg-sky-500/15 text-sky-300 border-sky-500/30; }
-  .pos-RB { @apply bg-emerald-500/15 text-emerald-300 border-emerald-500/30; }
-  .pos-WR { @apply bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30; }
-  .pos-TE { @apply bg-amber-500/15 text-amber-300 border-amber-500/30; }
-  .pos-K, .pos-DEF { @apply bg-zinc-500/15 text-zinc-300 border-zinc-500/30; }
-  .scrollbar-thin::-webkit-scrollbar { height: 8px; width: 8px; }
-  .scrollbar-thin::-webkit-scrollbar-thumb { background: #2a2f3f; border-radius: 4px; }
-  .fade-in { animation: fade .4s ease-out; }
-  @keyframes fade { from { opacity:0; transform: translateY(4px);} to { opacity:1; transform: translateY(0);} }
+  body { font-family: Inter, system-ui; background:#050507 }
+ .glass { background: linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02)); backdrop-filter: blur(16px); border:1px solid rgba(255,255,255,.08) }
 </style>
 </head>
-<body class="min-h-screen bg-[#05070f] text-zinc-100 antialiased selection:bg-fuchsia-500/30">
-  <div class="fixed inset-0 -z-10">
-    <div class="absolute inset-0 bg-[radial-gradient(60%_60%_at_50%_-10%,rgba(139,92,246,0.25),transparent_60%),radial-gradient(40%_40%_at_100%_0%,rgba(14,165,233,0.2),transparent_50%),radial-gradient(40%_40%_at_0%_100%,rgba(236,72,153,0.15),transparent_50%)]"></div>
-    <div class="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(5,7,15,0.9))]"></div>
+<body class="text-zinc-100">
+<header class="sticky top-0 z-40 border-b border-white/5 bg-black/60 backdrop-blur-xl">
+  <div class="max-w-[1400px] mx-auto px-6 h-[64px] flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-cyan-400"></div>
+      <h1 class="text-lg font-semibold">THE VAULT</h1>
+      <span class="text-xs px-2 py-0.5 rounded bg-white/5 border border-white/10">SF • TEP 0.5</span>
+    </div>
+    <div id="format" class="font-mono text-xs text-zinc-400"></div>
   </div>
+</header>
 
-  <header class="sticky top-0 z-40 border-b border-white/10 bg-[#05070f]/80 glass">
-    <div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-4">
-        <div class="size-11 rounded-2xl bg-gradient-to-br from-amber-400 via-fuchsia-500 to-sky-500 p-[1.5px] shadow-lg shadow-fuchsia-500/20">
-          <div class="size-full rounded-2xl bg-[#0a0d18] flex items-center justify-center">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-amber-300">
-              <path d="M12 3 L20 7 V17 L12 21 L4 17 V7 Z" stroke="currentColor" stroke-width="1.5" />
-              <path d="M12 3 V21 M4 7 L12 11 L20 7" stroke="currentColor" stroke-width="1.5" opacity=".6"/>
-            </svg>
-          </div>
-        </div>
-        <div>
-          <h1 class="display text-[22px] sm:text-[26px] font-bold leading-none tracking-tight">
-            <span class="bg-gradient-to-r from-amber-300 via-fuchsia-300 to-sky-300 bg-clip-text text-transparent">THE VAULT</span>
-          </h1>
-          <p class="text-xs sm:text-[13px] text-zinc-400 -mt-0.5">Sleeper League Overview • Dynasty Value + PPG</p>
-        </div>
-      </div>
-      <div class="hidden sm:flex items-center gap-2">
-        <span class="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-zinc-300">League 1313454100225990656</span>
-        <button id="reloadBtn" class="text-sm px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition">Refresh</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Debug / Status -->
-    <div id="statusBar" class="mb-6 grid gap-3 sm:grid-cols-3">
-      <div class="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-4">
-        <div class="text-[11px] uppercase tracking-wider text-zinc-400">Values CSV</div>
-        <div id="debugValues" class="mt-1 text-lg font-semibold">—</div>
-      </div>
-      <div class="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-4">
-        <div class="text-[11px] uppercase tracking-wider text-zinc-400">PPG CSV</div>
-        <div id="debugPPG" class="mt-1 text-lg font-semibold">—</div>
-      </div>
-      <div class="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-4">
-        <div class="text-[11px] uppercase tracking-wider text-zinc-400">Rosters</div>
-        <div id="debugRosters" class="mt-1 text-lg font-semibold">—</div>
-      </div>
-    </div>
-
-    <div id="errorBanner" class="hidden mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-200 text-sm"></div>
-
-    <!-- League Header Card -->
-    <div id="leagueCard" class="hidden mb-8 rounded-[24px] border border-white/10 bg-gradient-to-b from-white/[0.07] to-transparent p-6 sm:p-8 shadow-2xl shadow-black/40">
-      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div>
-          <h2 id="leagueName" class="display text-3xl font-bold tracking-tight"></h2>
-          <p id="leagueMeta" class="text-zinc-400 mt-1 text-sm"></p>
-        </div>
-        <div class="flex items-center gap-6">
-          <div class="text-center">
-            <div class="text-[11px] uppercase tracking-wider text-zinc-500">Teams</div>
-            <div id="statTeams" class="text-2xl font-semibold">—</div>
-          </div>
-          <div class="text-center">
-            <div class="text-[11px] uppercase tracking-wider text-zinc-500">Avg Vault Value</div>
-            <div id="statAvgValue" class="text-2xl font-semibold">—</div>
-          </div>
-          <div class="text-center">
-            <div class="text-[11px] uppercase tracking-wider text-zinc-500">Top PPG</div>
-            <div id="statTopPPG" class="text-2xl font-semibold">—</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Table -->
-    <div class="rounded-[24px] border border-white/10 bg-[#0a0d18]/80 glass shadow-2xl shadow-black/50 overflow-hidden">
-      <div class="border-b border-white/10 px-5 sm:px-7 py-4 flex items-center justify-between bg-white/[0.02]">
-        <h3 class="display font-semibold tracking-tight text-lg">Team Vault Rankings</h3>
-        <div class="text-xs text-zinc-500">Click row to expand roster</div>
-      </div>
-
-      <div id="loading" class="py-24 flex flex-col items-center justify-center gap-4 text-zinc-400">
-        <div class="size-10 rounded-full border-2 border-zinc-700 border-t-fuchsia-400 animate-spin"></div>
-        <p class="text-sm">Loading Sleeper data & values...</p>
-      </div>
-
-      <div class="overflow-x-auto scrollbar-thin">
-        <table class="w-full text-sm hidden" id="teamsTable">
-          <thead class="text-[11px] uppercase tracking-wider text-zinc-500 bg-white/[0.02]">
-            <tr class="[&>th]:px-4 [&>th]:py-3 [&>th]:text-left [&>th]:font-medium">
-              <th class="w-8"></th>
-              <th>Team</th>
-              <th>Manager</th>
-              <th class="text-right">Total Value</th>
-              <th class="text-right">Avg Age</th>
-              <th class="text-right">QB</th>
-              <th class="text-right">RB</th>
-              <th class="text-right">WR</th>
-              <th class="text-right">TE</th>
-              <th class="text-right">Opt PPG</th>
-              <th class="text-right pr-6">Players</th>
-            </tr>
-          </thead>
-          <tbody id="teamsBody" class="divide-y divide-white/[0.06]"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <footer class="mt-12 text-center text-xs text-zinc-600 pb-12">
-      Built for The Vault • Data: Sleeper API + Google Sheets (Papa Parse) • No storage used
-    </footer>
-  </main>
+<main class="max-w-[1400px] mx-auto px-6 py-8">
+  <div id="loading" class="glass rounded-2xl p-8 text-center">Loading league...</div>
+  <div id="app" class="hidden">
+    <table class="w-full text-sm">
+      <thead class="text-zinc-500 border-b border-white/10">
+        <tr><th class="text-left py-2">#</th><th class="text-left">Team</th><th class="text-right">Opt PPG</th><th class="text-right">Starters Val</th><th class="text-right">Total Val</th></tr>
+      </thead>
+      <tbody id="tbody" class="divide-y divide-white/5"></tbody>
+    </table>
+  </div>
+</main>
 
 <script>
 const LEAGUE_ID = '1313454100225990656';
 const VALUES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
 const PPG_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
 
-const fmt0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
-const fmt1 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+async function init(){
+  const [league, users, rosters, valsTxt, ppgTxt] = await Promise.all([
+    fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}`).then(r=>r.json()),
+    fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/users`).then(r=>r.json()),
+    fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/rosters`).then(r=>r.json()),
+    fetch(VALUES_URL).then(r=>r.text()),
+    fetch(PPG_URL).then(r=>r.text())
+  ]);
 
-const normalize = s => String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();
+  const slots = league.roster_positions.filter(p=>!['BN','IR','TAXI'].includes(p));
+  document.getElementById('format').textContent = slots.join(' • ');
 
-const posBadge = pos => {
-  const p = (pos||'').toUpperCase();
-  const cls = p==='QB'?'pos-QB':p==='RB'?'pos-RB':p==='WR'?'pos-WR':p==='TE'?'pos-TE':'pos-K';
-  return `<span class="inline-flex items-center px-2 py-0.5 rounded-lg border text-[11px] font-medium ${cls}">${p}</span>`;
-};
+  const vals = Papa.parse(valsTxt,{header:true}).data;
+  const vMap = {};
+  vals.forEach(r=>{ if(r.sleeper_id) vMap[r.sleeper_id] = {val:+r.val_sf_ppr_tep05||0, name:r.name} });
 
-function showError(msg){
-  const el = document.getElementById('errorBanner');
-  el.textContent = msg;
-  el.classList.remove('hidden');
+  const ppg = Papa.parse(ppgTxt,{header:true}).data;
+  const pMap = {};
+  ppg.forEach(r=>{ const n=(r.Player||'').toLowerCase().replace(/[^a-z0-9]/g,''); pMap[n]=+r['Avg_PPR_0.5_TEP']||0 });
+
+  const userMap = Object.fromEntries(users.map(u=>[u.user_id,u]));
+  const players = await fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json());
+
+  const teams = rosters.map(ro=>{
+    const plist = (ro.players||[]).map(pid=>{
+      const p=players[pid]; if(!p) return null;
+      const key=p.full_name.toLowerCase().replace(/[^a-z0-9]/g,'');
+      return {id:pid,name:p.full_name,pos:p.position,ppg:pMap[key]||0,val:vMap[pid]?.val||0}
+    }).filter(Boolean);
+
+    const pool=[...plist].sort((a,b)=>b.ppg-a.ppg);
+    const used=new Set(); const starters=[];
+    const fits=(pl,sl)=> sl===pl.pos || (sl==='FLEX'&&['RB','WR','TE'].includes(pl.pos)) || (sl==='SUPER_FLEX');
+
+    for(const s of slots){ const c=pool.find(p=>!used.has(p.id)&&fits(p,s)); if(c){used.add(c.id);starters.push({...c,slot:s})}}
+
+    return {
+      name:userMap[ro.owner_id]?.metadata?.team_name||userMap[ro.owner_id]?.display_name,
+      opt:starters.reduce((a,b)=>a+b.ppg,0),
+      sval:starters.reduce((a,b)=>a+b.val,0),
+      tval:plist.reduce((a,b)=>a+b.val,0),
+      starters
+    }
+  }).sort((a,b)=>b.opt-a.opt);
+
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('tbody').innerHTML = teams.map((t,i)=>`
+    <tr class="hover:bg-white/5">
+      <td class="py-2 font-mono text-zinc-500">${i+1}</td>
+      <td class="py-2">${t.name}</td>
+      <td class="py-2 text-right relative group">
+        <span class="font-mono cursor-help">${t.opt.toFixed(1)}</span>
+        <div class="invisible group-hover:visible absolute right-0 mt-1 z-50 w-80 p-3 rounded-xl bg-zinc-900 border-zinc-700 shadow-xl">
+          <div class="text-xs text-zinc-500 mb-1">Starters — PPG vs Value</div>
+          ${t.starters.map(s=>`<div class="flex justify-between text-xs py-0.5"><span>${s.slot} ${s.name}</span><span class="font-mono">${s.ppg.toFixed(1)} / ${Math.round(s.val).toLocaleString()}</span></div>`).join('')}
+          <div class="border-t border-zinc-800 mt-1 pt-1 flex justify-between font-mono text-xs"><span>Total</span><span>${t.opt.toFixed(1)} / ${Math.round(t.sval).toLocaleString()}</span></div>
+        </div>
+      </td>
+      <td class="py-2 text-right font-mono">${Math.round(t.sval).toLocaleString()}</td>
+      <td class="py-2 text-right font-mono text-zinc-500">${Math.round(t.tval).toLocaleString()}</td>
+    </tr>`).join('');
 }
-function hideError(){ document.getElementById('errorBanner').classList.add('hidden'); }
-
-async function fetchText(url){
-  const res = await fetch(url, { cache: 'no-store' });
-  if(!res.ok) throw new Error(`Fetch failed ${res.status} for ${url}`);
-  return res.text();
-}
-
-async function loadAll(){
-  hideError();
-  document.getElementById('loading').classList.remove('hidden');
-  document.getElementById('teamsTable').classList.add('hidden');
-  document.getElementById('leagueCard').classList.add('hidden');
-
-  try {
-    const [league, users, rosters, playersDict, valuesCsv, ppgCsv] = await Promise.all([
-      fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}`).then(r=>r.json()),
-      fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/users`).then(r=>r.json()),
-      fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/rosters`).then(r=>r.json()),
-      fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),
-      fetchText(VALUES_URL),
-      fetchText(PPG_URL),
-    ]);
-
-    // Parse CSVs
-    const valuesParsed = Papa.parse(valuesCsv, { header:true, skipEmptyLines:true });
-    const ppgParsed = Papa.parse(ppgCsv, { header:true, skipEmptyLines:true });
-
-    const valuesMap = new Map();
-    for(const row of valuesParsed.data){
-      const sid = String(row.sleeper_id || '').trim();
-      if(!sid) continue;
-      const val = parseFloat(row.val_sf_ppr_tep05) || 0;
-      valuesMap.set(sid, {
-        value: val,
-        name: row.name || '',
-        pos: row.pos || '',
-        team: row.team || '',
-        age: parseFloat(row.age) || 0
-      });
-    }
-
-    // Build PPG map
-    const ppgMap = new Map();
-    let nameKey = null;
-    if(ppgParsed.data.length){
-      const keys = Object.keys(ppgParsed.data[0]);
-      nameKey = keys.find(k=>/player|name/i.test(k)) || keys[0];
-    }
-    for(const row of ppgParsed.data){
-      const name = row[nameKey] || '';
-      const ppg = parseFloat(row.Avg_PPR_0_5_TEP || row.Avg_PPR_0_5_TEP || row.Avg_PPR_65_TEP || row.Avg_PPR_0_5_TEP || row['Avg_PPR_0.5_TEP'] || row['Avg_PPR_0.5_TEP'] || row['Avg_PPR_0_5_TEP'] || 0);
-      // Papa preserves header as-is, try exact
-      const ppgExact = parseFloat(row['Avg_PPR_0.5_TEP']) || ppg;
-      const norm = normalize(name);
-      if(norm) ppgMap.set(norm, ppgExact || 0);
-    }
-
-    // Debug
-    document.getElementById('debugValues').textContent = fmt0.format(valuesMap.size) + ' players';
-    document.getElementById('debugPPG').textContent = fmt0.format(ppgMap.size) + ' players';
-    document.getElementById('debugRosters').textContent = fmt0.format(rosters.length) + ' teams';
-    if(valuesMap.size === 0) showError('Failed to load Values CSV');
-
-    // Build team data
-    const userById = new Map(users.map(u=>[u.user_id, u]));
-    const starters = (league.roster_positions || []).filter(p=>!['BN','IR','TAXI'].includes(p));
-    // order slots by restrictiveness
-    const slotPriority = s => s==='QB'?0:s==='RB'?1:s==='WR'?1:s==='TE'?1:s==='FLEX'?2:s==='SUPER_FLEX'?3:4;
-    const sortedSlots = [...starters].sort((a,b)=>slotPriority(a)-slotPriority(b));
-
-    function computeOptimalPPG(players){
-      const pool = [...players].sort((a,b)=>b.ppg - a.ppg);
-      let total = 0;
-      const used = new Set();
-      for(const slot of sortedSlots){
-        let allowed = [];
-        if(slot==='FLEX') allowed=['RB','WR','TE'];
-        else if(slot==='SUPER_FLEX') allowed=['QB','RB','WR','TE'];
-        else if(slot==='WRRB_FLEX') allowed=['RB','WR'];
-        else if(slot==='REC_FLEX') allowed=['WR','TE'];
-        else allowed=[slot];
-        const idx = pool.findIndex(p=>!used.has(p.id)&&allowed.includes(p.pos));
-        if(idx>=0){
-          const p = pool[idx];
-          total += p.ppg;
-          used.add(p.id);
-          pool.splice(idx,1);
-        }
-      }
-      return total;
-    }
-
-    const teams = rosters.map(roster=>{
-      const user = userById.get(roster.owner_id) || {};
-      const teamName = user.metadata?.team_name || user.display_name || 'Unnamed Team';
-      const manager = user.display_name || 'Unknown';
-
-      const playerIds = roster.players || [];
-      const players = playerIds.map(pid=>{
-        const pidStr = String(pid);
-        const valRec = valuesMap.get(pidStr);
-        const sleeperRec = playersDict[pidStr] || {};
-        const name = valRec?.name || sleeperRec.full_name || `${sleeperRec.first_name||''} ${sleeperRec.last_name||''}`.trim() || pidStr;
-        const pos = (valRec?.pos || sleeperRec.position || '').toUpperCase();
-        const team = valRec?.team || sleeperRec.team || '';
-        const age = valRec?.age || sleeperRec.age || 0;
-        const value = valRec?.value || 0;
-        const ppg = ppgMap.get(normalize(name)) || 0;
-        return { id: pidStr, name, pos, team, age, value, ppg };
-      }).filter(p=>p.pos);
-
-      const total_value = players.reduce((s,p)=>s+p.value,0);
-      const ages = players.map(p=>p.age).filter(a=>a>0);
-      const avg_age = ages.length? ages.reduce((a,b)=>a+b,0)/ages.length : 0;
-      const pos_values = { QB:0,RB:0,WR:0,TE:0 };
-      for(const p of players){
-        if(pos_values[p.pos]!=null) pos_values[p.pos]+=p.value;
-      }
-      const optimal_ppg = computeOptimalPPG(players);
-      players.sort((a,b)=>b.value - a.value);
-      return { roster_id: roster.roster_id, teamName, manager, total_value, avg_age, pos_values, optimal_ppg, players, record: roster.settings };
-    });
-
-    teams.sort((a,b)=>b.total_value - a.total_value);
-
-    // League card
-    document.getElementById('leagueName').textContent = league.name || 'The Vault League';
-    document.getElementById('leagueMeta').textContent = `${league.season} Season • ${league.total_rosters} Teams • ${league.status}`;
-    document.getElementById('statTeams').textContent = teams.length;
-    document.getElementById('statAvgValue').textContent = fmt0.format(teams.reduce((s,t)=>s+t.total_value,0)/teams.length);
-    document.getElementById('statTopPPG').textContent = fmt1.format(Math.max(...teams.map(t=>t.optimal_ppg)));
-    document.getElementById('leagueCard').classList.remove('hidden');
-
-    // Render table
-    const tbody = document.getElementById('teamsBody');
-    tbody.innerHTML = '';
-    teams.forEach((t,idx)=>{
-      const tr = document.createElement('tr');
-      tr.className = 'team-row cursor-pointer hover:bg-white/[0.03] transition fade-in';
-      tr.dataset.idx = idx;
-      tr.innerHTML = `
-        <td class="pl-4 pr-2 py-3">
-          <svg class="chev size-4 text-zinc-600 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-        </td>
-        <td class="px-4 py-3 font-medium text-zinc-100">${t.teamName}</td>
-        <td class="px-4 py-3 text-zinc-400">${t.manager}</td>
-        <td class="px-4 py-3 text-right font-semibold tabular-nums">${fmt0.format(t.total_value)}</td>
-        <td class="px-4 py-3 text-right tabular-nums text-zinc-300">${fmt1.format(t.avg_age)}</td>
-        <td class="px-4 py-3 text-right tabular-nums">${fmt0.format(t.pos_values.QB)}</td>
-        <td class="px-4 py-3 text-right tabular-nums">${fmt0.format(t.pos_values.RB)}</td>
-        <td class="px-4 py-3 text-right tabular-nums">${fmt0.format(t.pos_values.WR)}</td>
-        <td class="px-4 py-3 text-right tabular-nums">${fmt0.format(t.pos_values.TE)}</td>
-        <td class="px-4 py-3 text-right font-medium text-amber-300 tabular-nums">${fmt1.format(t.optimal_ppg)}</td>
-        <td class="px-4 py-3 pr-6 text-right text-zinc-500">${t.players.length}</td>
-      `;
-      const exp = document.createElement('tr');
-      exp.className = 'expand-row hidden bg-[#060913]/70';
-      exp.innerHTML = `
-        <td colspan="11" class="p-0">
-          <div class="border-t border-white/10">
-            <div class="px-6 py-5">
-              <div class="flex items-center justify-between mb-3">
-                <div class="text-sm font-semibold text-zinc-200">Roster Breakdown • ${t.players.length} players</div>
-                <div class="text-xs text-zinc-500">Value = SF PPR TEP .05 • PPG = Avg_PPR_0.5_TEP</div>
-              </div>
-              <div class="overflow-x-auto rounded-xl border border-white/10">
-                <table class="w-full text-[13px]">
-                  <thead class="bg-white/[0.03] text-[11px] uppercase tracking-wider text-zinc-500">
-                    <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:text-left [&>th]:font-medium">
-                      <th>Player</th><th>Pos</th><th>Team</th><th class="text-right">Age</th><th class="text-right">Value</th><th class="text-right">PPG</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-white/5">
-                    ${t.players.map(p=>`
-                      <tr class="hover:bg-white/[0.02]">
-                        <td class="px-3 py-2 font-medium text-zinc-100">${p.name}</td>
-                        <td class="px-3 py-2">${posBadge(p.pos)}</td>
-                        <td class="px-3 py-2 text-zinc-400">${p.team||'—'}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">${p.age?fmt1.format(p.age):'—'}</td>
-                        <td class="px-3 py-2 text-right tabular-nums">${fmt0.format(p.value)}</td>
-                        <td class="px-3 py-2 text-right tabular-nums text-sky-300">${fmt1.format(p.ppg)}</td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-      tbody.appendChild(exp);
-    });
-
-    // Toggle expand
-    tbody.addEventListener('click', e=>{
-      const row = e.target.closest('.team-row');
-      if(!row) return;
-      const exp = row.nextElementSibling;
-      const chev = row.querySelector('.chev');
-      const isHidden = exp.classList.contains('hidden');
-      // close others? keep multiple open
-      exp.classList.toggle('hidden');
-      chev.style.transform = isHidden ? 'rotate(90deg)' : 'rotate(0deg)';
-    });
-
-    document.getElementById('loading').classList.add('hidden');
-    document.getElementById('teamsTable').classList.remove('hidden');
-
-  } catch(err){
-    console.error(err);
-    showError('Error loading data: ' + err.message);
-    document.getElementById('loading').innerHTML = `<div class="text-red-300">Failed to load. ${err.message}</div>`;
-  }
-}
-
-document.getElementById('reloadBtn')?.addEventListener('click', loadAll);
-loadAll();
+init();
 </script>
-<script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
 </body>
 </html>
