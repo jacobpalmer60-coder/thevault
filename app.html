@@ -19,6 +19,8 @@ body{font-family:Inter,system-ui;background:#0a0703}
 .scrollbar::-webkit-scrollbar-thumb{background:#3a2e12;border-radius:8px}
 th.sortable{cursor:pointer;user-select:none}
 th.sortable.active{color:#fde68a}
+tr.team-row{cursor:pointer}
+tr.team-row:hover{background:rgba(120,80,20,.12)}
 </style>
 </head>
 <body class="text-amber-50 antialiased leading-tight">
@@ -34,12 +36,10 @@ th.sortable.active{color:#fde68a}
         <div class="size-full rounded-[10px] bg-[#140f06] grid place-items-center">
           <span class="display text-xl gold-text gold-solid">V</span>
         </div>
-      </div>
       <div>
         <h1 class="display text-2xl font-bold gold-text gold-solid tracking-wide">THE VAULT</h1>
         <p class="text-[11px] uppercase tracking-[0.2em] text-amber-200/70 -mt-1">Dynasty Gold Standard</p>
       </div>
-    </div>
     <button id="refresh" class="px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-700/50 text-amber-200 text-sm transition whitespace-nowrap">Refresh Data</button>
   </div>
 </header>
@@ -86,6 +86,7 @@ const PICKS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu
 
 let teams = [];
 let sort = {key:'total',dir:-1};
+let expanded = new Set();
 const norm = s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 
 function archetype(t){
@@ -183,11 +184,9 @@ async function load(){
     return {rosterId:r.roster_id,teamName,username,total,qb,rb,wr,te,age,opt,starters,plist,bal,picks};
   });
 
-  // Production = 100 * team opt / league avg opt
+  // Production & Longevity indexed to 100
   const avgOpt = built.reduce((s,t)=>s+t.opt,0)/built.length;
   built.forEach(t=>{ t.production = avgOpt? (t.opt/avgOpt*100) : 100; });
-
-  // Longevity raw then indexed to 100
   built.forEach(t=>{ t.longRaw = Math.max(0,Math.min(100,100-((t.age-23)*8))); });
   const avgLong = built.reduce((s,t)=>s+t.longRaw,0)/built.length;
   built.forEach(t=>{ t.longevity = avgLong? (t.longRaw/avgLong*100) : 100; });
@@ -233,12 +232,23 @@ function render(){
     return sort.dir * (av > bv? 1 : av < bv? -1 : 0);
   });
   document.querySelectorAll('th.sortable').forEach(th=>th.classList.toggle('active', th.dataset.sort===sort.key));
-  tbody.innerHTML = data.map(t=>`
-    <tr class="hover:bg-amber-950/30 transition">
+  tbody.innerHTML = data.map(t=>{
+    const exp = expanded.has(t.rosterId);
+    const qbList = t.plist.filter(p=>p.pos==='QB').sort((a,b)=>b.value-a.value);
+    const rbList = t.plist.filter(p=>p.pos==='RB').sort((a,b)=>b.value-a.value);
+    const wrList = t.plist.filter(p=>p.pos==='WR').sort((a,b)=>b.value-a.value);
+    const teList = t.plist.filter(p=>p.pos==='TE').sort((a,b)=>b.value-a.value);
+    return `
+    <tr class="team-row hover:bg-amber-950/30 transition" data-id="${t.rosterId}">
       <td class="px-4 py-3 font-mono text-amber-300/80 whitespace-nowrap">${t.rank}</td>
       <td class="px-4 py-3">
-        <div class="font-semibold text-amber-50 whitespace-nowrap leading-tight">${t.teamName}</div>
-        <div class="text-[11px] text-amber-200/60 whitespace-nowrap leading-tight">@${t.username} • ${t.picks.length} picks</div>
+        <div class="flex items-center gap-2">
+          <svg class="size-3 text-amber-400 transition ${exp?'rotate-90':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 18 6-6-6-6" stroke-width="2"/></svg>
+          <div>
+            <div class="font-semibold text-amber-50 whitespace-nowrap leading-tight">${t.teamName}</div>
+            <div class="text-[11px] text-amber-200/60 whitespace-nowrap leading-tight">@${t.username} • ${t.picks.length} picks</div>
+          </div>
+        </div>
       </td>
       <td class="px-3 py-3 text-right font-mono font-semibold whitespace-nowrap">${Math.round(t.total).toLocaleString()}</td>
       <td class="px-3 py-3 text-right font-mono text-sky-300 whitespace-nowrap">${Math.round(t.qb).toLocaleString()}</td>
@@ -256,7 +266,47 @@ function render(){
       <td class="px-3 py-3 text-right font-mono whitespace-nowrap ${t.longevity>=100?'text-emerald-300':'text-rose-300'}">${Math.round(t.longevity)}</td>
       <td class="px-4 py-3 whitespace-nowrap"><span class="inline-flex px-2.5 py-1 rounded-full text-[11px] border bg-gradient-to-r ${t.archCls}">${t.arch}</span></td>
     </tr>
-  `).join('');
+    ${exp?`
+    <tr class="bg-[#0b0703]">
+      <td colspan="13" class="p-4">
+        <div class="grid md:grid-cols-5 gap-4">
+          ${[['QB',qbList,'text-sky-300'],['RB',rbList,'text-emerald-300'],['WR',wrList,'text-fuchsia-300'],['TE',teList,'text-amber-300']].map(([label,list,color])=>`
+            <div class="rounded-xl border border-amber-900/50 bg-[#140f06]/70 p-3">
+              <div class="text-[11px] uppercase tracking-widest text-amber-200/70 mb-2">${label} <span class="${color}">${Math.round(t[label.toLowerCase()]).toLocaleString()}</span></div>
+              <div class="space-y-1 max-h-[220px] overflow-auto pr-1">
+                ${list.length? list.map(p=>`
+                  <div class="flex justify-between text-[12px]">
+                    <span class="truncate">${p.name} <span class="text-amber-200/40">• ${p.age? p.age+'y':''}</span></span>
+                    <span class="font-mono">${Math.round(p.value).toLocaleString()}</span>
+                  </div>
+                `).join('') : `<div class="text-[12px] italic text-zinc-500">—</div>`}
+              </div>
+            </div>
+          `).join('')}
+          <div class="rounded-xl border border-amber-900/50 bg-[#140f06]/70 p-3">
+            <div class="text-[11px] uppercase tracking-widest text-amber-200/70 mb-2">Picks <span class="text-yellow-300">${Math.round(t.picksValue).toLocaleString()}</span></div>
+            <div class="space-y-1 max-h-[220px] overflow-auto pr-1">
+              ${t.picks.sort((a,b)=>a.season-b.season||a.round-b.round).map(p=>`
+                <div class="flex justify-between text-[12px]">
+                  <span>${p.season} R${p.round} <span class="text-amber-200/50">• ${p.tier}</span></span>
+                  <span class="font-mono">${Math.round(p.value).toLocaleString()}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </td>
+    </tr>`:''}
+  `}).join('');
+  // bind expand
+  document.querySelectorAll('tr.team-row').forEach(tr=>{
+    tr.onclick = (e)=>{
+      if(e.target.closest('.opt')) return;
+      const id = +tr.dataset.id;
+      expanded.has(id)? expanded.delete(id) : expanded.add(id);
+      render();
+    };
+  });
   bindTip();
 }
 
@@ -277,7 +327,6 @@ function bindTip(){
             </div>
           `).join('')}
         </div>
-        <div class="mt-2 pt-2 border-t border-amber-900 text-[11px] text-amber-200/70">Picks: ${t.picks.map(p=>`${p.season} R${p.round} (${p.tier})`).join(' • ')}</div>
       `;
       tip.classList.remove('hidden');
     });
@@ -300,4 +349,3 @@ document.getElementById('refresh').addEventListener('click',load);
 load();
 </script>
 </body>
-</html>
