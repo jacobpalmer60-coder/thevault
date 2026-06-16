@@ -75,6 +75,24 @@ tr.team-row:hover{background:rgba(120,80,20,.12)}
       </table>
     </div>
   </div>
+
+  <!-- LEGEND -->
+  <div class="mt-8 rounded-2xl border border-amber-900/40 bg-[#110c05]/60 p-6">
+    <h2 class="display text-lg gold-text mb-4">Legend</h2>
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 text-[12px] leading-relaxed text-amber-200/80">
+      <div><strong class="text-amber-200">Rank:</strong> Sorted by Total Value (highest = 1).</div>
+      <div><strong class="text-amber-200">Team:</strong> Click to expand roster. Shows pick count.</div>
+      <div><strong class="text-amber-200">Total Value:</strong> Sum of all player values from your sheet (auto-detects SF vs 1QB).</div>
+      <div><strong class="text-amber-200">QB / RB / WR / TE:</strong> Positional value subtotals.</div>
+      <div><strong class="text-amber-200">Picks:</strong> Value of 2027-2029 R1-R4. Priced by original owner's projected finish (late/mid/early). Live-synced from Sleeper trades every refresh.</div>
+      <div><strong class="text-amber-200">Age:</strong> Value-weighted average age — older expensive players pull it up.</div>
+      <div><strong class="text-amber-200">Opt PPG:</strong> Maximum starting lineup PPG using your league slots and your PPG sheet.</div>
+      <div><strong class="text-amber-200">Production:</strong> Opt PPG vs league average. 100 = average, 110 = 10% above.</div>
+      <div><strong class="text-amber-200">Longevity:</strong> 60% Value + 20% Age Score + 20% Picks, indexed to 100.</div>
+      <div><strong class="text-amber-200">Archetype:</strong> Build type — Elite Contender, Aging Contender, Young Riser, Pick-Rich Rebuilder, etc., based on value/production/age/balance.</div>
+      <div><strong class="text-amber-200">Live Sync:</strong> Refresh button pulls fresh values, PPG, and traded picks from Sleeper. No manual entry.</div>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -124,13 +142,13 @@ async function load(){
   const slots = (league.roster_positions||[]).filter(s=>!['BN','IR','TAXI'].includes(s));
   const optimal = plist=>{const pool=[...plist].sort((a,b)=>b.ppg-a.ppg);const used=new Set();let tot=0;const starters=[];for(const slot of slots){let a=[slot];if(slot==='FLEX')a=['RB','WR','TE'];if(slot==='SUPER_FLEX')a=['QB','RB','WR','TE'];if(slot==='WRRB_FLEX')a=['RB','WR'];if(slot==='REC_FLEX')a=['WR','TE'];const i=pool.findIndex(p=>!used.has(p.id)&&a.includes(p.pos));if(i>=0){const p=pool[i];used.add(p.id);tot+=p.ppg;starters.push({...p,slot});pool.splice(i,1);}}return{total:tot,starters};};
 
-  // LIVE PICKS - FIXED: owner_id is roster_id in this league
+  // LIVE PICKS - fixed: owner_id is roster_id
   const YEARS=[2027,2028,2029], ROUNDS=[1,2,3,4];
   const pickOwner = new Map();
   YEARS.forEach(y=>ROUNDS.forEach(rd=>rosters.forEach(ro=>pickOwner.set(`${y}-${rd}-${ro.roster_id}`, ro.roster_id))));
   traded.filter(p=>YEARS.includes(+p.season)).forEach(p=>{
     const to = Number(p.owner_id);
-    if(to && rosters.some(r=>r.roster_id===to)) pickOwner.set(`${p.season}-${p.round}-${p.roster_id}`, to);
+    if(to && to!==p.roster_id) pickOwner.set(`${p.season}-${p.round}-${p.roster_id}`, to);
   });
   const own = new Map(rosters.map(r=>[r.roster_id, []]));
   pickOwner.forEach((owner,key)=>{const [s,r,o]=key.split('-'); own.get(Number(owner)).push({season:+s, round:+r, original:+o});});
