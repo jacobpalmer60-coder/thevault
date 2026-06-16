@@ -1,81 +1,303 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>THE VAULT • Debug Picks</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>THE VAULT • Gold Dynasty Dashboard</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{color-scheme:dark}
-body{font-family:Inter,system-ui;background:#000}
+body{font-family:Inter,system-ui;background:#0a0703}
 .display{font-family:Cinzel,serif}
-.gold-solid{color:#FFD700}
-.gold-border{border-color:#FFD70033}
-.rank-pill{min-width:2.5rem}
-tr.team-row{cursor:pointer}
-tr.team-row:hover{background:rgba(255,215,0,.06)}
+.gold-text{background:linear-gradient(90deg,#facc15,#fde68a,#facc15);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gold-solid{color:#fde68a}
+.gold-border{border-image:linear-gradient(90deg,#a16207,#facc15,#a16207) 1}
+.glass{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.scrollbar::-webkit-scrollbar{height:8px;width:8px}
+.scrollbar::-webkit-scrollbar-thumb{background:#3a2e12;border-radius:8px}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable.active{color:#fde68a}
 </style>
 </head>
-<body class="text-zinc-200 leading-tight">
-<header class="sticky top-0 z-30 border-b border-yellow-900/30 bg-black/80"><div class="max-w- mx-auto px-6 py-4 flex justify-between"><div class="flex items-center gap-3"><div class="size-10 rounded-xl bg-gradient-to-br from-yellow-600 to-amber-400 p-"><div class="size-full rounded- bg-black grid place-items-center"><span class="display text-xl gold-solid">V</span></div></div><h1 class="display text-2xl font-bold gold-solid">THE VAULT</h1></div><button id="refresh" class="px-4 py-2 rounded-xl bg-yellow-500/10 border border-yellow-700/50 text-yellow-200 text-sm">Refresh</button></div></header>
-<main class="max-w- mx-auto px-6 py-8"><div id="status" class="mb-4 flex items-center gap-2 text-yellow-200/80 text-sm"><div class="size-2 rounded-full bg-yellow-400 animate-pulse"></div><span>Loading…</span></div><div class="overflow-hidden rounded-2xl border border-yellow-900/30 bg-zinc-950/80"><div class="overflow-x-auto"><table class="w-full text-"><thead class="bg-zinc-900/90 sticky top-0 border-b border-yellow-900/30"><tr class="text- uppercase tracking-widest text-yellow-200/70"><th class="px-3 w-8"></th><th class="px-3 text-left">Team</th><th class="px-2 text-right" data-sort="prodDelta">Prod</th><th class="px-2 text-right" data-sort="longDelta">Long</th><th class="px-2 text-right" data-sort="total">Total</th><th class="px-2 text-right">QB</th><th class="px-2 text-right">RB</th><th class="px-2 text-right">WR</th><th class="px-2 text-right">TE</th><th class="px-2 text-right" data-sort="picksValue">Picks</th><th class="px-2 text-right">Age</th><th class="px-2 text-right">Opt</th><th class="px-3">Arch</th></tr></thead><tbody id="tbody" class="divide-y divide-zinc-800"></tbody></table></div></main>
-<script>
-const LEAGUE_ID='1313454100225990656';
-const VALUES_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
-const PPG_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
-const PICK_VALUES_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
-let teams=[],sort={key:'total',dir:-1},expanded=new Set();
-const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
-const rankClass=(r,t)=>r===1?'bg-yellow-400/25 text-yellow-100 border-yellow-400/70':(p=r/t)<=.25?'bg-emerald-600/25 text-emerald-200 border-emerald-700':p<=.5?'bg-sky-600/25 text-sky-200 border-sky-700':p<=.75?'bg-zinc-700/25 text-zinc-200 border-zinc-600':'bg-rose-700/30 text-rose-200 border-rose-800';
+<body class="text-amber-50 antialiased leading-tight">
+<div class="fixed inset-0 -z-10 bg-[#0a0703]">
+  <div class="absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(250,204,21,0.18),transparent_70%)]"></div>
+  <div class="absolute inset-0 opacity-[0.04]" style="background-image:linear-gradient(#fff1 1px,transparent 1px),linear-gradient(90deg,#fff1 1px,transparent 1px);background-size:40px 40px"></div>
+</div>
 
-function getArchetype(t){
-  if(t.prodDelta>8 && t.age<26) return 'Win Now';
-  if(t.prodDelta>3 && t.longDelta>5) return 'Contender';
-  if(t.prodDelta<-5 && t.picksValue>7000) return 'Rebuild';
-  if(t.longDelta>8 && t.age<25.5) return 'Youth Build';
-  if(t.age>27.5 && t.picksValue<4000) return 'Aging';
-  return 'Balanced';
+<header class="sticky top-0 z-30 border-b border-amber-900/40 bg-black/50 glass">
+  <div class="max-w-[1500px] mx-auto px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="size-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-600 p-[2px] shadow-lg shadow-amber-900/40">
+        <div class="size-full rounded-[10px] bg-[#140f06] grid place-items-center">
+          <span class="display text-xl gold-text gold-solid">V</span>
+        </div>
+      </div>
+      <div>
+        <h1 class="display text-2xl font-bold gold-text gold-solid tracking-wide">THE VAULT</h1>
+        <p class="text-[11px] uppercase tracking-[0.2em] text-amber-200/70 -mt-1">Dynasty Gold Standard</p>
+      </div>
+    </div>
+    <button id="refresh" class="px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-700/50 text-amber-200 text-sm transition whitespace-nowrap">Refresh Data</button>
+  </div>
+</header>
+
+<main class="max-w-[1500px] mx-auto px-6 py-8">
+  <div id="status" class="mb-6 flex items-center gap-2 text-amber-200/80 text-sm">
+    <div class="size-2 rounded-full bg-amber-400 animate-pulse"></div>
+    <span>Loading league 1313454100225990656 • values, PPG & live picks…</span>
+  </div>
+
+  <div class="overflow-hidden rounded-[24px] border gold-border bg-[#110c05]/80 shadow-[0_0_80px_-20px_rgba(250,204,21,0.4)]">
+    <div class="overflow-x-auto scrollbar">
+      <table class="w-full text-[13px]">
+        <thead class="bg-[#1a1307]/90 backdrop-blur sticky top-0 z-10 border-b border-amber-900/50">
+          <tr class="text-[11px] uppercase tracking-widest text-amber-200/70">
+            <th class="text-left px-4 py-3 whitespace-nowrap">Rank</th>
+            <th class="text-left px-4 py-3 min-w-[220px]">Team</th>
+            <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="total">Total Value</th>
+            <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="qb">QB</th>
+            <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="rb">RB</th>
+            <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="wr">WR</th>
+            <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="te">TE</th>
+            <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="picksValue">Picks</th>
+            <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="age">Age</th>
+            <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="opt">Opt PPG</th>
+            <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="production">Production</th>
+            <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="longevity">Longevity</th>
+            <th class="text-left px-4 py-3">Archetype</th>
+          </tr>
+        </thead>
+        <tbody id="tbody" class="divide-y divide-amber-950/60"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div id="tip" class="hidden fixed z-50 w-[340px] max-w-[90vw] rounded-2xl border border-amber-800 bg-[#0f0a04] shadow-2xl shadow-black/70 p-3"></div>
+
+<script>
+const LEAGUE_ID = '1313454100225990656';
+const VALUES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
+const PPG_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
+const PICKS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
+
+let teams = [];
+let sort = {key:'total',dir:-1};
+const norm = s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+
+function archetype(t){
+  const {valP,ppgP,age,bal} = t;
+  if(valP>=75 && ppgP>=75 && age>=24 && age<=27.5) return ['Elite Contender','from-amber-500/20 to-yellow-500/20 text-amber-200 border-amber-600/40'];
+  if(ppgP>=70 && age>=27.5) return ['Aging Contender','from-orange-500/20 to-amber-600/20 text-orange-200 border-orange-600/40'];
+  if(ppgP>=60 && ppgP<75 && age>=26) return ['Win-Now Fringe','from-amber-600/20 to-yellow-700/20 text-amber-300 border-amber-700/40'];
+  if(age<25.5 && valP>=45 && ppgP>=40 && ppgP<65) return ['Young Riser / Ascending','from-emerald-600/20 to-teal-600/20 text-emerald-200 border-emerald-600/40'];
+  if(ppgP<40 && age<26 && valP>=35) return ['Pick-Rich Rebuilder','from-sky-600/20 to-cyan-600/20 text-sky-200 border-sky-600/40'];
+  if(bal>=70) return ['Balanced Core','from-zinc-600/20 to-neutral-600/20 text-zinc-200 border-zinc-600/40'];
+  if(valP>=70 && ppgP<=45) return ['Volatile / High-Variance','from-rose-600/20 to-red-600/20 text-rose-200 border-rose-600/40'];
+  if(valP<=25 && ppgP<=25) return ['Stripped Rebuilder','from-stone-700/30 to-stone-800/30 text-stone-300 border-stone-700/40'];
+  return ['Stuck in the Middle / Purgatory','from-zinc-700/20 to-zinc-800/20 text-zinc-300 border-zinc-700/40'];
 }
 
 async function load(){
- const [lg,users,rosters,players,vCsv,pCsv,traded]=await Promise.all([
-  fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}`).then(r=>r.json()),
-  fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/users`).then(r=>r.json()),
-  fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/rosters`).then(r=>r.json()),
-  fetch(`https://api.sleeper.app/v1/players/nfl`).then(r=>r.json()),
-  fetch(VALUES_URL).then(r=>r.text()),
-  fetch(PPG_URL).then(r=>r.text()),
-  fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/traded_picks`).then(r=>r.json())
- ]);
- const isSF = (lg.roster_positions||[]).includes('SUPER_FLEX');
- const SEASONS=[2027,2028,2029], ROUNDS=[1,2,3,4];
- const valMap=new Map();Papa.parse(vCsv,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.sleeper_id)valMap.set(String(r.sleeper_id), isSF? +r.val_sf_ppr_tep05||0 : +r.val_1qb_ppr_tep05||0)});
- const ppgMap=new Map();Papa.parse(pCsv,{header:true,skipEmptyLines:true}).data.forEach(r=>{const n=r.Player||r.player;if(n)ppgMap.set(norm(n),+r['Avg_PPR_0.5_TEP']||0)});
- const userMap=new Map(users.map(u=>[u.user_id,u])), rosterByUser=new Map(rosters.map(r=>[r.owner_id,r.roster_id]));
- const slots=(lg.roster_positions||[]).filter(s=>!['BN','IR','TAXI'].includes(s));
- const optimal=list=>{const pool=[...list].sort((a,b)=>b.ppg-a.ppg);let t=0;const u=new Set();for(const s of slots){let a=[s];if(s==='FLEX')a=['RB','WR','TE'];if(s==='SUPER_FLEX')a=['QB','RB','WR','TE'];const i=pool.findIndex(p=>!u.has(p.id)&&a.includes(p.pos));if(i>=0){u.add(pool[i].id);t+=pool[i].ppg;pool.splice(i,1)}}return t};
- const built=rosters.map(r=>{const u=userMap.get(r.owner_id)||{};const plist=(r.players||[]).map(pid=>{const p=players[String(pid)]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim()||p.full_name||'';return{id:String(pid),name:n,pos:p.position||'',age:p.age||0,value:valMap.get(String(pid))||0,ppg:ppgMap.get(norm(n))||0}});const tot=plist.reduce((s,p)=>s+p.value,0);const age=(()=>{const v=plist.filter(p=>p.value>0&&p.age>0);const sv=v.reduce((s,p)=>s+p.value,0);return sv?v.reduce((s,p)=>s+p.value*p.age,0)/sv:0})();return{rosterId:r.roster_id,teamName:u.metadata?.team_name||u.display_name||'Team',username:u.username||'',total:tot,qb:plist.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0),rb:plist.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0),wr:plist.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0),te:plist.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0),age,opt:optimal(plist),plist}});
- const avgOpt=built.reduce((s,t)=>s+t.opt,0)/built.length;built.forEach(t=>{t.prodDelta=(t.opt/avgOpt-1)*100;t.prodPts=t.opt-avgOpt});
+  const [league,users,rosters,players,valuesCsv,ppgCsv,traded,picksCsv] = await Promise.all([
+    fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}`).then(r=>r.json()),
+    fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/users`).then(r=>r.json()),
+    fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/rosters`).then(r=>r.json()),
+    fetch(`https://api.sleeper.app/v1/players/nfl`).then(r=>r.json()),
+    fetch(VALUES_URL).then(r=>r.text()),
+    fetch(PPG_URL).then(r=>r.text()),
+    fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/traded_picks`).then(r=>r.json()),
+    fetch(PICKS_URL).then(r=>r.text()),
+  ]);
+  const values = Papa.parse(valuesCsv,{header:true,skipEmptyLines:true}).data;
+  const ppgs = Papa.parse(ppgCsv,{header:true,skipEmptyLines:true}).data;
+  const pickVals = Papa.parse(picksCsv,{header:true,skipEmptyLines:true}).data;
 
- // FIXED: build picks for 2027-29 only, apply trades correctly
- const own=new Map(built.map(t=>[t.rosterId,[]]));
- built.forEach(t=>SEASONS.forEach(s=>ROUNDS.forEach(r=>own.get(t.rosterId).push({season:s,round:r,original:t.rosterId}))));
- const relevant=traded.filter(p=>SEASONS.includes(+p.season));
- relevant.forEach(p=>{const nr=rosterByUser.get(p.owner_id);if(!nr)return;const list=own.get(p.roster_id);const i=list.findIndex(x=>x.season==p.season&&x.round==p.round);if(i>=0)list.splice(i,1);own.get(nr).push({season:+p.season,round:+p.round,original:p.roster_id})});
+  const isSF = (league.roster_positions||[]).includes('SUPER_FLEX');
+  const valMap = new Map();
+  values.forEach(r=>{ const sid = String(r.sleeper_id||'').trim(); if(sid) valMap.set(sid, isSF? parseFloat(r.val_sf_ppr_tep05)||0 : parseFloat(r.val_1qb_ppr_tep05)||0); });
+  const ppgMap = new Map();
+  ppgs.forEach(r=>{ const name = r.Player || r.player || ''; const ppg = parseFloat(r['Avg_PPR_0.5_TEP'])||0; if(name) ppgMap.set(norm(name), ppg); });
+  const pickMap = new Map();
+  pickVals.forEach(r=>{ if(r.season) pickMap.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`, isSF? +r.sf_value||0 : +r.qb_value||0); });
 
- // tier by PPG - top 3 = late, middle 6 = mid, bottom 3 = early
- const tier=new Map([...built].sort((a,b)=>b.opt-a.opt).map((t,i)=>[t.rosterId,i<3?'late':i<9?'mid':'early']));
+  const userMap = new Map(users.map(u=>[u.user_id,u]));
+  const r2u = new Map(rosters.map(r=>[r.owner_id,r.roster_id]));
+  const slots = (league.roster_positions||[]).filter(s=>!['BN','IR','TAXI'].includes(s));
 
- let pickVal=new Map();try{const csv=await fetch(PICK_VALUES_URL).then(r=>r.text());Papa.parse(csv,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.season){const key=`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`;const val=isSF?+r.sf_value:+r.qb_value;pickVal.set(key,val)}})}catch(e){}
+  function optimal(plist){
+    const pool = [...plist].sort((a,b)=>b.ppg-a.ppg);
+    const used = new Set(); let total=0; const starters=[];
+    for(const slot of slots){
+      let allowed=[slot];
+      if(slot==='FLEX') allowed=['RB','WR','TE'];
+      if(slot==='SUPER_FLEX') allowed=['QB','RB','WR','TE'];
+      if(slot==='WRRB_FLEX') allowed=['RB','WR'];
+      if(slot==='REC_FLEX') allowed=['WR','TE'];
+      const idx = pool.findIndex(p=>!used.has(p.id)&&allowed.includes(p.pos));
+      if(idx>=0){ const p=pool[idx]; used.add(p.id); total+=p.ppg; starters.push({...p,slot}); pool.splice(idx,1); }
+    }
+    return {total,starters};
+  }
 
- built.forEach(t=>{const ps=own.get(t.rosterId)||[];let sum=0;ps.forEach(p=>{p.tier=tier.get(p.original)||'mid';p.value=pickVal.get(`${p.season}-${p.round}-${p.tier}`)||0;sum+=p.value});t.picks=ps.sort((a,b)=>a.season-b.season||a.round-b.round);t.picksValue=sum;t.capital=t.total+sum;t.cpy=t.capital/Math.max(t.age,1)});
- const avgCpy=built.reduce((s,t)=>s+t.cpy,0)/built.length;built.forEach(t=>t.longDelta=(t.cpy/avgCpy-1)*100);
- teams=built;render();document.getElementById('status').innerHTML=`<div class="size-2 rounded-full bg-yellow-400"></div><span>${isSF?'SF':'1QB'} • Live • ${teams.length} teams • ${relevant.length} trades • 2027-29</span>`;
+  // Exact 2027-2029 pick inventory from Sleeper
+  const YEARS=[2027,2028,2029], ROUNDS=[1,2,3,4];
+  const own=new Map(rosters.map(r=>[r.roster_id,[]]));
+  rosters.forEach(r=>YEARS.forEach(y=>ROUNDS.forEach(rd=>own.get(r.roster_id).push({season:y,round:rd,original:r.roster_id}))));
+  traded.filter(p=>YEARS.includes(+p.season)).forEach(p=>{
+    const to=r2u.get(p.owner_id), from=p.roster_id;
+    if(!own.has(from)||!own.has(to)) return;
+    const src=own.get(from); const i=src.findIndex(x=>x.season==p.season&&x.round==p.round);
+    if(i>-1) own.get(to).push(src.splice(i,1)[0]);
+  });
+
+  const built = rosters.map(r=>{
+    const u = userMap.get(r.owner_id)||{};
+    const teamName = u.metadata?.team_name || u.display_name || 'Team';
+    const username = u.username || u.display_name || '';
+    const plist = (r.players||[]).map(pid=>{
+      const pidS = String(pid); const p = players[pidS]||{};
+      const name = `${p.first_name||''} ${p.last_name||''}`.trim() || p.full_name || pidS;
+      const value = valMap.get(pidS)||0;
+      const ppg = ppgMap.get(norm(name))||0;
+      return {id:pidS,name,pos:p.position||'',age:p.age||0,value,ppg,team:p.team||''};
+    });
+    const total = plist.reduce((s,p)=>s+p.value,0);
+    const qb = plist.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0);
+    const rb = plist.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0);
+    const wr = plist.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0);
+    const te = plist.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0);
+    const vAge = plist.filter(p=>p.value>0&&p.age>0);
+    const sumV = vAge.reduce((s,p)=>s+p.value,0);
+    const age = sumV? vAge.reduce((s,p)=>s+p.value*p.age,0)/sumV : 0;
+    const {total:opt,starters} = optimal(plist);
+    const sumPos = qb+rb+wr+te || 1;
+    const shares = [qb,rb,wr,te].map(v=>v/sumPos);
+    const mean = shares.reduce((a,b)=>a+b)/4;
+    const std = Math.sqrt(shares.reduce((s,x)=>s+(x-mean)**2,0)/4);
+    const bal = 100 - std*200;
+    const picks = own.get(r.roster_id)||[];
+    return {rosterId:r.roster_id,teamName,username,total,qb,rb,wr,te,age,opt,starters,plist,bal,picks};
+  });
+
+  // Production = 100 * team opt / league avg opt
+  const avgOpt = built.reduce((s,t)=>s+t.opt,0)/built.length;
+  built.forEach(t=>{ t.production = avgOpt? (t.opt/avgOpt*100) : 100; });
+
+  // Longevity raw then indexed to 100
+  built.forEach(t=>{ t.longRaw = Math.max(0,Math.min(100,100-((t.age-23)*8))); });
+  const avgLong = built.reduce((s,t)=>s+t.longRaw,0)/built.length;
+  built.forEach(t=>{ t.longevity = avgLong? (t.longRaw/avgLong*100) : 100; });
+
+  // Tier picks by Opt PPG
+  const sortedOpt = [...built].sort((a,b)=>b.opt-a.opt);
+  const n = sortedOpt.length;
+  const lateCount = n===10?3: n===12?4 : Math.floor(n*0.3);
+  const midCount = 4;
+  const tier = new Map(sortedOpt.map((t,i)=>[t.rosterId, i<lateCount?'late': i<lateCount+midCount?'mid':'early']));
+
+  // Price picks using original owner tier
+  built.forEach(t=>{
+    let sum=0;
+    t.picks.forEach(p=>{
+      const tn = tier.get(p.original)||'mid';
+      p.tier = tn;
+      p.value = pickMap.get(`${p.season}-${p.round}-${tn}`)||0;
+      sum += p.value;
+    });
+    t.picksValue = sum;
+  });
+
+  const vals = built.map(t=>t.total).sort((a,b)=>a-b);
+  const opts = built.map(t=>t.opt).sort((a,b)=>a-b);
+  built.forEach(t=>{
+    t.valP = vals.indexOf(t.total)/(vals.length-1)*100;
+    t.ppgP = opts.indexOf(t.opt)/(opts.length-1)*100;
+    const [label,cls] = archetype(t);
+    t.arch = label; t.archCls = cls;
+  });
+  built.sort((a,b)=>b.total-a.total);
+  built.forEach((t,i)=>t.rank=i+1);
+  teams = built;
+  render();
+  document.getElementById('status').innerHTML = `<div class="size-2 rounded-full bg-emerald-400"></div><span>Live • ${teams.length} teams • Sleeper picks priced</span>`;
 }
-function rankMap(k,a=false){const s=[...teams].sort((x,y)=>a?x[k]-y[k]:y[k]-x[k]);const m=new Map();s.forEach((t,i)=>m.set(t.rosterId,i+1));return m}
-function render(){const tb=document.getElementById('tbody');const data=[...teams].sort((a,b)=>{const av=a[sort.key],bv=b[sort.key];return sort.dir*(av>bv?1:av<bv?-1:0)});const rP=rankMap('prodDelta'),rL=rankMap('longDelta'),rT=rankMap('total'),rK=rankMap('picksValue');tb.innerHTML=data.map(t=>{const e=expanded.has(t.rosterId);return`<tr class="team-row" data-id="${t.rosterId}"><td class="px-2"><svg class="size-3 text-yellow-400 ${e?'rotate-90':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 18 6-6-6-6" stroke-width="2"/></svg></td><td class="px-2 py-2"><div class="font-medium">${t.teamName}</div><div class="text- text-zinc-500">@${t.username}</div></td><td class="px-1 text-right"><span class="rank-pill mr-1 px-1 py-0.5 rounded border text- ${rankClass(rP.get(t.rosterId),teams.length)}">#${rP.get(t.rosterId)}</span>${t.prodDelta>=0?'+':''}${t.prodDelta.toFixed(0)}%</td><td class="px-1 text-right"><span class="rank-pill mr-1 px-1 py-0.5 rounded border text- ${rankClass(rL.get(t.rosterId),teams.length)}">#${rL.get(t.rosterId)}</span>${t.longDelta>=0?'+':''}${t.longDelta.toFixed(0)}%</td><td class="px-1 text-right">${Math.round(t.total).toLocaleString()}</td><td class="px-1 text-right text-sky-400">${Math.round(t.qb).toLocaleString()}</td><td class="px-1 text-right text-emerald-400">${Math.round(t.rb).toLocaleString()}</td><td class="px-1 text-right text-fuchsia-400">${Math.round(t.wr).toLocaleString()}</td><td class="px-1 text-right text-amber-400">${Math.round(t.te).toLocaleString()}</td><td class="px-1 text-right"><span class="rank-pill mr-1 px-1 py-0.5 rounded border text- ${rankClass(rK.get(t.rosterId),teams.length)}">#${rK.get(t.rosterId)}</span>${Math.round(t.picksValue).toLocaleString()}</td><td class="px-1 text-right">${t.age.toFixed(1)}</td><td class="px-1 text-right">${t.opt.toFixed(1)}</td><td class="px-2 text- text-yellow-200">${getArchetype(t)}</td></tr>${e?`<tr class="bg-zinc-950"><td colspan="13" class="p-3"><div class="mb-2 text- uppercase tracking-widest text-yellow-200/70">Picks • ${t.picks.map(p=>`${p.season} R${p.round}${p.tier[0].toUpperCase()} (${Math.round(p.value)})`).join(', ')}</div><div class="grid grid-cols-2 md:grid-cols-4 gap-3">${['QB','RB','WR','TE'].map(pos=>{const L=t.plist.filter(p=>p.pos===pos).sort((a,b)=>b.value-a.value);return`<div><div class="text- uppercase opacity-60 mb-1">${pos}</div>${L.map(p=>`<div class="flex justify-between text-"><span>${p.name}</span><span>${p.age||'-'} • ${Math.round(p.value)} • ${p.ppg.toFixed(1)}</span></div>`).join('')}</div>`}).join('')}</div></td></tr>`:''}`}).join('');tb.querySelectorAll('tr.team-row').forEach(r=>r.onclick=()=>{const id=+r.dataset.id;expanded.has(id)?expanded.delete(id):expanded.add(id);render()})}
-document.getElementById('refresh').onclick=load;load();
+
+function render(){
+  const tbody = document.getElementById('tbody');
+  const data = [...teams].sort((a,b)=>{
+    const av = a[sort.key], bv = b[sort.key];
+    return sort.dir * (av > bv? 1 : av < bv? -1 : 0);
+  });
+  document.querySelectorAll('th.sortable').forEach(th=>th.classList.toggle('active', th.dataset.sort===sort.key));
+  tbody.innerHTML = data.map(t=>`
+    <tr class="hover:bg-amber-950/30 transition">
+      <td class="px-4 py-3 font-mono text-amber-300/80 whitespace-nowrap">${t.rank}</td>
+      <td class="px-4 py-3">
+        <div class="font-semibold text-amber-50 whitespace-nowrap leading-tight">${t.teamName}</div>
+        <div class="text-[11px] text-amber-200/60 whitespace-nowrap leading-tight">@${t.username} • ${t.picks.length} picks</div>
+      </td>
+      <td class="px-3 py-3 text-right font-mono font-semibold whitespace-nowrap">${Math.round(t.total).toLocaleString()}</td>
+      <td class="px-3 py-3 text-right font-mono text-sky-300 whitespace-nowrap">${Math.round(t.qb).toLocaleString()}</td>
+      <td class="px-3 py-3 text-right font-mono text-emerald-300 whitespace-nowrap">${Math.round(t.rb).toLocaleString()}</td>
+      <td class="px-3 py-3 text-right font-mono text-fuchsia-300 whitespace-nowrap">${Math.round(t.wr).toLocaleString()}</td>
+      <td class="px-3 py-3 text-right font-mono text-amber-300 whitespace-nowrap">${Math.round(t.te).toLocaleString()}</td>
+      <td class="px-3 py-3 text-right font-mono text-yellow-300 whitespace-nowrap">${Math.round(t.picksValue).toLocaleString()}</td>
+      <td class="px-3 py-3 text-right font-mono whitespace-nowrap">${t.age.toFixed(1)}</td>
+      <td class="px-3 py-3 text-right whitespace-nowrap">
+        <span class="opt inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-950/60 border border-amber-800 hover:bg-amber-900/60 cursor-help" data-id="${t.rosterId}">
+          <span class="font-mono font-semibold text-amber-100">${t.opt.toFixed(1)}</span>
+        </span>
+      </td>
+      <td class="px-3 py-3 text-right font-mono whitespace-nowrap ${t.production>=100?'text-emerald-300':'text-rose-300'}">${Math.round(t.production)}</td>
+      <td class="px-3 py-3 text-right font-mono whitespace-nowrap ${t.longevity>=100?'text-emerald-300':'text-rose-300'}">${Math.round(t.longevity)}</td>
+      <td class="px-4 py-3 whitespace-nowrap"><span class="inline-flex px-2.5 py-1 rounded-full text-[11px] border bg-gradient-to-r ${t.archCls}">${t.arch}</span></td>
+    </tr>
+  `).join('');
+  bindTip();
+}
+
+function bindTip(){
+  const tip = document.getElementById('tip');
+  document.querySelectorAll('.opt').forEach(el=>{
+    el.addEventListener('mouseenter',e=>{
+      const t = teams.find(x=>String(x.rosterId)===el.dataset.id);
+      tip.innerHTML = `
+        <div class="text-[11px] uppercase tracking-wider text-amber-200/70 mb-2">Optimal Starters • ${t.teamName}</div>
+        <div class="space-y-1 max-h-[240px] overflow-auto pr-1">
+          ${t.starters.map(s=>`
+            <div class="grid grid-cols-[50px_1fr_auto_auto] gap-2 items-center text-[12px]">
+              <span class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-800 text-amber-200 text-[10px]">${s.slot}</span>
+              <span class="truncate">${s.name} <span class="text-amber-200/50">• ${s.pos}</span></span>
+              <span class="font-mono text-emerald-300">${s.ppg.toFixed(1)}</span>
+              <span class="font-mono text-amber-300">${Math.round(s.value).toLocaleString()}</span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="mt-2 pt-2 border-t border-amber-900 text-[11px] text-amber-200/70">Picks: ${t.picks.map(p=>`${p.season} R${p.round} (${p.tier})`).join(' • ')}</div>
+      `;
+      tip.classList.remove('hidden');
+    });
+    el.addEventListener('mouseleave',()=>tip.classList.add('hidden'));
+    el.addEventListener('mousemove',e=>{
+      tip.style.left = Math.min(window.innerWidth-360, e.clientX+14)+'px';
+      tip.style.top = e.clientY+14+'px';
+    });
+  });
+}
+
+document.querySelectorAll('th.sortable').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const key = th.dataset.sort;
+    if(sort.key===key) sort.dir*=-1; else {sort.key=key; sort.dir=-1;}
+    render();
+  });
+});
+document.getElementById('refresh').addEventListener('click',load);
+load();
 </script>
 </body>
 </html>
