@@ -30,33 +30,35 @@ tr.team-row:hover{background:rgba(120,80,20,.12)}
 </div>
 
 <header class="sticky top-0 z-30 border-b border-amber-900/40 bg-black/50 glass">
-  <div class="max-w-[1500px] mx-auto px-6 py-4 flex items-center justify-between">
+  <div class="max-w- mx-auto px-6 py-4 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="size-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-600 p-[2px] shadow-lg shadow-amber-900/40">
-        <div class="size-full rounded-[10px] bg-[#140f06] grid place-items-center">
+      <div class="size-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-600 p- shadow-lg shadow-amber-900/40">
+        <div class="size-full rounded- bg-[#140f06] grid place-items-center">
           <span class="display text-xl gold-text gold-solid">V</span>
         </div>
+      </div>
       <div>
         <h1 class="display text-2xl font-bold gold-text gold-solid tracking-wide">THE VAULT</h1>
-        <p class="text-[11px] uppercase tracking-[0.2em] text-amber-200/70 -mt-1">Dynasty Gold Standard</p>
+        <p class="text- uppercase tracking-[0.2em] text-amber-200/70 -mt-1">Dynasty Gold Standard</p>
       </div>
+    </div>
     <button id="refresh" class="px-4 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-700/50 text-amber-200 text-sm transition whitespace-nowrap">Refresh Data</button>
   </div>
 </header>
 
-<main class="max-w-[1500px] mx-auto px-6 py-8">
+<main class="max-w- mx-auto px-6 py-8">
   <div id="status" class="mb-6 flex items-center gap-2 text-amber-200/80 text-sm">
     <div class="size-2 rounded-full bg-amber-400 animate-pulse"></div>
     <span>Loading league 1313454100225990656 • values, PPG & live picks…</span>
   </div>
 
-  <div class="overflow-hidden rounded-[24px] border gold-border bg-[#110c05]/80 shadow-[0_0_80px_-20px_rgba(250,204,21,0.4)]">
+  <div class="overflow-hidden rounded- border gold-border bg-[#110c05]/80 shadow-[0_0_80px_-20px_rgba(250,204,21,0.4)]">
     <div class="overflow-x-auto scrollbar">
-      <table class="w-full text-[13px]">
+      <table class="w-full text-">
         <thead class="bg-[#1a1307]/90 backdrop-blur sticky top-0 z-10 border-b border-amber-900/50">
-          <tr class="text-[11px] uppercase tracking-widest text-amber-200/70">
+          <tr class="text- uppercase tracking-widest text-amber-200/70">
             <th class="text-left px-4 py-3 whitespace-nowrap">Rank</th>
-            <th class="text-left px-4 py-3 min-w-[220px]">Team</th>
+            <th class="text-left px-4 py-3 min-w-">Team</th>
             <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="total">Total Value</th>
             <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="qb">QB</th>
             <th class="text-right px-3 py-3 sortable whitespace-nowrap" data-sort="rb">RB</th>
@@ -76,7 +78,7 @@ tr.team-row:hover{background:rgba(120,80,20,.12)}
   </div>
 </main>
 
-<div id="tip" class="hidden fixed z-50 w-[340px] max-w-[90vw] rounded-2xl border border-amber-800 bg-[#0f0a04] shadow-2xl shadow-black/70 p-3"></div>
+<div id="tip" class="hidden fixed z-50 w- max-w- rounded-2xl border-amber-800 bg-[#0f0a04] shadow-2xl shadow-black/70 p-3"></div>
 
 <script>
 const LEAGUE_ID = '1313454100225990656';
@@ -88,6 +90,7 @@ let teams = [];
 let sort = {key:'total',dir:-1};
 let expanded = new Set();
 const norm = s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+const clean = v => parseFloat(String(v||'').replace(/,/g,'')) || 0;
 
 function archetype(t){
   const {valP,ppgP,age,bal} = t;
@@ -119,11 +122,11 @@ async function load(){
 
   const isSF = (league.roster_positions||[]).includes('SUPER_FLEX');
   const valMap = new Map();
-  values.forEach(r=>{ const sid = String(r.sleeper_id||'').trim(); if(sid) valMap.set(sid, isSF? parseFloat(r.val_sf_ppr_tep05)||0 : parseFloat(r.val_1qb_ppr_tep05)||0); });
+  values.forEach(r=>{ const sid = String(r.sleeper_id||'').trim(); if(sid) valMap.set(sid, clean(isSF? r.val_sf_ppr_tep05 : r.val_1qb_ppr_tep05)); });
   const ppgMap = new Map();
   ppgs.forEach(r=>{ const name = r.Player || r.player || ''; const ppg = parseFloat(r['Avg_PPR_0.5_TEP'])||0; if(name) ppgMap.set(norm(name), ppg); });
   const pickMap = new Map();
-  pickVals.forEach(r=>{ if(r.season) pickMap.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`, isSF? +r.sf_value||0 : +r.qb_value||0); });
+  pickVals.forEach(r=>{ if(r.season) pickMap.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`, isSF? clean(r.sf_value) : clean(r.qb_value)); });
 
   const userMap = new Map(users.map(u=>[u.user_id,u]));
   const r2u = new Map(rosters.map(r=>[r.owner_id,r.roster_id]));
@@ -246,7 +249,7 @@ function render(){
           <svg class="size-3 text-amber-400 transition ${exp?'rotate-90':''}" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 18 6-6-6-6" stroke-width="2"/></svg>
           <div>
             <div class="font-semibold text-amber-50 whitespace-nowrap leading-tight">${t.teamName}</div>
-            <div class="text-[11px] text-amber-200/60 whitespace-nowrap leading-tight">@${t.username} • ${t.picks.length} picks</div>
+            <div class="text- text-amber-200/60 whitespace-nowrap leading-tight">@${t.username} • ${t.picks.length} picks</div>
           </div>
         </div>
       </td>
@@ -258,36 +261,36 @@ function render(){
       <td class="px-3 py-3 text-right font-mono text-yellow-300 whitespace-nowrap">${Math.round(t.picksValue).toLocaleString()}</td>
       <td class="px-3 py-3 text-right font-mono whitespace-nowrap">${t.age.toFixed(1)}</td>
       <td class="px-3 py-3 text-right whitespace-nowrap">
-        <span class="opt inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-950/60 border border-amber-800 hover:bg-amber-900/60 cursor-help" data-id="${t.rosterId}">
+        <span class="opt inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-950/60 border-amber-800 hover:bg-amber-900/60 cursor-help" data-id="${t.rosterId}">
           <span class="font-mono font-semibold text-amber-100">${t.opt.toFixed(1)}</span>
         </span>
       </td>
       <td class="px-3 py-3 text-right font-mono whitespace-nowrap ${t.production>=100?'text-emerald-300':'text-rose-300'}">${Math.round(t.production)}</td>
       <td class="px-3 py-3 text-right font-mono whitespace-nowrap ${t.longevity>=100?'text-emerald-300':'text-rose-300'}">${Math.round(t.longevity)}</td>
-      <td class="px-4 py-3 whitespace-nowrap"><span class="inline-flex px-2.5 py-1 rounded-full text-[11px] border bg-gradient-to-r ${t.archCls}">${t.arch}</span></td>
+      <td class="px-4 py-3 whitespace-nowrap"><span class="inline-flex px-2.5 py-1 rounded-full text- border bg-gradient-to-r ${t.archCls}">${t.arch}</span></td>
     </tr>
     ${exp?`
     <tr class="bg-[#0b0703]">
       <td colspan="13" class="p-4">
         <div class="grid md:grid-cols-5 gap-4">
           ${[['QB',qbList,'text-sky-300'],['RB',rbList,'text-emerald-300'],['WR',wrList,'text-fuchsia-300'],['TE',teList,'text-amber-300']].map(([label,list,color])=>`
-            <div class="rounded-xl border border-amber-900/50 bg-[#140f06]/70 p-3">
-              <div class="text-[11px] uppercase tracking-widest text-amber-200/70 mb-2">${label} <span class="${color}">${Math.round(t[label.toLowerCase()]).toLocaleString()}</span></div>
-              <div class="space-y-1 max-h-[220px] overflow-auto pr-1">
+            <div class="rounded-xl border-amber-900/50 bg-[#140f06]/70 p-3">
+              <div class="text- uppercase tracking-widest text-amber-200/70 mb-2">${label} <span class="${color}">${Math.round(t[label.toLowerCase()]).toLocaleString()}</span></div>
+              <div class="space-y-1 max-h- overflow-auto pr-1">
                 ${list.length? list.map(p=>`
-                  <div class="flex justify-between text-[12px]">
+                  <div class="flex justify-between text-">
                     <span class="truncate">${p.name} <span class="text-amber-200/40">• ${p.age? p.age+'y':''}</span></span>
                     <span class="font-mono">${Math.round(p.value).toLocaleString()}</span>
                   </div>
-                `).join('') : `<div class="text-[12px] italic text-zinc-500">—</div>`}
+                `).join('') : `<div class="text- italic text-zinc-500">—</div>`}
               </div>
             </div>
           `).join('')}
-          <div class="rounded-xl border border-amber-900/50 bg-[#140f06]/70 p-3">
-            <div class="text-[11px] uppercase tracking-widest text-amber-200/70 mb-2">Picks <span class="text-yellow-300">${Math.round(t.picksValue).toLocaleString()}</span></div>
-            <div class="space-y-1 max-h-[220px] overflow-auto pr-1">
+          <div class="rounded-xl border-amber-900/50 bg-[#140f06]/70 p-3">
+            <div class="text- uppercase tracking-widest text-amber-200/70 mb-2">Picks <span class="text-yellow-300">${Math.round(t.picksValue).toLocaleString()}</span></div>
+            <div class="space-y-1 max-h- overflow-auto pr-1">
               ${t.picks.sort((a,b)=>a.season-b.season||a.round-b.round).map(p=>`
-                <div class="flex justify-between text-[12px]">
+                <div class="flex justify-between text-">
                   <span>${p.season} R${p.round} <span class="text-amber-200/50">• ${p.tier}</span></span>
                   <span class="font-mono">${Math.round(p.value).toLocaleString()}</span>
                 </div>
@@ -298,7 +301,6 @@ function render(){
       </td>
     </tr>`:''}
   `}).join('');
-  // bind expand
   document.querySelectorAll('tr.team-row').forEach(tr=>{
     tr.onclick = (e)=>{
       if(e.target.closest('.opt')) return;
@@ -316,11 +318,11 @@ function bindTip(){
     el.addEventListener('mouseenter',e=>{
       const t = teams.find(x=>String(x.rosterId)===el.dataset.id);
       tip.innerHTML = `
-        <div class="text-[11px] uppercase tracking-wider text-amber-200/70 mb-2">Optimal Starters • ${t.teamName}</div>
-        <div class="space-y-1 max-h-[240px] overflow-auto pr-1">
+        <div class="text- uppercase tracking-wider text-amber-200/70 mb-2">Optimal Starters • ${t.teamName}</div>
+        <div class="space-y-1 max-h- overflow-auto pr-1">
           ${t.starters.map(s=>`
-            <div class="grid grid-cols-[50px_1fr_auto_auto] gap-2 items-center text-[12px]">
-              <span class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-800 text-amber-200 text-[10px]">${s.slot}</span>
+            <div class="grid grid-cols-[50px_1fr_auto] gap-2 items-center text-">
+              <span class="px-1.5 py-0.5 rounded bg-amber-950 border border-amber-800 text-amber-200 text-">${s.slot}</span>
               <span class="truncate">${s.name} <span class="text-amber-200/50">• ${s.pos}</span></span>
               <span class="font-mono text-emerald-300">${s.ppg.toFixed(1)}</span>
               <span class="font-mono text-amber-300">${Math.round(s.value).toLocaleString()}</span>
@@ -349,3 +351,4 @@ document.getElementById('refresh').addEventListener('click',load);
 load();
 </script>
 </body>
+</html>
