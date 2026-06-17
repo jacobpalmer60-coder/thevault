@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TradeCalc Pro — Position Groups</title>
+<title>TradeCalc Pro — Fixed</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -18,25 +18,25 @@
 </header>
 
 <main class="max-w-[1200px] mx-auto px-6 py-8">
-  <section id="analysis" class="mb-8 hidden">
+  <section id="analysis" class="mb-8">
     <div class="glass rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
       <div class="flex items-center justify-between mb-5">
         <h3 class="font-semibold text-[18px]">Trade Evaluation</h3>
-        <span id="verdictPill" class="text-[11px] px-2.5 py-1 rounded-full bg-white/10">—</span>
+        <span id="verdictPill" class="text-[11px] px-2.5 py-1 rounded-full bg-white/10">Loading...</span>
       </div>
       <div class="grid md:grid-cols-2 gap-5">
         <div class="rounded-2xl bg-violet-500/5 border border-violet-500/20 p-5">
           <div class="font-medium text-violet-200 mb-3">Team A Impact</div>
-          <div id="statsA" class="space-y-2.5 text-[13px]"></div>
+          <div id="statsA" class="space-y-2.5 text-[13px]"><div class="text-white/40">Select teams...</div></div>
         </div>
         <div class="rounded-2xl bg-cyan-500/5 border border-cyan-500/20 p-5">
           <div class="font-medium text-cyan-200 mb-3">Team B Impact</div>
-          <div id="statsB" class="space-y-2.5 text-[13px]"></div>
+          <div id="statsB" class="space-y-2.5 text-[13px]"><div class="text-white/40">Select teams...</div></div>
         </div>
       </div>
       <div class="mt-5 pt-4 border-t border-white/10">
         <div class="flex justify-between text-[12px] mb-2"><span class="text-white/60">Fairness</span><span id="fairText" class="font-mono">—</span></div>
-        <div class="h-2 bg-white/5 rounded-full overflow-hidden"><div id="fairBar" class="h-full w-0 bg-gradient-to-r from-violet-500 to-cyan-400"></div></div>
+        <div class="h-2 bg-white/5 rounded-full overflow-hidden"><div id="fairBar" class="h-full w-0 bg-gradient-to-r from-violet-500 to-cyan-400 transition-all"></div></div>
       </div>
     </div>
   </section>
@@ -86,40 +86,28 @@ async function load(){
 
 function loadTeam(side,id){
   const r=sleeper.rosters.find(x=>x.roster_id===id);
-  state[side]=(r.players||[]).map(pid=>{const p=sleeper.players[pid]||{};const nm=`${p.first_name||''} ${p.last_name||''}`.trim();return{id:pid,n:nm,pos:p.position||'?',age:p.age||0,value:sleeper.values.get(pid)||0,ppg:sleeper.ppg.get(nm.toLowerCase())||0}}).filter(p=>p.n);
+  state[side]=(r.players||[]).map(pid=>{
+    const p=sleeper.players[pid]||{};
+    const nm=`${p.first_name||''} ${p.last_name||''}`.trim();
+    return {id:pid,n:nm,pos:p.position||'?',age:p.age||0,value:sleeper.values.get(pid)||0,ppg:sleeper.ppg.get(nm.toLowerCase())||0}
+  }).filter(p=>p.n);
 
-  // ORGANIZE BY POSITION, DESCENDING VALUE
+  // Group by position, sort by value desc
   const grouped={}; state[side].forEach(p=>{(grouped[p.pos]=grouped[p.pos]||[]).push(p)});
   const order=['QB','RB','WR','TE','K','DEF'];
   const allPos=[...order.filter(p=>grouped[p]),...Object.keys(grouped).filter(p=>!order.includes(p)).sort()];
 
   const html=allPos.map(pos=>{
     const players=grouped[pos].sort((a,b)=>b.value-a.value);
-    return `<div>
-      <div class="text-[11px] uppercase tracking-wider text-white/40 mb-1.5 mt-3 first:mt-0">${pos} <span class="text-white/20">(${players.length})</span></div>
-      <div class="space-y-1">
-        ${players.map(p=>`
-          <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] border border-white/5">
-            <div class="flex items-center gap-2 min-w-0">
-              <span class="text-[11px] w-5 text-white/40">${players.indexOf(p)+1}</span>
-              <span class="truncate">${p.n}</span>
-              <span class="text-[10px] text-white/30">${p.age}y</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="text-[11px] text-white/40">${p.ppg.toFixed(1)}</span>
-              <span class="font-mono text-[12px] w-12 text-right">${Math.round(p.value).toLocaleString()}</span>
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>`;
+    return `<div><div class="text-[11px] uppercase text-white/40 mb-1 mt-3">${pos}</div>${players.map(p=>`<div class="flex justify-between py-1 px-2 rounded hover:bg-white/5"><span class="truncate">${p.n} <span class="text-white/30 text-[10px]">${p.age}</span></span><span class="font-mono text-[11px]">${Math.round(p.value)||p.ppg.toFixed(1)}</span></div>`).join('')}</div>`;
   }).join('');
 
   document.getElementById('list'+side).innerHTML=html;
-  calc();
+  setTimeout(calc, 50);
 }
 
 const long=(a,pos)=>{const pk={QB:30,RB:24,WR:26,TE:27}[pos]||26;return Math.max(.3,1-Math.abs(a-pk)*.06)};
-const base=p=>Math.round((p.value||p.ppg*10)*long(p.age,p.pos)*({QB:1.2,RB:1.05,WR:1.08,TE:.82}[p.pos]||1));
+const base=p=>Math.round(((p.value||p.ppg*50))*long(p.age,p.pos)*({QB:1.2,RB:1.05,WR:1.08,TE:.82}[p.pos]||1));
 
 function optimal(team){
   const pool=[...team].sort((x,y)=>y.ppg-x.ppg); const used=new Set(); let t=0;
@@ -127,7 +115,7 @@ function optimal(team){
     let pos=[s]; if(s==='FLEX')pos=['RB','WR','TE']; if(s==='SUPER_FLEX')pos=['QB','RB','WR','TE']; if(s==='WRRB_FLEX')pos=['RB','WR']; if(s==='REC_FLEX')pos=['WR','TE'];
     const i=pool.findIndex(p=>!used.has(p.id)&&pos.includes(p.pos)); if(i>=0){t+=pool[i].ppg;used.add(pool[i].id)}
   }
-  return t;
+  return t||pool.slice(0,8).reduce((s,p)=>s+p.ppg,0);
 }
 
 function calc(){
@@ -138,17 +126,17 @@ function calc(){
     const long=team.length?team.reduce((s,p)=>s+long(p.age,p.pos),0)/team.length*100:0;
     return {val,age,opt,prod:opt,long};
   };
-  const A=getStats(state.A), B=getStats(state.B);
-  document.getElementById('analysis').classList.toggle('hidden',!(A.val+B.val));
 
-  const row=(l,v,f=x=>x)=>`<div class="flex justify-between"><span class="text-white/60">${l}</span><span class="font-mono">${f(v)}</span></div>`;
-  document.getElementById('statsA').innerHTML=[row('Value',A.val,x=>x.toLocaleString()),row('Opt PPG',A.opt,x=>x.toFixed(1)),row('Productivity',A.prod,x=>x.toFixed(1)),row('Longevity',A.long,x=>x.toFixed(0)+'%'),row('Age',A.age,x=>x.toFixed(1))].join('');
-  document.getElementById('statsB').innerHTML=[row('Value',B.val,x=>x.toLocaleString()),row('Opt PPG',B.opt,x=>x.toFixed(1)),row('Productivity',B.prod,x=>x.toFixed(1)),row('Longevity',B.long,x=>x.toFixed(0)+'%'),row('Age',B.age,x=>x.toFixed(1))].join('');
+  const A=getStats(state.A), B=getStats(state.B);
+  const row=(l,v,f=x=>x)=>`<div class="flex justify-between py-1"><span class="text-white/60">${l}</span><span class="font-mono">${f(v)}</span></div>`;
+
+  document.getElementById('statsA').innerHTML = [row('Value',A.val,x=>Math.round(x).toLocaleString()),row('Opt PPG',A.opt,x=>x.toFixed(1)),row('Productivity',A.prod,x=>x.toFixed(1)),row('Longevity',A.long,x=>x.toFixed(0)+'%'),row('Age',A.age,x=>x.toFixed(1))].join('');
+  document.getElementById('statsB').innerHTML = [row('Value',B.val,x=>Math.round(x).toLocaleString()),row('Opt PPG',B.opt,x=>x.toFixed(1)),row('Productivity',B.prod,x=>x.toFixed(1)),row('Longevity',B.long,x=>x.toFixed(0)+'%'),row('Age',B.age,x=>x.toFixed(1))].join('');
 
   const diff=A.val-B.val; const fair=Math.max(0,100-Math.abs(diff)/Math.max(1,(A.val+B.val)/2)*100);
-  document.getElementById('verdictPill').textContent=Math.abs(diff)<200?'Even':diff>0?'A +'+Math.round(diff).toLocaleString():'B +'+Math.round(-diff).toLocaleString();
-  document.getElementById('fairText').textContent=Math.round(fair)+'% fair';
-  document.getElementById('fairBar').style.width=Math.round(fair)+'%';
+  document.getElementById('verdictPill').textContent = Math.abs(diff)<500?'Even':diff>0?'A leads':'B leads';
+  document.getElementById('fairText').textContent = Math.round(fair)+'% fair';
+  document.getElementById('fairBar').style.width = Math.round(fair)+'%';
 }
 
 document.getElementById('resetBtn').onclick=load;
