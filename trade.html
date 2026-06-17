@@ -3,54 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TradeCalc Pro — Team Values</title>
+<title>TradeCalc Pro — Sleeper Slots</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  body{font-family:Outfit;background:#050810;color:#fff}
-  :root{color-scheme:dark}
- .player.selected{outline:2px solid #8b5cf6;background:rgba(139,92,246,.15)}
-</style>
+<style>body{font-family:Outfit;background:#050810;color:#fff}:root{color-scheme:dark}.player.selected{outline:2px solid #8b5cf6;background:rgba(139,92,246,.15)}</style>
 </head>
 <body>
 <main class="max-w- mx-auto p-6">
-  <!-- TOP TRADE BOXES -->
   <div class="grid md:grid-cols-2 gap-4 mb-6">
-    <div class="bg-violet-500/5 border border-violet-500/30 rounded-xl p-4 min-h-">
+    <div class="bg-violet-500/5 border border-violet-500/30 rounded-xl p-4">
       <h3 class="text-violet-300 font-medium mb-2">Team A Sends <span id="countA" class="text-xs opacity-60">(0)</span></h3>
       <div id="tradeA" class="flex flex-wrap gap-1.5 mb-3 min-h-"></div>
-      <div id="statsA" class="text- space-y-1">
-        <div class="opacity-50">Select players to see Team A after trade</div>
-      </div>
+      <div id="statsA" class="text-"></div>
     </div>
-    <div class="bg-cyan-500/5 border border-cyan-500/30 rounded-xl p-4 min-h-">
+    <div class="bg-cyan-500/5 border border-cyan-500/30 rounded-xl p-4">
       <h3 class="text-cyan-300 font-medium mb-2">Team B Sends <span id="countB" class="text-xs opacity-60">(0)</span></h3>
       <div id="tradeB" class="flex flex-wrap gap-1.5 mb-3 min-h-"></div>
-      <div id="statsB" class="text- space-y-1">
-        <div class="opacity-50">Select players to see Team B after trade</div>
-      </div>
+      <div id="statsB" class="text-"></div>
     </div>
   </div>
 
   <div class="text-center mb-5">
     <div class="inline-flex items-center gap-3 px-5 py-2 bg-white/5 rounded-full border border-white/10">
-      <span class="text-sm">Fairness:</span>
-      <span id="fair" class="font-mono">Select players</span>
-      <div class="w-28 h-1.5 bg-white/10 rounded-full overflow-hidden"><div id="bar" class="h-full bg-gradient-to-r from-violet-500 to-cyan-400 w-0 transition-all"></div></div>
+      <span>Fairness:</span><span id="fair" class="font-mono">Select players</span>
+      <div class="w-28 h-1.5 bg-white/10 rounded-full"><div id="bar" class="h-full bg-gradient-to-r from-violet-500 to-cyan-400 w-0"></div></div>
     </div>
   </div>
 
-  <!-- ROSTERS -->
   <div class="grid lg:grid-cols-2 gap-5">
-    <div class="border border-white/10 rounded-xl p-4 bg-white/[0.02]">
-      <select id="teamA" class="w-full mb-3 bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
-      <div id="listA" class="space-y-1 max-h- overflow-auto pr-1"></div>
-    </div>
-    <div class="border border-white/10 rounded-xl p-4 bg-white/[0.02]">
-      <select id="teamB" class="w-full mb-3 bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-sm"></select>
-      <div id="listB" class="space-y-1 max-h- overflow-auto pr-1"></div>
-    </div>
+    <div class="border border-white/10 rounded-xl p-4"><select id="teamA" class="w-full mb-3 bg-black/60 border border-white/10 rounded px-3 py-2 text-sm"></select><div id="listA" class="space-y-1 max-h- overflow-auto"></div></div>
+    <div class="border border-white/10 rounded-xl p-4"><select id="teamB" class="w-full mb-3 bg-black/60 border border-white/10 rounded px-3 py-2 text-sm"></select><div id="listB" class="space-y-1 max-h- overflow-auto"></div></div>
   </div>
 </main>
 
@@ -67,161 +50,79 @@ async function init(){
     fetch(`https://api.sleeper.app/v1/league/${LEAGUE}/users`).then(r=>r.json()),
     fetch(`https://api.sleeper.app/v1/league/${LEAGUE}/rosters`).then(r=>r.json()),
     fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),
-    fetch(VAL).then(r=>r.text()),
-    fetch(PPG).then(r=>r.text())
+    fetch(VAL).then(r=>r.text()), fetch(PPG).then(r=>r.text())
   ]);
 
-  S={users:us,rosters:ro,players:pl,vals:new Map(),ppg:new Map(),slots:lg.roster_positions};
+  S={users:us,rosters:ro,players:pl,vals:new Map(),ppg:new Map()};
+  // PULL REAL SLOTS FROM SLEEPER
+  S.slots = lg.roster_positions.filter(x =>!['BN','IR','TAXI','RESERVE'].includes(x));
+
   const sf = lg.roster_positions.includes('SUPER_FLEX');
+  Papa.parse(v,{header:true}).data.forEach(r=>r.sleeper_id&&S.vals.set(r.sleeper_id,parseFloat(sf?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05)||0));
+  Papa.parse(p,{header:true}).data.forEach(r=>r.Player&&S.ppg.set(r.Player.toLowerCase(),parseFloat(r['Avg_PPR_0.5_TEP'])||0));
 
-  Papa.parse(v,{header:true,skipEmptyLines:true}).data.forEach(r=>{
-    if(r.sleeper_id) S.vals.set(r.sleeper_id, parseFloat(sf?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05)||0);
-  });
-  Papa.parse(p,{header:true,skipEmptyLines:true}).data.forEach(r=>{
-    if(r.Player) S.ppg.set(r.Player.toLowerCase(), parseFloat(r['Avg_PPR_0.5_TEP'])||0);
-  });
-
-  const a=document.getElementById('teamA'), b=document.getElementById('teamB');
-  us.forEach(u=>{
-    const r=ro.find(x=>x.owner_id===u.user_id); if(!r) return;
-    const o=document.createElement('option');
-    o.value=r.roster_id;
-    o.textContent=u.metadata?.team_name||u.display_name;
-    a.appendChild(o.cloneNode(true));
-    b.appendChild(o);
-  });
-
-  a.onchange=()=>load('A',+a.value);
-  b.onchange=()=>load('B',+b.value);
-  load('A',+a.options[0].value);
-  load('B',+b.options[1].value);
+  const a=teamA,b=teamB;
+  us.forEach(u=>{const r=ro.find(x=>x.owner_id===u.user_id);if(!r)return;const o=document.createElement('option');o.value=r.roster_id;o.textContent=u.metadata?.team_name||u.display_name;a.appendChild(o.cloneNode(true));b.appendChild(o);});
+  a.onchange=()=>load('A',+a.value); b.onchange=()=>load('B',+b.value);
+  load('A',+a.options[0].value); load('B',+b.options[1].value);
 }
 
 function load(side,id){
   const r=S.rosters.find(x=>x.roster_id===id);
-  rosters[side] = r.players.map(pid=>{
-    const p=S.players[pid]||{};
-    const n=`${p.first_name||''} ${p.last_name||''}`.trim();
-    return {
-      id:pid, n, pos:p.position||'?', age:p.age||0,
-      val:S.vals.get(pid)||0,
-      ppg:S.ppg.get(n.toLowerCase())||0
-    }
-  }).filter(x=>x.n).sort((a,b)=>b.val-a.val);
-
-  trade[side]=[];
-  render(side);
-  update();
+  rosters[side]=r.players.map(pid=>{const p=S.players[pid]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id:pid,n,pos:p.position,age:p.age||0,val:S.vals.get(pid)||0,ppg:S.ppg.get(n.toLowerCase())||0}}).filter(x=>x.n).sort((a,b)=>b.val-a.val);
+  trade[side]=[]; render(side); update();
 }
 
 function render(side){
-  const list=document.getElementById('list'+side);
-  list.innerHTML = rosters[side].map(p=>{
-    const sel = trade[side].some(x=>x.id===p.id);
-    return `<div class="player ${sel?'selected':''} flex justify-between items-center p-2.5 mb-1 rounded-lg border border-white/10 bg-black/20 hover:bg-white/5 cursor-pointer transition-all" onclick="toggle('${side}','${p.id}')">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <div class="w-5 h-5 rounded border ${sel?'bg-violet-500 border-violet-500':'border-white/20'} grid place-items-center text-">${sel?'✓':''}</div>
-        <span class="text- truncate">${p.pos} <span class="text-white/90">${p.n}</span> <span class="text- text-white/40">${p.age}</span></span>
-      </div>
-      <span class="font-mono text- text-white/60">${Math.round(p.val).toLocaleString()}</span>
-    </div>`;
+  document.getElementById('list'+side).innerHTML = rosters[side].map(p=>{
+    const sel=trade[side].some(x=>x.id===p.id);
+    return `<div class="player ${sel?'selected':''} flex justify-between p-2 mb-1 rounded border border-white/10 hover:bg-white/5 cursor-pointer" onclick="toggle('${side}','${p.id}')"><span>${p.pos} ${p.n}</span><span class="font-mono text-xs">${Math.round(p.val).toLocaleString()}</span></div>`;
   }).join('');
 }
 
-function toggle(side,id){
-  const p = rosters[side].find(x=>x.id===id);
-  const idx = trade[side].findIndex(x=>x.id===id);
-  if(idx>=0) trade[side].splice(idx,1); else trade[side].push(p);
-  render(side);
-  update();
-}
+function toggle(side,id){const p=rosters[side].find(x=>x.id===id);const i=trade[side].findIndex(x=>x.id===id);i>=0?trade[side].splice(i,1):trade[side].push(p);render(side);update();}
 
 function getTeamStats(team){
   if(!team.length) return {val:0,age:0,opt:0,long:0};
-  const val = team.reduce((s,p)=>s + (p.val || p.ppg*40), 0);
-  const age = team.reduce((s,p)=>s + p.age, 0) / team.length;
+  const val=team.reduce((s,p)=>s+(p.val||p.ppg*50),0);
+  const age=team.reduce((s,p)=>s+p.age,0)/team.length;
 
-  // Calculate optimal PPG
-  const pool = [...team].sort((a,b)=>b.ppg - a.ppg);
-  const used = new Set();
-  let opt = 0;
-  const slots = ['QB','RB','RB','WR','WR','TE','FLEX','SUPER_FLEX'];
-  for(const slot of slots){
-    let positions = [slot];
-    if(slot==='FLEX') positions=['RB','WR','TE'];
-    if(slot==='SUPER_FLEX') positions=['QB','RB','WR','TE'];
-    const idx = pool.findIndex(p=>!used.has(p.id) && positions.includes(p.pos));
-    if(idx>=0){ opt += pool[idx].ppg; used.add(pool[idx].id); }
+  // OPT PPG USING REAL SLEEPER SLOTS
+  const pool=[...team].sort((a,b)=>b.ppg-a.ppg);
+  const used=new Set(); let opt=0;
+  for(const slot of S.slots){
+    let pos=[slot];
+    if(slot==='FLEX')pos=['RB','WR','TE'];
+    if(slot==='SUPER_FLEX')pos=['QB','RB','WR','TE'];
+    if(slot==='WRRB_FLEX')pos=['RB','WR'];
+    if(slot==='REC_FLEX')pos=['WR','TE'];
+    const idx=pool.findIndex(p=>!used.has(p.id)&&pos.includes(p.pos));
+    if(idx>=0){opt+=pool[idx].ppg;used.add(pool[idx].id);}
   }
 
-  const long = team.reduce((s,p)=>{
-    const peak = {QB:30,RB:24,WR:26,TE:27}[p.pos]||26;
-    return s + Math.max(30, 100 - Math.abs(p.age-peak)*5);
-  },0) / team.length;
-
-  return {val, age, opt, long};
+  const long=team.reduce((s,p)=>{const peak={QB:30,RB:24,WR:26,TE:27}[p.pos]||26;return s+Math.max(30,100-Math.abs(p.age-peak)*5)},0)/team.length;
+  return {val,age,opt,long};
 }
 
 function update(){
-  // Update chips
-  ['A','B'].forEach(side=>{
-    document.getElementById('count'+side).textContent = `(${trade[side].length})`;
-    document.getElementById('trade'+side).innerHTML = trade[side].map(p=>
-      `<span class="px-2.5 py-1 bg-white/10 hover:bg-white/20 rounded-lg text- cursor-pointer transition-colors" onclick="toggle('${side}','${p.id}')">${p.pos} ${p.n} ✕</span>`
-    ).join('') || '<span class="text-xs opacity-30">No players selected</span>';
-  });
+  ['A','B'].forEach(s=>{document.getElementById('count'+s).textContent=`(${trade[s].length})`;document.getElementById('trade'+s).innerHTML=trade[s].map(p=>`<span class="px-2 py-1 bg-white/10 rounded text-xs" onclick="toggle('${s}','${p.id}')">${p.pos} ${p.n} ✕</span>`).join('')});
 
-  // Calculate teams AFTER trade
-  const teamAAfter = [
-   ...rosters.A.filter(p =>!trade.A.some(t => t.id === p.id)),
-   ...trade.B
-  ];
-  const teamBAfter = [
-   ...rosters.B.filter(p =>!trade.B.some(t => t.id === p.id)),
-   ...trade.A
-  ];
+  const teamA=[...rosters.A.filter(p=>!trade.A.some(t=>t.id===p.id)),...trade.B];
+  const teamB=[...rosters.B.filter(p=>!trade.B.some(t=>t.id===p.id)),...trade.A];
 
-  const statsA = getTeamStats(teamAAfter);
-  const statsB = getTeamStats(teamBAfter);
-  const beforeA = getTeamStats(rosters.A);
-  const beforeB = getTeamStats(rosters.B);
+  const A=getTeamStats(teamA), B=getTeamStats(teamB);
+  const bA=getTeamStats(rosters.A), bB=getTeamStats(rosters.B);
 
-  // Display TEAM totals (not player totals)
-  const renderStats = (el, after, before) => {
-    const delta = after.val - before.val;
-    const deltaColor = delta > 0? 'text-emerald-400' : delta < 0? 'text-red-400' : 'text-white/60';
-    const deltaSign = delta > 0? '+' : '';
+  const html=(st,bf)=>`<div class="grid grid-cols-2 gap-1"><div>Value: <span class="font-mono">${Math.round(st.val).toLocaleString()}</span></div><div>Opt PPG: <span class="font-mono">${st.opt.toFixed(1)}</span></div><div>Productivity: <span class="font-mono">${st.opt.toFixed(1)}</span></div><div>Longevity: <span class="font-mono">${st.long.toFixed(0)}%</span></div><div>Age: <span class="font-mono">${st.age.toFixed(1)}</span></div></div>`;
 
-    document.getElementById(el).innerHTML = `
-      <div class="grid grid-cols-2 gap-x-4 gap-y-1">
-        <div class="flex justify-between"><span class="opacity-60">Value:</span><span class="font-mono">${Math.round(after.val).toLocaleString()} <span class="${deltaColor} text-">(${deltaSign}${Math.round(delta).toLocaleString()})</span></span></div>
-        <div class="flex justify-between"><span class="opacity-60">Opt PPG:</span><span class="font-mono">${after.opt.toFixed(1)}</span></div>
-        <div class="flex justify-between"><span class="opacity-60">Productivity:</span><span class="font-mono">${after.opt.toFixed(1)}</span></div>
-        <div class="flex justify-between"><span class="opacity-60">Longevity:</span><span class="font-mono">${after.long.toFixed(0)}%</span></div>
-        <div class="flex justify-between col-span-2"><span class="opacity-60">Age:</span><span class="font-mono">${after.age.toFixed(1)}</span></div>
-      </div>
-    `;
-  };
-
-  if(trade.A.length || trade.B.length){
-    renderStats('statsA', statsA, beforeA);
-    renderStats('statsB', statsB, beforeB);
-
-    const valueDiff = Math.abs((statsA.val - beforeA.val) + (statsB.val - beforeB.val));
-    const fairness = Math.max(0, 100 - (valueDiff / Math.max(beforeA.val, beforeB.val) * 100));
-
-    document.getElementById('fair').textContent = fairness > 95? 'Even' : `Δ ${Math.round(Math.abs(statsA.val - beforeA.val)).toLocaleString()}`;
-    document.getElementById('bar').style.width = fairness + '%';
-  } else {
-    document.getElementById('statsA').innerHTML = '<div class="opacity-40 text-xs">Select players to see Team A after trade</div>';
-    document.getElementById('statsB').innerHTML = '<div class="opacity-40 text-xs">Select players to see Team B after trade</div>';
-    document.getElementById('fair').textContent = 'Select players';
-    document.getElementById('bar').style.width = '0%';
+  if(trade.A.length||trade.B.length){
+    statsA.innerHTML=html(A,bA); statsB.innerHTML=html(B,bB);
+    const diff=Math.abs((A.val-bA.val)+(B.val-bB.val));
+    fair.textContent=diff<200?'Even':`Δ ${Math.round(diff).toLocaleString()}`;
+    bar.style.width=Math.max(10,100-diff/500)+'%';
   }
 }
-
-window.toggle = toggle;
-init();
+window.toggle=toggle; init();
 </script>
 </body>
 </html>
