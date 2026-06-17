@@ -23,11 +23,11 @@
 <style>
   :root { color-scheme: dark; }
   body { font-family: 'Outfit', system-ui; background: #050810; }
-  .glass { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-  .grid-bg { background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0); background-size: 24px 24px; }
+ .glass { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+ .grid-bg { background-image: radial-gradient(circle at 1px 1px, rgba(255,255,0.06) 1px, transparent 0); background-size: 24px 24px; }
   *::-webkit-scrollbar { width: 8px; height: 8px; }
-  *::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 8px; }
-  .fade-in { animation: fade .3s ease-out; }
+  *::-webkit-scrollbar-thumb { background: rgba(255,255,0.15); border-radius: 8px; }
+ .fade-in { animation: fade.3s ease-out; }
   @keyframes fade { from { opacity:0; transform: translateY(4px)} to {opacity:1; transform:none} }
 </style>
 </head>
@@ -50,7 +50,7 @@
     </div>
     <div class="hidden md:flex items-center gap-2">
       <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">Sleeper Live</span>
-      <span class="text-xs px-2.5 py-1 rounded-full bg-white/5 text-white/70 border border-white/10">Archetype Analysis</span>
+      <span class="text-xs px-2.5 py-1 rounded-full bg-white/5 text-white/70 border-white/10">Archetype Analysis</span>
     </div>
     <button id="resetBtn" class="text-xs px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition">Reset</button>
   </div>
@@ -170,7 +170,6 @@
               <div class="text-[11px] text-white/50">Age Delta</div>
               <div id="ageDelta" class="font-mono text-[20px] mt-0.5">—</div>
             </div>
-          </div>
           <div class="mt-3 h-2 w-full rounded-full bg-white/5 overflow-hidden border border-white/5">
             <div id="fairBar" class="h-full w-0 bg-gradient-to-r from-violet-500 to-cyan-400 transition-all duration-500"></div>
           </div>
@@ -210,11 +209,11 @@ async function loadSleeper(){
     fetch(PPG_URL).then(r=>r.text())
   ]);
   sleeper.users = users; sleeper.rosters = rosters; sleeper.players = players;
-  
+
   // parse values
   valuesCsv.split('\n').slice(1).forEach(line=>{
     const cols = line.split(',');
-    const id = cols[0]; const val = parseFloat(cols[2])||0; // simplified
+    const id = cols[0]; const val = parseFloat(cols[2])||0;
     if(id) sleeper.values.set(id, val);
   });
   ppgCsv.split('\n').slice(1).forEach(line=>{
@@ -222,11 +221,13 @@ async function loadSleeper(){
     const name = cols[0]?.toLowerCase(); const ppg = parseFloat(cols[1])||0;
     if(name) sleeper.ppg.set(name, ppg);
   });
-  
+
   const selA = document.getElementById('teamSelectA');
   const selB = document.getElementById('teamSelectB');
+  selA.innerHTML=''; selB.innerHTML='';
   users.forEach(u=>{
     const r = rosters.find(x=>x.owner_id===u.user_id);
+    if(!r) return;
     const name = u.metadata?.team_name || u.display_name;
     const opt = document.createElement('option');
     opt.value = r.roster_id; opt.textContent = name;
@@ -235,7 +236,6 @@ async function loadSleeper(){
   });
   selA.onchange = ()=>loadTeam('A', +selA.value);
   selB.onchange = ()=>loadTeam('B', +selB.value);
-  // auto-load first two
   if(rosters[0]) { selA.value = rosters[0].roster_id; loadTeam('A', rosters[0].roster_id); }
   if(rosters[1]) { selB.value = rosters[1].roster_id; loadTeam('B', rosters[1].roster_id); }
 }
@@ -253,7 +253,7 @@ function loadTeam(side, rosterId){
   renderList(side);
 }
 
-// --- app_7 calculations (simplified) ---
+// --- app_7 calculations ---
 function prodScore(p){ return p.ppg[0]||0; }
 function longevity(age,pos){
   const peak = {QB:30, RB:24, WR:26, TE:27}[pos]||26;
@@ -285,15 +285,15 @@ const ARCHETYPES = [
 const el = id=>document.getElementById(id);
 const fmt = n => n.toLocaleString();
 
-function playerCard(p, team){
+function playerCard(p){
   const val = baseValue(p);
   const prod = prodScore(p).toFixed(1);
   const lon = Math.round(longevity(p.age,p.pos)*100);
   return `<div class="fade-in flex items-center gap-3 p-3 rounded-2xl bg-white/[0.04] border border-white/5">
-    <div class="w-10 h-10 rounded-xl bg-white/5 grid place-items-center font-mono text-[11px]">${p.pos}</div>
+    <div class="w-10 h-10 rounded-xl bg-white/5 grid place-items-center font-mono text-[11px]">${p.pos||''}</div>
     <div class="flex-1 min-w-0">
       <div class="truncate font-medium">${p.n}</div>
-      <div class="text-[10px] text-white/50">${p.team} • ${p.age} • PROD ${prod} • LONG ${lon}%</div>
+      <div class="text-[10px] text-white/50">${p.team||''} • ${p.age||0} • PROD ${prod} • LONG ${lon}%</div>
     </div>
     <div class="font-mono">${fmt(val)}</div>
   </div>`;
@@ -302,9 +302,9 @@ function playerCard(p, team){
 function renderList(team){
   const list = el(team==='A'?'listA':'listB');
   const arr = state[team];
-  list.innerHTML = arr.map(p=>playerCard(p,team)).join('') || `<div class="py-14 text-center text-white/50">No players</div>`;
+  list.innerHTML = arr.map(p=>playerCard(p)).join('') || `<div class="py-14 text-center text-white/50">No players</div>`;
   el(team==='A'?'countA':'countB').textContent = arr.length;
-  const avgAge = arr.length ? (arr.reduce((s,p)=>s+p.age,0)/arr.length).toFixed(1) : '—';
+  const avgAge = arr.length? (arr.reduce((s,p)=>s+(p.age||0),0)/arr.length).toFixed(1) : '—';
   el(team==='A'?'ageA':'ageB').textContent = avgAge;
   calc();
 }
@@ -315,18 +315,18 @@ function calc(){
   const vA = sum(state.A), vB = sum(state.B);
   el('valueA').textContent = fmt(vA);
   el('valueB').textContent = fmt(vB);
-  el('analysis').classList.toggle('hidden', !(state.A.length||state.B.length));
+  el('analysis').classList.toggle('hidden',!(state.A.length||state.B.length));
   const diff = vA - vB;
   const fairness = Math.max(0, 100 - Math.abs(diff)/Math.max(1,((vA+vB)/2))*100 );
   el('diffVal').textContent = (diff>=0?'+':'')+fmt(diff);
   el('fairVal').textContent = Math.round(fairness)+'%';
   el('fairBar').style.width = Math.round(fairness)+'%';
   el('verdictPill').textContent = Math.abs(diff)<200?'Fair': diff>0?'A Wins':'B Wins';
-  
+
   const ctx = el('valueChart').getContext('2d');
   if(chart) chart.destroy();
   chart = new Chart(ctx, {type:'bar', data:{labels:['Team A','Team B'], datasets:[{data:[vA,vB], backgroundColor:['rgba(139,92,246,0.8)','rgba(34,211,238,0.8)']}]}, options:{plugins:{legend:{display:false}}, scales:{y:{display:false}}}});
-  
+
   const archEl = el('archetypes');
   archEl.innerHTML = ARCHETYPES.map(a=>{
     const aA = state.A.reduce((s,p)=>s+archetypeValue(p,a.key),0);
@@ -340,7 +340,14 @@ function calc(){
   }).join('');
 }
 
-document.getElementById('swapBtn').onclick = ()=>{ const t=state.A; state.A=state.B; state.B=t; const a=document.getElementById('teamSelectA').value; const b=document.getElementById('teamSelectB').value; document.getElementById('teamSelectA').value=b; document.getElementById('teamSelectB').value=a; renderList('A'); renderList('B'); };
+document.getElementById('swapBtn').onclick = ()=>{
+  const t=state.A; state.A=state.B; state.B=t;
+  const a=document.getElementById('teamSelectA').value;
+  const b=document.getElementById('teamSelectB').value;
+  document.getElementById('teamSelectA').value=b;
+  document.getElementById('teamSelectB').value=a;
+  renderList('A'); renderList('B');
+};
 document.getElementById('resetBtn').onclick = loadSleeper;
 
 loadSleeper();
