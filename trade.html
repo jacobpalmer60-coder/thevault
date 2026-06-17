@@ -3,1271 +3,470 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Dynasty Trade Calculator</title>
+<title>TradeCalc Pro — Production & Longevity Dynasty Calculator</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Outfit','system-ui'], mono: ['JetBrains Mono','monospace'] },
+        boxShadow: { 'glow': '0 0 40px rgba(99,102,241,0.2)' }
+      }
+    }
+  }
+</script>
 <style>
-body{font-family:'Outfit',system-ui;background:#020617;color:#e2e8f0}
-.mono{font-family:'JetBrains Mono',monospace}
-.tabular-nums{font-variant-numeric:tabular-nums}
-.player-row{cursor:pointer;border:1px solid transparent}
-.player-row:hover{background:rgba(255,255,255,.04)}
-.player-row.selected{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4)}
-.player-row.last-clicked{box-shadow:0 0 0 2px rgba(245,158,11,.70) inset;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.50)}
-.player-row.selected.last-clicked{box-shadow:0 0 0 2px rgba(245,158,11,.90) inset;background:rgba(245,158,11,.16);border-color:rgba(245,158,11,.60)}
-.badge{font-size:12px;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}
-.badge-pick{background:rgba(168,85,247,.15);border-color:rgba(168,85,247,.3);color:#e9d5ff}
-.badge-need{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.35);color:#fca5a5}
-.table-head{font-size:11px;text-transform:uppercase;color:#64748b}
-.role-starter{color:#22c55e}
-.role-depth{color:#94a3b8}
-.lineup-new{color:#22c55e}
-.pill{font-size:13px;padding:4px 12px;border-radius:999px;border:1px solid transparent;display:inline-flex;align-items:center;gap:6px}
-.pill-rebuild{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.35);color:#93c5fd}
-.pill-mid{background:rgba(100,116,139,.12);border-color:rgba(100,116,139,.35);color:#cbd5e1}
-.pill-fringe{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
-.pill-contender{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.35);color:#86efac}
-.pill-rebuild-deep{background:rgba(37,99,235,.18);border-color:rgba(37,99,235,.45);color:#93c5fd}
-.pill-retool{background:rgba(100,116,139,.18);border-color:rgba(100,116,139,.45);color:#cbd5e1}
-.pill-hopeful{background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.45);color:#fde68a}
-.pill-elite{background:rgba(16,185,129,.20);border-color:rgba(16,185,129,.50);color:#6ee7b7}
-.pill-juggernaut{background:rgba(16,185,129,.28);border-color:rgba(16,185,129,.60);color:#a7f3d0;box-shadow:0 0 12px rgba(16,185,129,.35)}
-.tooltip{position:relative}
-.tooltip:hover.tooltip-card{display:block}
-.tooltip-card{display:none;position:absolute;top:100%;left:0;margin-top:8px;z-index:50;width:340px;max-width:min(340px,calc(100vw - 24px));background:#0f172a;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px}
-#pill-b.tooltip-card{left:auto;right:0}
-.meter{height:6px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
-.meter-fill{height:100%}
-.tab-btn{padding:8px 14px;border-radius:10px;font-size:14px;border:1px solid transparent;color:#94a3b8;white-space:nowrap}
-.tab-btn.active{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fcd34d}
-.tab-panel{display:none}
-.tab-panel.active{display:block}
-.scrollbar-thin{scrollbar-width:thin}
-.scrollbar-thin::-webkit-scrollbar{width:8px;height:8px}
-.scrollbar-thin::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:999px}
-.quick-btn{padding:4px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.12);color:#fcd34d;white-space:nowrap}
-.quick-btn:hover{background:rgba(245,158,11,.2)}
-.seg-btn{color:#94a3b8;border:1px solid transparent;transition:all.15s}
-.seg-btn:hover{background:rgba(255,255,255,.04)}
-.seg-btn.active{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4);color:#fcd34d}
-.combo-wrap{position:relative}
-.combo-input{background:#020617}
-.combo-input:focus{outline:none;border-color:rgba(245,158,11,.5);box-shadow:0 0 0 2px rgba(245,158,11,.15)}
-.combo-dropdown{scrollbar-width:thin}
-.combo-dropdown::-webkit-scrollbar{width:8px}
-.combo-dropdown::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:999px}
-.combo-group{position:sticky;top:0;z-index:1}
-.team-name{font-size:clamp(12px,0.9vw,14px)}
-.value-table td,.value-table th{vertical-align:top}
-.value-table.assets-cell{white-space:normal; line-height:1.5}
-.asset-chip{display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); margin:2px 4px 2px 0; font-size:13px}
-.asset-chip.pos{font-size:11px; opacity:.7}
-.fit-good{color:#86efac}
-.fit-bad{color:#fca5a5}
-.fit-neutral{color:#cbd5e1}
+  :root { color-scheme: dark; }
+  body { font-family: 'Outfit', system-ui; background: #050810; }
+  .glass { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .grid-bg { background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0); background-size: 24px 24px; }
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 8px; }
+  .fade-in { animation: fade .3s ease-out; }
+  @keyframes fade { from { opacity:0; transform: translateY(4px)} to {opacity:1; transform:none} }
 </style>
 </head>
-<body class="min-h-screen">
-<header class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur">
-  <div class="max-w-[1920px] mx-auto px-4 h-14 flex items-center justify-between">
-    <div class="flex items-center gap-3 min-w-0">
-      <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-600 shrink-0"></div>
-      <div class="font-semibold text-lg whitespace-nowrap">Dynasty Trade Calculator</div>
-      <span id="league-name" class="ml-2 text-sm text-slate-400 mono hidden sm:inline truncate max-w-[200px]"></span>
-      <span id="scoring-name" class="ml-2 text-sm text-amber-300 mono hidden sm:inline"></span>
+<body class="text-white selection:bg-violet-500/30 selection:text-violet-200">
+<div class="fixed inset-0 -z-10">
+  <div class="absolute inset-0 bg-[radial-gradient(800px_400px_at_50%_-10%,rgba(99,102,241,0.25),transparent),radial-gradient(600px_300px_at_90%_10%,rgba(16,185,129,0.18),transparent),radial-gradient(500px_300px_at_10%_20%,rgba(236,72,153,0.15),transparent)]"></div>
+  <div class="absolute inset-0 grid-bg opacity-[0.4]"></div>
+</div>
+
+<header class="sticky top-0 z-40 border-b border-white/5 bg-black/30 glass">
+  <div class="max-w-[1200px] mx-auto px-4 sm:px-6 h-[68px] flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-400 shadow-glow grid place-items-center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M7 7h10v10"/><path d="M7 17L17 7"/></svg>
+      </div>
+      <div>
+        <div class="font-semibold tracking-tight leading-none">TradeCalc Pro</div>
+        <div class="text-[11px] text-white/60 -mt-0.5">Production + Longevity Model</div>
+      </div>
+    <div class="hidden md:flex items-center gap-2">
+      <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">Merged: trade_5 + app_7</span>
+      <span class="text-xs px-2.5 py-1 rounded-full bg-white/5 text-white/70 border border-white/10">Archetype Analysis</span>
     </div>
-    <div class="flex items-center gap-2 shrink-0">
-      <button id="swap-btn" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm">Swap</button>
-      <button id="reset-btn" class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm">Reset</button>
-    </div>
+    <button id="resetBtn" class="text-xs px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition">Reset</button>
   </div>
 </header>
 
-<main class="max-w-[1920px] mx-auto px-4 py-4">
-  <div id="status" class="mb-3 text-sm text-slate-400"><span id="status-text">Loading…</span></div>
-
-  <div class="grid grid-cols-3 gap-3 mb-4">
-    <div class="bg-slate-900/60 border border-white/10 rounded-2xl p-2.5">
-      <div class="text-[10px] uppercase tracking-wider text-slate-500">Team A Sends</div>
-      <div id="send-a" class="text-lg font-semibold mono leading-tight">0</div>
-      <div class="text-xs text-slate-400"><span id="count-a">0</span> assets</div>
-    </div>
-    <div class="bg-slate-900/60 border border-amber-500/20 rounded-2xl p-2.5 text-center">
-      <div class="text-[10px] uppercase tracking-wider text-amber-300">Fairness</div>
-      <div id="fairness-label" class="text-lg font-semibold mono leading-tight">Even</div>
-    </div>
-    <div class="bg-slate-900/60 border border-white/10 rounded-2xl p-2.5 text-right">
-      <div class="text-[10px] uppercase tracking-wider text-slate-500">Team B Sends</div>
-      <div id="send-b" class="text-lg font-semibold mono leading-tight">0</div>
-      <div class="text-xs text-slate-400"><span id="count-b">0</span> assets</div>
-    </div>
+<main class="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 md:py-12">
+  <div class="text-center max-w-3xl mx-auto mb-10">
+    <h1 class="text-[32px] md:text-[48px] font-semibold tracking-tight leading-[1.1]">Dynasty trades, solved with <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-300">real production curves</span></h1>
+    <p class="mt-3 text-[15px] md:text-[17px] text-white/65">Merges trade machine UX from trade_5 with app_7's production-weighted longevity engine. Get instant fairness plus who wins for Win-Now, Rebuild, Balanced, and 2-Year Window archetypes.</p>
   </div>
 
-  <div class="overflow-x-auto">
-    <div class="flex gap-4 items-start min-w-[1900px]">
-
-      <!-- Team A -->
-      <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col w-[320px] shrink-0">
-        <div class="px-3 py-3 border-b border-white/10 bg-amber-500/10 rounded-t-2xl">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0 flex-1">
-              <div class="text-[10px] uppercase tracking-wider text-amber-300/80 font-medium">Team A</div>
-              <div id="team-a-name" class="team-name font-semibold leading-tight whitespace-nowrap truncate" title=""></div>
-              <div id="team-a-owner" class="text-xs text-slate-400 mt-0.5 truncate"></div>
-            </div>
-            <select id="team-a-select" class="bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-32 shrink-0"></select>
-          </div>
-          <div id="pill-a" class="mt-2.5"></div>
-          <div id="needs-a" class="mt-2 flex flex-wrap gap-1.5"></div>
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr_72px_1fr] gap-5 lg:gap-6 items-start">
+    <!-- TEAM A -->
+    <section class="glass rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-4 sm:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-white/10 grid place-items-center text-sm font-semibold">A</div>
+          <h2 class="text-[18px] font-semibold">Team A</h2>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/60">Give</span>
         </div>
-        <div class="p-3 space-y-3 max-h-[60vh] overflow-y-auto scrollbar-thin">
-          <div>
-            <div class="text-xs uppercase text-slate-500 px-1 mb-2">Picks</div>
-            <div id="picks-a" class="space-y-1.5"></div>
-          </div>
-          <div>
-            <div class="text-xs uppercase text-slate-500 px-1 mb-2">Players</div>
-            <div id="roster-a" class="space-y-1.5"></div>
-          </div>
+        <div class="text-right">
+          <div class="text-[11px] text-white/50 uppercase tracking-wide">Team Value</div>
+          <div id="valueA" class="font-mono text-[22px] leading-none mt-0.5">0</div>
         </div>
-      </section>
-
-      <!-- Center Impact Panels -->
-      <div class="flex gap-6 flex-1 min-w-0">
-        <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col flex-1 min-w-[600px] min-h-[800px]">
-          <div class="p-3 border-b border-white/10 bg-amber-500/10 sticky top-0 z-[11] bg-slate-900/95 backdrop-blur rounded-t-2xl">
-            <h2 class="font-semibold text-amber-300 text-base">Impact A — What You Get</h2>
-          </div>
-          <div id="impact-a" class="flex-1 p-4"></div>
-        </section>
-        <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col flex-1 min-w-[600px] min-h-[800px]">
-          <div class="p-3 border-b border-white/10 bg-amber-500/10 sticky top-0 z-[11] bg-slate-900/95 backdrop-blur rounded-t-2xl">
-            <h2 class="font-semibold text-amber-300 text-base">Impact B — What You Get</h2>
-          </div>
-          <div id="impact-b" class="flex-1 p-4"></div>
-        </section>
       </div>
 
-      <!-- Team B -->
-      <section class="bg-slate-900/60 border border-white/10 rounded-2xl flex flex-col w-[320px] shrink-0">
-        <div class="px-3 py-3 border-b border-white/10 bg-amber-500/10 rounded-t-2xl">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0 flex-1">
-              <div class="text-[10px] uppercase tracking-wider text-amber-300/80 font-medium">Team B</div>
-              <div id="team-b-name" class="team-name font-semibold leading-tight whitespace-nowrap truncate" title=""></div>
-              <div id="team-b-owner" class="text-xs text-slate-400 mt-0.5 truncate"></div>
-            </div>
-            <select id="team-b-select" class="bg-slate-900 border border-white/10 rounded-lg px-2 py-1.5 text-sm w-32 shrink-0"></select>
-          </div>
-          <div id="pill-b" class="mt-2.5"></div>
-          <div id="needs-b" class="mt-2 flex flex-wrap gap-1.5"></div>
+      <div class="relative mt-4">
+        <div class="flex items-center gap-2 px-3 h-12 rounded-2xl bg-black/40 border border-white/10 focus-within:border-violet-500/50 transition">
+          <i data-lucide="search" class="w-4 h-4 text-white/50"></i>
+          <input id="searchA" placeholder="Add player — e.g. Jefferson, Bijan, Allen" class="w-full bg-transparent outline-none placeholder:text-white/40 text-[14px]" autocomplete="off">
+          <kbd class="hidden sm:block text-[10px] px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white/50">/</kbd>
         </div>
-        <div class="p-3 space-y-3 max-h-[60vh] overflow-y-auto scrollbar-thin">
-          <div>
-            <div class="text-xs uppercase text-slate-500 px-1 mb-2">Picks</div>
-            <div id="picks-b" class="space-y-1.5"></div>
-          </div>
-          <div>
-            <div class="text-xs uppercase text-slate-500 px-1 mb-2">Players</div>
-            <div id="roster-b" class="space-y-1.5"></div>
-          </div>
-        </div>
-      </section>
+        <div id="resultsA" class="absolute z-20 mt-2 w-full hidden max-h-[320px] overflow-auto rounded-2xl border border-white/10 bg-[#0B1220]/95 glass shadow-2xl"></div>
+      </div>
 
+      <div id="listA" class="mt-4 space-y-2.5 min-h-[220px]">
+        <div class="empty-state py-14 text-center text-white/50 text-sm border border-dashed border-white/10 rounded-2xl bg-white/[0.02]">Add players to Team A</div>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between text-[12px] text-white/50">
+        <div class="flex items-center gap-3">
+          <span><span class="text-white/70" id="countA">0</span> players</span>
+          <span>•</span>
+          <span>Avg Age <span class="text-white/70" id="ageA">—</span></span>
+        </div>
+        <button data-clear="A" class="hover:text-white/80 transition">Clear</button>
+      </div>
+    </section>
+
+    <!-- VS -->
+    <div class="hidden lg:flex flex-col items-center gap-3 pt-24">
+      <div class="w-12 h-12 rounded-full bg-white/5 border border-white/10 grid place-items-center font-semibold shadow-glow">VS</div>
+      <div class="w-px h-24 bg-gradient-to-b from-white/20 to-transparent"></div>
+      <button id="swapBtn" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition">Swap</button>
     </div>
+
+    <!-- TEAM B -->
+    <section class="glass rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-4 sm:p-6 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-white/10 grid place-items-center text-sm font-semibold">B</div>
+          <h2 class="text-[18px] font-semibold">Team B</h2>
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/60">Receive</span>
+        </div>
+        <div class="text-right">
+          <div class="text-[11px] text-white/50 uppercase tracking-wide">Team Value</div>
+          <div id="valueB" class="font-mono text-[22px] leading-none mt-0.5">0</div>
+        </div>
+      </div>
+
+      <div class="relative mt-4">
+        <div class="flex items-center gap-2 px-3 h-12 rounded-2xl bg-black/40 border border-white/10 focus-within:border-cyan-500/50 transition">
+          <i data-lucide="search" class="w-4 h-4 text-white/50"></i>
+          <input id="searchB" placeholder="Add player — e.g. Chase, Gibbs, Stroud" class="w-full bg-transparent outline-none placeholder:text-white/40 text-[14px]" autocomplete="off">
+          <kbd class="hidden sm:block text-[10px] px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white/50">/</kbd>
+        </div>
+        <div id="resultsB" class="absolute z-20 mt-2 w-full hidden max-h-[320px] overflow-auto rounded-2xl border border-white/10 bg-[#0B1220]/95 glass shadow-2xl"></div>
+      </div>
+
+      <div id="listB" class="mt-4 space-y-2.5 min-h-[220px]">
+        <div class="empty-state py-14 text-center text-white/50 text-sm border border-dashed border-white/10 rounded-2xl bg-white/[0.02]">Add players to Team B</div>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between text-[12px] text-white/50">
+        <div class="flex items-center gap-3">
+          <span><span class="text-white/70" id="countB">0</span> players</span>
+          <span>•</span>
+          <span>Avg Age <span class="text-white/70" id="ageB">—</span></span>
+        </div>
+        <button data-clear="B" class="hover:text-white/80 transition">Clear</button>
+      </div>
+    </section>
   </div>
 
-<div class="max-w-7xl mx-auto px-4 py-8">
-  <h2 class="text-xl font-semibold mb-4">Debug: All Lineups</h2>
-  <div id="lineup-debug" class="text-xs overflow-auto"></div>
-</div>
+  <!-- ANALYSIS -->
+  <section id="analysis" class="mt-10 hidden">
+    <div class="glass rounded-[28px] border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] p-5 sm:p-7">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-300 grid place-items-center"><i data-lucide="activity" class="w-3.5 h-3.5"></i></div>
+            <h3 class="font-semibold">Trade Evaluation</h3>
+            <span id="verdictPill" class="ml-1 text-[11px] px-2 py-0.5 rounded-full border border-white/10 bg-white/5">—</span>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="p-3 rounded-2xl bg-black/30 border border-white/5">
+              <div class="text-[11px] text-white/50">Value Diff</div>
+              <div id="diffVal" class="font-mono text-[20px] mt-0.5">0</div>
+            </div>
+            <div class="p-3 rounded-2xl bg-black/30 border border-white/5">
+              <div class="text-[11px] text-white/50">Fairness</div>
+              <div id="fairVal" class="font-mono text-[20px] mt-0.5">—</div>
+            </div>
+            <div class="p-3 rounded-2xl bg-black/30 border border-white/5">
+              <div class="text-[11px] text-white/50">Age Delta</div>
+              <div id="ageDelta" class="font-mono text-[20px] mt-0.5">—</div>
+            </div>
+          <div class="mt-3 h-2 w-full rounded-full bg-white/5 overflow-hidden border border-white/5">
+            <div id="fairBar" class="h-full w-0 bg-gradient-to-r from-violet-500 to-cyan-400 transition-all duration-500"></div>
+          </div>
+        </div>
+        <div class="lg:w-[340px]">
+          <canvas id="valueChart" height="120"></canvas>
+        </div>
+      </div>
 
+      <div class="mt-8">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-6 h-6 rounded-lg bg-violet-500/20 text-violet-300 grid place-items-center"><i data-lucide="layers" class="w-3.5 h-3.5"></i></div>
+          <h4 class="font-semibold">Archetype Benefit Analysis</h4>
+          <span class="text-[11px] text-white/50">from app_7 longevity curves</span>
+        </div>
+        <div id="archetypes" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3"></div>
+      </div>
+
+      <div class="mt-8 grid md:grid-cols-3 gap-3 text-[12px] text-white/60">
+        <div class="p-3 rounded-xl bg-white/[0.02] border border-white/5"><span class="text-white/80">Production:</span> 55/30/15 weighted PPG last 3 seasons (app_7)</div>
+        <div class="p-3 rounded-xl bg-white/[0.02] border border-white/5"><span class="text-white/80">Longevity:</span> position-specific age decay curves with peak windows</div>
+        <div class="p-3 rounded-xl bg-white/[0.02] border border-white/5"><span class="text-white/80">Value:</span> Prod × Longevity × Positional Multiplier, normalized</div>
+      </div>
+    </div>
+  </section>
+
+  <p class="text-center text-[12px] text-white/40 mt-10">Built by merging trade_5 UI with app_7's production & longevity engine. Not financial advice.</p>
 </main>
 
 <script>
-(() => {
-  const DEFAULT_LEAGUE = '1313454100225990656';
-  const params = new URLSearchParams(location.search);
-  const league_id = params.get('league_id') || DEFAULT_LEAGUE;
+// --- DATA from app_7 + trade_5 merged ---
+const PLAYERS = [
+  // QBs
+  {id:'allen', n:'Josh Allen', pos:'QB', team:'BUF', age:28, ppg:[25.2,23.6,22.9]},
+  {id:'mahomes', n:'Patrick Mahomes', pos:'QB', team:'KC', age:29, ppg:[22.1,23.8,24.5]},
+  {id:'lamar', n:'Lamar Jackson', pos:'QB', team:'BAL', age:27, ppg:[24.6,21.3,20.8]},
+  {id:'hurts', n:'Jalen Hurts', pos:'QB', team:'PHI', age:26, ppg:[23.9,24.2,22.7]},
+  {id:'burrow', n:'Joe Burrow', pos:'QB', team:'CIN', age:28, ppg:[19.4,22.6,21.1]},
+  {id:'herbert', n:'Justin Herbert', pos:'QB', team:'LAC', age:26, ppg:[18.9,20.4,22.3]},
+  {id:'stroud', n:'C.J. Stroud', pos:'QB', team:'HOU', age:23, ppg:[19.8,0,0]},
+  {id:'love', n:'Jordan Love', pos:'QB', team:'GB', age:26, ppg:[18.5,0,0]},
+  // RBs
+  {id:'bijan', n:'Bijan Robinson', pos:'RB', team:'ATL', age:22, ppg:[15.2,0,0]},
+  {id:'breece', n:'Breece Hall', pos:'RB', team:'NYJ', age:23, ppg:[16.8,12.4,0]},
+  {id:'gibbs', n:'Jahmyr Gibbs', pos:'RB', team:'DET', age:22, ppg:[15.9,0,0]},
+  {id:'cmc', n:'Christian McCaffrey', pos:'RB', team:'SF', age:28, ppg:[21.5,19.4,16.2]},
+  {id:'taylor', n:'Jonathan Taylor', pos:'RB', team:'IND', age:25, ppg:[14.2,17.8,20.1]},
+  {id:'saquon', n:'Saquon Barkley', pos:'RB', team:'PHI', age:27, ppg:[15.6,16.9,15.1]},
+  {id:'achane', n:"De'Von Achane", pos:'RB', team:'MIA', age:23, ppg:[14.9,0,0]},
+  {id:'kyren', n:'Kyren Williams', pos:'RB', team:'LAR', age:24, ppg:[16.1,0,0]},
+  // WRs
+  {id:'jj', n:'Justin Jefferson', pos:'WR', team:'MIN', age:25, ppg:[19.2,20.4,21.8]},
+  {id:'chase', n:"Ja'Marr Chase", pos:'WR', team:'CIN', age:24, ppg:[17.9,18.5,18.1]},
+  {id:'lamb', n:'CeeDee Lamb', pos:'WR', team:'DAL', age:25, ppg:[20.8,16.2,15.4]},
+  {id:'hill', n:'Tyreek Hill', pos:'WR', team:'MIA', age:30, ppg:[20.1,19.5,18.3]},
+  {id:'arsb', n:'Amon-Ra St. Brown', pos:'WR', team:'DET', age:25, ppg:[18.7,16.9,14.2]},
+  {id:'puka', n:'Puka Nacua', pos:'WR', team:'LAR', age:23, ppg:[17.5,0,0]},
+  {id:'ajb', n:'A.J. Brown', pos:'WR', team:'PHI', age:27, ppg:[17.3,16.8,16.1]},
+  {id:'garrett', n:'Garrett Wilson', pos:'WR', team:'NYJ', age:24, ppg:[14.8,13.9,0]},
+  {id:'olave', n:'Chris Olave', pos:'WR', team:'NO', age:24, ppg:[14.2,13.7,0]},
+  {id:'london', n:'Drake London', pos:'WR', team:'ATL', age:23, ppg:[13.9,11.8,0]},
+  {id:'marv', n:'Marvin Harrison Jr.', pos:'WR', team:'ARI', age:22, ppg:[0,0,0]},
+  // TEs
+  {id:'laporta', n:'Sam LaPorta', pos:'TE', team:'DET', age:23, ppg:[13.2,0,0]},
+  {id:'mcbride', n:'Trey McBride', pos:'TE', team:'ARI', age:25, ppg:[11.8,6.2,0]},
+  {id:'hock', n:'T.J. Hockenson', pos:'TE', team:'MIN', age:27, ppg:[12.6,11.9,10.8]},
+  {id:'kelce', n:'Travis Kelce', pos:'TE', team:'KC', age:35, ppg:[12.4,15.1,16.8]},
+  {id:'andrews', n:'Mark Andrews', pos:'TE', team:'BAL', age:29, ppg:[10.9,13.4,14.2]},
+  {id:'kincaid', n:'Dalton Kincaid', pos:'TE', team:'BUF', age:25, ppg:[9.8,0,0]},
+];
 
-  const CSV_URLS = {
-    value: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=0&single=true&output=csv',
-    ppg: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=1865143681&single=true&output=csv'
+// --- app_7 Calculations ---
+function prodScore(ppg){
+  const [y1=0,y2=0,y3=0] = ppg;
+  const y3e = y3 || (y2*0.85);
+  const y2e = y2 || (y1*0.85);
+  return (y1*0.55 + y2e*0.30 + y3e*0.15);
+}
+function longevity(age,pos){
+  const curves = {
+    QB: [[21,0.60],[24,0.82],[27,0.98],[30,1.00],[33,0.93],[36,0.78],[39,0.55]],
+    RB: [[20,0.90],[21,0.97],[22,1.00],[23,0.99],[24,0.95],[25,0.88],[26,0.74],[27,0.58],[28,0.44],[29,0.32],[30,0.22]],
+    WR: [[20,0.74],[21,0.82],[22,0.90],[23,0.96],[24,0.99],[25,1.00],[26,1.00],[27,0.98],[28,0.94],[29,0.87],[30,0.77],[31,0.66],[32,0.54],[33,0.42]],
+    TE: [[21,0.68],[22,0.76],[23,0.85],[24,0.92],[25,0.97],[26,1.00],[27,1.00],[28,0.98],[29,0.94],[30,0.87],[31,0.77],[32,0.65],[33,0.53]]
   };
-
-  const ARCHETYPES = [
-    { name:'Elite Contender', color:'#7bffcc', cond:d=>d.prodPct>=70 && d.windowPct>=70 && d.avgAge<=26.5 },
-    { name:'Aging Contender', color:'#8aa0b8', cond:d=>d.prodPct>=40 && d.windowPct<30 && d.avgAge>=27.5 && d.picksPct<=30 },
-    { name:'Win-Now Fringe', color:'#5aa9ff', cond:d=>d.prodPct>=40 && d.windowPct>=30 && d.windowPct<70 && d.avgAge>=26 },
-    { name:'Young Riser / Ascending', color:'#a78bfa', cond:d=>d.prodPct>=30 && d.prodPct<70 && d.windowPct>=70 && d.avgAge<=25.5 },
-    { name:'Pick-Rich Rebuilder', color:'#4ade80', cond:d=>d.prodPct<40 && d.windowPct>=70 && d.picksPct>=70 },
-    { name:'Volatile / High-Variance', color:'#f472b6', cond:d=>d.prodPct>=30 && d.prodPct<70 && d.windowPct<30 },
-    { name:'Stripped Rebuilder', color:'#ff6b6b', cond:d=>d.prodPct<40 && d.windowPct<30 },
-    { name:'Stuck in the Middle / Purgatory', color:'#94a3b8', cond:d=>d.prodPct<40 && d.windowPct>=30 && d.windowPct<70 },
-    { name:'Balanced Core', color:'#9dc8ff', cond:d=>true }
-  ];
-
-  const state = {
-    league:null, users:[], rosters:[], players:{},
-    ppg:new Map(), auditValues:new Map(),
-    pickValues:new Map(), pickInventory:new Map(),
-    teamSlots:new Map(),
-    ageMap:new Map(),
-    pickValueMap:new Map(), teamA:null, teamB:null,
-    selectedA:new Set(), selectedB:new Set(),
-    tradedPicks:[],
-    scoringKey:'PPR',
-    teamMetrics:new Map(),
-    refreshTime:null,
-    lastClickedA:null,
-    lastClickedB:null,
-    pkgMode:'acquire',
-    pkgTargetPlayer:null,
-    pkgMustInclude:[],
-    pkgMustOptions:[],
-    pkgResultsFull:[],
-    pkgTeamFilter:'all',
-    pkgExclude:new Set(),
-    pkgMust:new Set()
-  };
-
-  const $ = s => document.querySelector(s);
-  const fmt = n => Math.round(n).toLocaleString();
-  const fmt1 = n => (Math.round(n*10)/10).toFixed(1);
-  const setStatus = t => { const el=$('#status-text'); if(el) el.textContent=t; };
-  const teamName = r => {
-    const u = state.users.find(x=>x.user_id===r.owner_id);
-    return u?.metadata?.team_name || u?.display_name || `Team ${r.roster_id}`;
-  };
-  const teamInfo = r => {
-    const u = state.users.find(x=>x.user_id===r.owner_id);
-    const tName = u?.metadata?.team_name || u?.display_name || `Team ${r.roster_id}`;
-    const oName = u?.display_name || '';
-    return {teamName:tName, ownerName:oName, distinct: u?.metadata?.team_name && u?.metadata?.team_name!== oName};
-  };
-  const ordinal = n => { const s=['th','st','nd','rd']; const v=n%100; return n+(s[(v-20)%10]||s[v]||s[0]); };
-  const norm = s => String(s||'').toLowerCase().replace(/\./g,'').replace(/[^a-z0-9]+/g,' ').trim();
-  const debounce = (fn,delay)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),delay);};};
-  const mean = arr => arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;
-  const std = arr => {const m=mean(arr);return Math.sqrt(mean(arr.map(x=>(x-m)*(x-m))))||1;};
-  const percentiles = arr => {
-    const sorted=[...arr].sort((a,b)=>a-b); const n=sorted.length;
-    return arr.map(v=>{
-      const less=sorted.filter(x=>x<v).length;
-      const eq=sorted.filter(x=>x===v).length;
-      const rank=less+0.5*eq+0.5;
-      return n>1?((rank-1)/(n-1))*100:50;
-    });
-  };
-
-  async function fetchJSON(url){ const r=await fetch(url); return r.json(); }
-  async function fetchText(url){ const r=await fetch(url); return r.text(); }
-
-  function parseCSV(text){
-    const lines = text.trim().split(/\r?\n/);
-    const headers = lines[0].split(',').map(h=>h.trim());
-    return lines.slice(1).map(line=>{
-      const cols = line.split(',');
-      const obj = {};
-      headers.forEach((h,i)=> obj[h]=cols[i]?.trim());
-      return obj;
-    });
-  }
-  function toNum(v){ if(v==null||v==='')return NaN; const n=Number(v); return Number.isFinite(n)?n:NaN; }
-
-  async function loadAuditValues(){
-    setStatus('Loading values…');
-    return new Promise((resolve)=>{
-      Papa.parse(CSV_URLS.value, {
-        download:true,
-        header:true,
-        skipEmptyLines:true,
-        complete:(res)=>{
-          state.auditValues.clear();
-          state.ageMap.clear();
-          state.pickValueMap.clear();
-          res.data.forEach(r=>{
-            const name = r.Player || r.player;
-            const val = parseFloat(r.Value);
-            const age = parseFloat(r.Age);
-            const pos = (r.Pos||'').toUpperCase();
-            if(name && Number.isFinite(val)){
-              const lower = name.toLowerCase();
-              const isPick = pos==='PICK' || /(early|mid|late)/i.test(name);
-              if(!isPick){
-                state.auditValues.set(norm(name), Math.round(val));
-              }
-            }
-            if(name && Number.isFinite(age)){
-              state.ageMap.set(norm(name), age);
-            }
-            if(name && Number.isFinite(val)){
-              const lower = name.toLowerCase();
-              const posU = (r.Pos||'').toUpperCase();
-              if(posU==='PICK' || /(early|mid|late)/i.test(name)){
-                const yearMatch = lower.match(/(20\d{2})/);
-                const year = yearMatch ? parseInt(yearMatch[1]) : null;
-                let tier = null;
-                if(/early/i.test(lower)) tier='early';
-                else if(/mid/i.test(lower)) tier='mid';
-                else if(/late/i.test(lower)) tier='late';
-                let round = null;
-                if(/1st|round\s*1/.test(lower)) round=1;
-                else if(/2nd|round\s*2/.test(lower)) round=2;
-                else if(/3rd|round\s*3/.test(lower)) round=3;
-                else if(/4th|round\s*4/.test(lower)) round=4;
-                if(tier && round){
-                  if(year) state.pickValueMap.set(`${year}-${round}-${tier}`, Math.round(val));
-                  state.pickValueMap.set(`${round}-${tier}`, Math.round(val));
-                }
-              }
-            }
-          });
-          resolve();
-        },
-        error:()=>resolve()
-      });
-    });
-  }
-
-  function buildSourceMap(rows){
-    const map=new Map();
-    rows.forEach(r=>{
-      const name=r.Player||r.player; if(!name) return;
-      const pos=(r.Position||'').toUpperCase();
-      const rec={name,pos};
-      ['Std','Std 0.5 TEP','Std TEP','Half 0.5 TEP','Half TEP','PPR','PPR 0.5 TEP','PPR TEP'].forEach(c=>{
-        let v=toNum(r[c]);
-        if(!Number.isFinite(v)&&c.includes('0.5 TEP')){
-          const base=c.replace(' 0.5 TEP',''); const full=base+' TEP';
-          const b=toNum(r[base]), f=toNum(r[full]);
-          if(Number.isFinite(b)&&Number.isFinite(f)) v=(b+f)/2;
-          else if(Number.isFinite(b)) v=pos==='TE'?b+0.5:b;
-        }
-        rec[c]=v;
-      });
-      map.set(norm(name),rec);
-    });
-    return map;
-  }
-
-  async function loadPPG(){
-    setStatus('Loading projections…');
-    const rec = state.league.scoring_settings?.rec || 0;
-    const bonusTe = state.league.scoring_settings?.bonus_rec_te || 0;
-    const recLabel = rec>=1 ? 'PPR' : rec>=0.5 ? 'Half' : 'Std';
-    const tepLabel = bonusTe>=1 ? '_TEP' : bonusTe>=0.5 ? '_0.5_TEP' : '';
-    state.scoringKey = recLabel + (tepLabel ? tepLabel.replace('_',' ') : '');
-    $('#scoring-name').textContent = state.scoringKey;
-    const colName = `Avg_${recLabel}${tepLabel}`;
-    return new Promise((resolve)=>{
-      Papa.parse(CSV_URLS.ppg, {
-        download:true,
-        header:true,
-        skipEmptyLines:true,
-        complete:(res)=>{
-          const nameToId = new Map();
-          Object.entries(state.players).forEach(([id,p])=>{
-            const full = norm(p.full_name || `${p.first_name||''} ${p.last_name||''}`);
-            if(full) nameToId.set(full, id);
-          });
-          state.ppg.clear();
-          res.data.forEach(r=>{
-            const name = r.Player;
-            if(!name) return;
-            const pid = nameToId.get(norm(name));
-            if(!pid) return;
-            const val = parseFloat(r[colName]);
-            if(Number.isFinite(val)) state.ppg.set(pid, val);
-          });
-          resolve();
-        },
-        error:()=>resolve()
-      });
-    });
-  }
-
-  async function loadPickValues(){
-    const year=new Date().getFullYear()+1;
-    const base={1:{early:8000,mid:6000,late:4000},2:{early:3000,mid:2000,late:1500},3:{early:1000,mid:800,late:600},4:{early:400,mid:300,late:200}};
-    for(let y=year;y<year+3;y++){
-      const decay=Math.pow(0.85,y-year);
-      [1,2,3,4].forEach(rd=>{
-        ['early','mid','late'].forEach(slot=>{
-          state.pickValues.set(norm(`${y} ${ordinal(rd)} ${slot}`), Math.round(base[rd][slot]*decay));
-        });
-      });
+  const c = curves[pos]||curves.WR;
+  if(age<=c[0][0]) return c[0][1];
+  if(age>=c[c.length-1][0]) return c[c.length-1][1];
+  for(let i=0;i<c.length-1;i++){
+    const [a0,v0]=c[i], [a1,v1]=c[i+1];
+    if(age>=a0 && age<=a1){
+      const t=(age-a0)/(a1-a0);
+      return v0 + (v1-v0)*t;
     }
   }
+  return 0.5;
+}
+const posMult = {QB:1.20, RB:1.05, WR:1.08, TE:0.82};
 
-  function playerFromId(pid){
-    const p=state.players[pid]||{};
-    const name=p.full_name||`${p.first_name||''} ${p.last_name||''}`.trim()||pid;
-    const auditVal = state.auditValues.get(norm(name));
-    const ppg = state.ppg.get(pid)||0;
-    const value = Number.isFinite(auditVal) ? auditVal : 0;
-    const ageVal = state.ageMap.get(norm(name)) ?? (p.age?Number(p.age):null);
-    return {
-      id:pid,
-      name,
-      pos:p.position||'UNK',
-      team:p.team||'',
-      age:ageVal,
-      ppg,
-      value
-    };
+function baseValue(p){
+  const prod = prodScore(p.ppg);
+  const lon = longevity(p.age, p.pos);
+  const raw = prod * lon * 42 * (posMult[p.pos]||1);
+  return Math.max(5, Math.round(raw));
+}
+
+// Archetype adjustments (app_7 logic)
+function archetypeValue(p, type){
+  const prod = prodScore(p.ppg);
+  const lon = longevity(p.age, p.pos);
+  const base = baseValue(p);
+  switch(type){
+    case 'winNow': // prioritize proven production, discount youth projection
+      return Math.round(base * (0.7 + 0.3* Math.min(1, prod/22)) * (p.age>=26 && p.age<=31 ? 1.12 : p.age>31 ? 0.88 : 0.92));
+    case 'rebuild': // youth and longevity premium
+      const youth = Math.max(0, (26 - p.age))*0.075;
+      return Math.round(base * (0.85 + youth) * (0.7 + 0.3*lon));
+    case 'balanced':
+      return base;
+    case 'contender': // next 2 years
+      const shortLon = Math.min(1, lon + 0.08);
+      const shortProd = (p.ppg[0]*0.68 + (p.ppg[1]||p.ppg[0]*0.9)*0.32);
+      return Math.round(shortProd * shortLon * 40 * (posMult[p.pos]||1));
   }
+  return base;
+}
 
+const ARCHETYPES = [
+  {key:'winNow', name:'Win Now', icon:'trophy', desc:'Maximize points in 2024-25. Favors age 26-31 studs.'},
+  {key:'contender', name:'2-Year Window', icon:'hourglass', desc:'Optimized for immediate + next season.'},
+  {key:'balanced', name:'Balanced', icon:'scale', desc:'Standard dynasty: prod × longevity.'},
+  {key:'rebuild', name:'Rebuild', icon:'sprout', desc:'Youth & career length > current PPG.'},
+];
 
-  function computeSlots(){
-    // Assign early/mid/late based on PPG ranking to match league overview
-    const scores = state.rosters.map(r=>{
-      const opt = computeOptimalLineup(r.roster_id);
-      return {id:r.roster_id, ppg:opt.total};
-    }).sort((a,b)=>b.ppg-a.ppg);
-    state.teamSlots.clear();
-    scores.forEach((s,i)=>{
-      let slot='mid'; if(i<3)slot='late'; else if(i>=scores.length-3)slot='early';
-      state.teamSlots.set(s.id,slot);
-    });
-  }
+// --- State ---
+const state = { A:[], B:[] };
+const el = id=>document.getElementById(id);
+const fmt = n => n.toLocaleString();
 
-
-  function getPickValue(season,round,slot){
-    const key1 = `${season}-${round}-${slot}`;
-    const key2 = `${round}-${slot}`;
-    return state.pickValueMap.get(key1) ?? state.pickValueMap.get(key2) ?? 0;
-  }
-
-
-  function buildPickInventory(){
-    state.rosters.forEach(r=>state.pickInventory.set(r.roster_id,[]));
-    state.tradedPicks.forEach(tp=>{
-      const owner=state.rosters.find(r=>r.owner_id===tp.owner_id);
-      const orig=state.rosters.find(r=>r.roster_id===tp.roster_id);
-      if(!owner||!orig)return;
-      const slot=state.teamSlots.get(orig.roster_id)||'mid';
-      const value=getPickValue(tp.season,tp.round,slot);
-      state.pickInventory.get(owner.roster_id).push({
-        id:`${tp.season}-${tp.round}-${slot}-${orig.roster_id}`,
-        name:`${tp.season} ${ordinal(tp.round)} ${slot}`,
-        season:tp.season,round:tp.round,slot,value,
-        origTeam:teamName(orig),isOwn:owner.roster_id===orig.roster_id,type:'pick', roster_id:owner.roster_id
-      });
-    });
-    const start=new Date().getFullYear()+1;
-    state.rosters.forEach(r=>{
-      const inv=state.pickInventory.get(r.roster_id);
-      for(let y=start;y<start+3;y++){
-        [1,2,3,4].forEach(rd=>{
-          if(state.tradedPicks.some(tp=>tp.roster_id===r.roster_id&&tp.season==y&&tp.round==rd))return;
-          const slot=state.teamSlots.get(r.roster_id)||'mid';
-          inv.push({
-            id:`${y}-${rd}-${slot}-own`,
-            name:`${y} ${ordinal(rd)} ${slot}`,
-            season:y,round:rd,slot,
-            value:getPickValue(y,rd,slot),
-            origTeam:teamName(r),isOwn:true,type:'pick', roster_id:r.roster_id
-          });
-        });
-      }
-      inv.sort((a,b)=>b.value-a.value);
-    });
-  }
-
-  function getStarterSlots(){
-    const pos=state.league.roster_positions||[];
-    return pos.filter(p=>!['BN','TAXI','IR'].includes(p));
-  }
-
-  function computeOptimalLineup(rosterId, addPlayers=[], removeIds=new Set()){
-    const r=state.rosters.find(x=>x.roster_id==rosterId);
-    const base=(r.players||[]).filter(pid=>!removeIds.has(pid)).map(playerFromId);
-    const pool=[...base,...addPlayers];
-    const slots=getStarterSlots();
-    const used=new Set();
-    let total=0;
-    const starters=[];
-    const isFlex=s=>/FLEX/.test(s);
-    const ordered=[...slots.filter(s=>!isFlex(s)),...slots.filter(isFlex)];
-    const eligible=(pos,slot)=>{
-      if(slot==='QB')return pos==='QB';
-      if(slot==='RB')return pos==='RB';
-      if(slot==='WR')return pos==='WR';
-      if(slot==='TE')return pos==='TE';
-      if(slot==='FLEX')return ['RB','WR','TE'].includes(pos);
-      if(slot==='SUPER_FLEX')return ['QB','RB','WR','TE'].includes(pos);
-      if(slot==='REC_FLEX')return ['WR','TE'].includes(pos);
-      if(slot==='WRRB_FLEX')return ['WR','RB'].includes(pos);
-      return false;
-    };
-    const counts={};
-    ordered.forEach(slot=>{
-      counts[slot]=(counts[slot]||0)+1;
-      const displaySlot = slot==='SUPER_FLEX'? 'SFLEX' : slot;
-      const label = counts[slot]>1? `${displaySlot}${counts[slot]}` : displaySlot;
-      let best=null;
-      pool.forEach(p=>{
-        if(used.has(p.id))return;
-        if(eligible(p.pos,slot)){
-          if(!best||p.ppg>best.ppg) best=p;
-        }
-      });
-      if(best){
-        used.add(best.id);
-        total+=best.ppg;
-        starters.push({...best, slot: label});
-      }
-    });
-    const ages=starters.map(s=>s.age).filter(a=>Number.isFinite(a));
-    const avgAge=ages.length? ages.reduce((a,b)=>a+b,0)/ages.length : null;
-    return {total, starters, avgAge};
-  }
-
-
-  function getTeamBaseMetrics(rosterId){
-    const r=state.rosters.find(x=>x.roster_id==rosterId);
-    const players=(r.players||[]).map(playerFromId);
-    const rosterValue=players.reduce((s,p)=>s+p.value,0);
-    const picks=state.pickInventory.get(rosterId)||[];
-    const pickScore=picks.reduce((s,p)=>s+p.value,0);
-    const firsts=picks.filter(p=>p.round===1).length;
-    const opt=computeOptimalLineup(rosterId);
-    const ages=players.map(p=>p.age).filter(a=>a!=null&&a>0);
-    const avgAge=ages.length?ages.reduce((a,b)=>a+b,0)/ages.length:0;
-    return {
-      rosterId,
-      ppg:opt.total,
-      rosterValue,
-      pickScore,
-      firsts,
-      avgAge,
-      players,
-      picks
-    };
-  }
-
-  function computeTeamMetrics(){
-    const bases = state.rosters.map(r=>getTeamBaseMetrics(r.roster_id));
-    const values=bases.map(b=>b.rosterValue);
-    const picks=bases.map(b=>b.pickScore);
-    const ages=bases.map(b=>b.avgAge);
-    const vM=mean(values), vS=std(values);
-    const pM=mean(picks), pS=std(picks);
-    const aM=mean(ages), aS=std(ages);
-    bases.forEach(b=>{
-      b.valueZ=(b.rosterValue-vM)/vS;
-      b.picksZ=(b.pickScore-pM)/pS;
-      b.ageZ=(b.avgAge-aM)/aS;
-      b.windowRaw=0.5*b.valueZ+0.3*b.picksZ+0.2*(-b.ageZ);
-    });
-    const prodPcts=percentiles(bases.map(b=>b.ppg));
-    const winPcts=percentiles(bases.map(b=>b.windowRaw));
-    const pickPcts=percentiles(bases.map(b=>b.pickScore));
-    state.teamMetrics.clear();
-    bases.forEach((b,i)=>{
-      b.prodPct=prodPcts[i];
-      b.windowPct=winPcts[i];
-      b.picksPct=pickPcts[i];
-      const arch = ARCHETYPES.find(a=>a.cond(b));
-      b.archetype=arch.name;
-      b.archetypeColor=arch.color;
-      b.name=teamName(state.rosters.find(r=>r.roster_id===b.rosterId));
-      state.teamMetrics.set(b.rosterId,b);
-    });
-    state.refreshTime=new Date();
-  }
-
-  function pillHTML(rosterId){
-    const m=state.teamMetrics.get(rosterId);
-    if(!m) return '';
-    const time = state.refreshTime? state.refreshTime.toLocaleTimeString() : '';
-    return `<div class="tooltip inline-block">
-      <span class="pill" style="background:${m.archetypeColor}18;border-color:${m.archetypeColor}50;color:${m.archetypeColor}">${m.archetype}</span>
-      <div class="tooltip-card">
-        <div class="text-sm font-semibold mb-2">${m.name}</div>
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div>Prod %: <span class="mono">${m.prodPct.toFixed(0)}%</span></div>
-          <div>Window %: <span class="mono">${m.windowPct.toFixed(0)}%</span></div>
-          <div>Picks %: <span class="mono">${m.picksPct.toFixed(0)}%</span></div>
-          <div>Avg Age: <span class="mono">${m.avgAge.toFixed(1)}</span></div>
-          <div>PPG: <span class="mono">${fmt1(m.ppg)}</span></div>
-          <div>Value: <span class="mono">${fmt(m.rosterValue)}</span></div>
-        </div>
-        <div class="text-xs text-slate-500 mt-3">Updated ${time}</div>
+function playerCard(p, team){
+  const val = baseValue(p);
+  const prod = prodScore(p.ppg).toFixed(1);
+  const lon = Math.round(longevity(p.age,p.pos)*100);
+  const posColor = {QB:'from-violet-500/30 to-violet-500/10 text-violet-300', RB:'from-emerald-500/30 to-emerald-500/10 text-emerald-300', WR:'from-cyan-500/30 to-cyan-500/10 text-cyan-300', TE:'from-amber-500/30 to-amber-500/10 text-amber-300'}[p.pos];
+  return `
+  <div class="fade-in group flex items-center gap-3 p-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.07] border border-white/5 transition">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-b ${posColor} border border-white/10 grid place-items-center font-mono text-[11px]">${p.pos}</div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2">
+        <div class="truncate font-medium leading-tight">${p.n}</div>
+        <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-white/60">${p.team} • ${p.age}</span>
       </div>
-    </div>`;
-  }
-
-  function getAllAssetsForTeam(rosterId){
-    const r=state.rosters.find(x=>x.roster_id==rosterId);
-    if(!r) return [];
-    const players=(r.players||[]).map(playerFromId).map(p=>({...p, roster_id:rosterId}));
-    const picks=(state.pickInventory.get(rosterId)||[]).map(p=>({...p, roster_id:rosterId}));
-    return [...players,...picks];
-  }
-
-  function getSelectedAssets(rosterId,selSet){
-    const r=state.rosters.find(x=>x.roster_id==rosterId);
-    const players=(r.players||[]).filter(pid=>selSet.has(pid)).map(playerFromId);
-    const picks=(state.pickInventory.get(rosterId)||[]).filter(p=>selSet.has(p.id));
-    return [...players,...picks];
-  }
-
-  function getStarterCounts(){
-    const pos = state.league.roster_positions||[];
-    const counts={QB:0,RB:0,WR:0,TE:0,FLEX:0,SFLEX:0};
-    pos.forEach(p=>{
-      if(p==='SUPER_FLEX') counts.SFLEX++;
-      else if(counts.hasOwnProperty(p)) counts[p]++;
-    });
-    return counts;
-  }
-
-  function getTeamPosStrength(rosterId, pos, K){
-    const r = state.rosters.find(x=>x.roster_id==rosterId);
-    const players = (r.players||[]).map(playerFromId).filter(p=>p.pos===pos).sort((a,b)=>b.value-a.value);
-    const top = players.slice(0,K);
-    const strength = top.reduce((s,p)=>s+p.value,0);
-    const avgAge = top.length? top.reduce((s,p)=>s+(p.age||0),0)/top.length : null;
-    return {strength, avgAge, count:players.length};
-  }
-
-  function computePositionalNeeds(rosterId){
-    const counts = getStarterCounts();
-    const posList = ['QB','RB','WR','TE'];
-    const Kmap = {
-      QB: Math.max(1, counts.QB + counts.SFLEX),
-      RB: Math.max(1, counts.RB),
-      WR: Math.max(1, counts.WR),
-      TE: Math.max(1, counts.TE)
-    };
-    const flexAdd = Math.ceil(counts.FLEX / 3);
-    Kmap.RB += flexAdd; Kmap.WR += flexAdd; Kmap.TE += flexAdd;
-    const teamStrengths = {};
-    posList.forEach(pos=>{
-      const {strength, avgAge} = getTeamPosStrength(rosterId, pos, Kmap[pos]);
-      teamStrengths[pos] = {strength, avgAge, K:Kmap[pos]};
-    });
-    const leagueAvg = {};
-    posList.forEach(pos=>{
-      const strengths = state.rosters.map(r=>{
-        const {strength} = getTeamPosStrength(r.roster_id, pos, Kmap[pos]);
-        return strength;
-      });
-      leagueAvg[pos] = mean(strengths);
-    });
-    const needs = posList.map(pos=>{
-      const team = teamStrengths[pos];
-      let needScore = leagueAvg[pos] - team.strength;
-      if(team.avgAge && team.avgAge > 29) needScore *= 1.2;
-      return { pos, needScore, teamStrength: team.strength, leagueAvg: leagueAvg[pos], avgAge: team.avgAge };
-    }).filter(n=> n.needScore > 0 && n.teamStrength < 0.9 * n.leagueAvg)
-   .sort((a,b)=>b.needScore - a.needScore)
-   .slice(0,2);
-    return needs;
-  }
-
-  function getTopHeavyPct(starters){
-    if(!starters.length) return 0;
-    const total = starters.reduce((s,p)=>s+p.ppg,0);
-    const top3 = [...starters].sort((a,b)=>b.ppg-a.ppg).slice(0,3).reduce((s,p)=>s+p.ppg,0);
-    return total? (top3/total)*100 : 0;
-  }
-
-  function getAgeDistribution(players){
-    const totalVal = players.reduce((s,p)=>s+p.value,0) || 1;
-    const buckets = { youth:0, prime:0, aging:0 };
-    players.forEach(p=>{
-      if(!p.age) return;
-      if(p.age<=23) buckets.youth+=p.value;
-      else if(p.age<=27) buckets.prime+=p.value;
-      else buckets.aging+=p.value;
-    });
-    return {
-      youthPct: (buckets.youth/totalVal)*100,
-      primePct: (buckets.prime/totalVal)*100,
-      agingPct: (buckets.aging/totalVal)*100
-    };
-  }
-
-  function getFitSentence(archBefore, archAfter, dProd, dWin){
-    const name = archBefore;
-    if(name==='Elite Contender'){
-      if(dProd<-5 || dWin<-10) return {cls:'fit-bad', text:'⚠️ Risky for Elite Contender — you’re dropping Prod % or Window % out of elite range.'};
-      return {cls:'fit-good', text:'✅ Stays Elite. You kept Prod % and Window % in the top tier.'};
-    }
-    if(name==='Win-Now Fringe'){
-      if(dProd>=2) return {cls:'fit-good', text:'✅ Fits Win-Now. Prod % up, pushing for playoffs.'};
-      if(dProd<-3 && dWin<0) return {cls:'fit-bad', text:'⚠️ Odd for Win-Now — Prod % down with no future gain.'};
-      return {cls:'fit-neutral', text:'Neutral move for Win-Now Fringe.'};
-    }
-    if(name==='Aging Contender'){
-      if(dProd>=3 && dWin<0) return {cls:'fit-good', text:'✅ Classic Aging Contender push — Prod % up, Window % down.'};
-      if(dProd<-3 && dWin>5) return {cls:'fit-good', text:'✅ Smart pivot out — you’re getting younger and richer.'};
-      return {cls:'fit-neutral', text:'Mixed signals for Aging Contender.'};
-    }
-    if(name==='Young Riser / Ascending'){
-      if(dWin>=5) return {cls:'fit-good', text:'✅ Fits Young Riser — Window % up, building toward Elite.'};
-      if(dProd>5 && dWin<-5) return {cls:'fit-bad', text:'⚠️ Selling youth too early for a small Prod bump.'};
-      return {cls:'fit-neutral', text:'Slight shift for Young Riser.'};
-    }
-    if(name==='Pick-Rich Rebuilder'){
-      if(dWin>=5) return {cls:'fit-good', text:'✅ Good rebuild process — Window % up, picks or youth added.'};
-      if(dProd>0 && dWin<-5) return {cls:'fit-bad', text:'⚠️ Burning picks for veterans while still rebuilding.'};
-      return {cls:'fit-neutral', text:'Rebuilder move.'};
-    }
-    if(name==='Volatile / High-Variance'){
-      if(Math.abs(dProd)>4 || Math.abs(dWin)>8) return {cls:'fit-good', text:'✅ Gives direction — you’re moving out of volatility.'};
-      return {cls:'fit-neutral', text:'Still volatile.'};
-    }
-    if(name==='Stripped Rebuilder'){
-      if(dWin>=8) return {cls:'fit-good', text:'✅ Perfect Stripped Rebuilder move — Window % up big.'};
-      if(dWin<0) return {cls:'fit-bad', text:'⚠️ Backwards — you lost future value.'};
-      return {cls:'fit-neutral', text:'Rebuild step.'};
-    }
-    if(name==='Stuck in the Middle / Purgatory'){
-      if(Math.abs(dProd)>=5 || Math.abs(dWin)>=8) return {cls:'fit-good', text:'✅ Gets you out of purgatory — clear direction chosen.'};
-      return {cls:'fit-bad', text:'⚠️ Still stuck — no meaningful Prod % or Window % move.'};
-    }
-    return {cls:'fit-neutral', text:'Balanced Core — minor shift.'};
-  }
-
-  function renderSelect(){
-    const a=$('#team-a-select'),b=$('#team-b-select');
-    a.innerHTML='';b.innerHTML='';
-    state.rosters.forEach(r=>{
-      const o=document.createElement('option');o.value=r.roster_id;o.textContent=teamName(r);
-      a.appendChild(o.cloneNode(true));b.appendChild(o.cloneNode(true));
-    });
-    state.teamA=state.rosters[0]?.roster_id;
-    state.teamB=state.rosters[1]?.roster_id||state.rosters[0]?.roster_id;
-    a.value=state.teamA;b.value=state.teamB;
-  }
-
-  function toggle(set,id){set.has(id)?set.delete(id):set.add(id);updateAll();}
-
-  function renderPicks(rosterId,containerId,selSet,side){
-    const inv=state.pickInventory.get(rosterId)||[];
-    const cont=$(containerId);cont.innerHTML='';
-    inv.forEach(p=>{
-      const sel=selSet.has(p.id);
-      const isLast = side==='A'? (state.lastClickedA && state.lastClickedA.id===p.id) : (state.lastClickedB && state.lastClickedB.id===p.id);
-      const row=document.createElement('div');
-      row.className=`player-row px-3 py-2 rounded-xl ${sel?'selected':''} ${isLast?'last-clicked':''}`;
-      row.innerHTML=`<div class="flex items-center gap-2 flex-wrap">
-        <span class="badge badge-pick">${p.season}</span>
-        <span class="badge">R${p.round}</span>
-        <span class="badge">${p.slot}</span>
+      <div class="flex items-center gap-2 mt-1">
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-white/60">PROD ${prod}</span>
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-white/60">LONG ${lon}%</span>
       </div>
-      <div class="text-sm mt-1 break-words" title="${p.name}">${p.name}</div>
-      <div class="text-xs mono text-slate-400">Val ${fmt(p.value)}</div>`;
-      row.onclick=()=>{
-        if(side==='A') state.lastClickedA = {...p, roster_id:rosterId};
-        else state.lastClickedB = {...p, roster_id:rosterId};
-        toggle(selSet,p.id);
-      };
-      cont.appendChild(row);
-    });
+    </div>
+    <div class="text-right">
+      <div class="font-mono text-[18px] leading-none">${fmt(val)}</div>
+      <button data-remove="${p.id}" data-team="${team}" class="mt-1 text-[11px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-300 border border-white/10 transition">Remove</button>
+    </div>
+  </div>`;
+}
+
+function renderList(team){
+  const list = el(team==='A'?'listA':'listB');
+  const arr = state[team];
+  if(arr.length===0){
+    list.innerHTML = `<div class="empty-state py-14 text-center text-white/50 text-sm border border-dashed border-white/10 rounded-2xl bg-white/[0.02]">Add players to Team ${team}</div>`;
+  } else {
+    list.innerHTML = arr.map(p=>playerCard(p,team)).join('');
+    list.querySelectorAll('[data-remove]').forEach(b=> b.addEventListener('click', ()=> removePlayer(team, b.dataset.remove)));
   }
+  el(team==='A'?'countA':'countB').textContent = arr.length;
+  const avgAge = arr.length ? (arr.reduce((s,p)=>s+p.age,0)/arr.length).toFixed(1) : '—';
+  el(team==='A'?'ageA':'ageB').textContent = avgAge;
+  calc();
+}
 
-  function renderRoster(teamId,containerId,selSet,side){
-    const r=state.rosters.find(x=>x.roster_id==teamId);if(!r)return;
-    const players=(r.players||[]).map(playerFromId).sort((a,b)=>b.value-a.value);
-    const cont=$(containerId);cont.innerHTML='';
-    players.forEach(p=>{
-      const sel=selSet.has(p.id);
-      const isLast = side==='A'? (state.lastClickedA && state.lastClickedA.id===p.id) : (state.lastClickedB && state.lastClickedB.id===p.id);
-      const row=document.createElement('div');
-      row.className=`player-row px-3 py-2 rounded-xl ${sel?'selected':''} ${isLast?'last-clicked':''}`;
-      row.title=p.name;
-      row.innerHTML=`<div class="text-sm leading-snug break-words">${p.name}</div>
-        <div class="text-xs mono text-slate-400">${p.pos} • ${fmt1(p.ppg)} PPG • ${fmt(p.value)}</div>`;
-      row.onclick=()=>{
-        if(side==='A') state.lastClickedA = {...p, roster_id:teamId};
-        else state.lastClickedB = {...p, roster_id:teamId};
-        toggle(selSet,p.id);
-      };
-      cont.appendChild(row);
-    });
-  }
+function addPlayer(team, p){
+  if(state.A.find(x=>x.id===p.id) || state.B.find(x=>x.id===p.id)) return;
+  state[team].push(p);
+  renderList(team);
+  hideResults();
+}
+function removePlayer(team,id){
+  state[team]=state[team].filter(p=>p.id!==id);
+  renderList(team);
+}
 
-  function lineupHTML(title, starters, highlightIds=new Set()){
-    const rows = starters.map(s=>{
-      const cls = highlightIds.has(s.id)? 'lineup-new' : '';
-      return `<div class="flex items-center justify-between text-sm py-1 gap-2 ${cls}">
-        <div class="flex items-center gap-2 min-w-0 flex-1">
-          <span class="text-xs mono w-12 shrink-0 text-slate-500">${s.slot}</span>
-          <span class="truncate min-w-0">${s.name}</span>
-        </div>
-        <div class="text-xs mono tabular-nums text-slate-400 shrink-0 w-[90px] text-right">${s.age||'-'} • ${fmt1(s.ppg)}</div>
-      </div>`;
-    }).join('');
-    return `<div>
-      <div class="text-xs uppercase text-slate-500 mb-2">${title}</div>
-      <div class="bg-slate-950/50 rounded-xl border border-white/5 px-2 py-2">${rows || '<div class="text-sm text-slate-600 px-1.5">—</div>'}</div>
-    </div>`;
-  }
+function search(inputEl, resultsEl, team){
+  const q = inputEl.value.toLowerCase().trim();
+  if(!q){ resultsEl.classList.add('hidden'); return; }
+  const res = PLAYERS.filter(p=> !state.A.find(a=>a.id===p.id) && !state.B.find(b=>b.id===p.id) && (p.n.toLowerCase().includes(q) || p.pos.toLowerCase()===q)).slice(0,8);
+  resultsEl.innerHTML = res.map(p=>`
+    <button data-id="${p.id}" class="w-full text-left px-3 py-2.5 hover:bg-white/5 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-white/5 grid place-items-center text-[11px] font-mono">${p.pos}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[14px] leading-tight truncate">${p.n}</div>
+        <div class="text-[11px] text-white/50">${p.team} • Age ${p.age} • ${p.ppg[0]?p.ppg[0].toFixed(1)+' PPG':''}</div>
+      </div>
+      <div class="text-[12px] font-mono text-white/70">${fmt(baseValue(p))}</div>
+    </button>`).join('') || `<div class="px-3 py-4 text-sm text-white/50">No matches</div>`;
+  resultsEl.classList.remove('hidden');
+  resultsEl.querySelectorAll('button[data-id]').forEach(b=> b.onclick = ()=> { const p=PLAYERS.find(x=>x.id===b.dataset.id); addPlayer(team,p); inputEl.value=''; });
+}
+function hideResults(){ el('resultsA').classList.add('hidden'); el('resultsB').classList.add('hidden'); }
 
-  function renderImpactPanel(containerId, receivingTeamId, givingTeamId, outSelSet, inSelSet){
-    const cont=$(containerId);
-    try{
-      const incoming=getSelectedAssets(givingTeamId,inSelSet);
-      const outgoing=getSelectedAssets(receivingTeamId,outSelSet);
-      const addPlayers=incoming.filter(a=>a.type==='player');
-      const removeIds=new Set(outgoing.filter(a=>a.type==='player').map(a=>a.id));
-      const beforeOpt=computeOptimalLineup(receivingTeamId);
-      const afterOpt=computeOptimalLineup(receivingTeamId, addPlayers, removeIds);
-      const mBefore=state.teamMetrics.get(receivingTeamId);
-      const r=state.rosters.find(x=>x.roster_id===receivingTeamId);
-      const basePlayers=(r.players||[]).filter(pid=>!removeIds.has(pid)).map(playerFromId);
-      const postPlayers=[...basePlayers,...addPlayers];
-      const postRosterValue=postPlayers.reduce((s,p)=>s+p.value,0);
-      const postPicks=(state.pickInventory.get(receivingTeamId)||[]).filter(p=>!outgoing.some(o=>o.id===p.id));
-      const postPickScore=postPicks.reduce((s,p)=>s+p.value,0)+incoming.filter(a=>a.type==='pick').reduce((s,a)=>s+a.value,0);
-      const postAges=postPlayers.map(p=>p.age).filter(a=>a!=null&&a>0);
-      const postAvgAge=postAges.length?postAges.reduce((a,b)=>a+b,0)/postAges.length:mBefore.avgAge;
-      const vals=[...state.teamMetrics.values()].map(m=>m.rosterValue);
-      const picks=[...state.teamMetrics.values()].map(m=>m.pickScore);
-      const ages=[...state.teamMetrics.values()].map(m=>m.avgAge);
-      const vM=mean(vals), vS=std(vals)||1;
-      const pM=mean(picks), pS=std(picks)||1;
-      const aM=mean(ages), aS=std(ages)||1;
-      const postValueZ=(postRosterValue-vM)/vS;
-      const postPicksZ=(postPickScore-pM)/pS;
-      const postAgeZ=(postAvgAge-aM)/aS;
-      const postWindowRaw=0.5*postValueZ+0.3*postPicksZ+0.2*(-postAgeZ);
-      const teamIds=[...state.teamMetrics.keys()];
-      const allPpg=teamIds.map(id=>id===receivingTeamId?afterOpt.total:state.teamMetrics.get(id).ppg);
-      const allWinRaw=teamIds.map(id=>id===receivingTeamId?postWindowRaw:(state.teamMetrics.get(id).windowRaw||0));
-      const allPickScores=teamIds.map(id=>id===receivingTeamId?postPickScore:state.teamMetrics.get(id).pickScore);
-      const prodPcts=percentiles(allPpg);
-      const winPcts=percentiles(allWinRaw);
-      const pickPcts=percentiles(allPickScores);
-      const idx=teamIds.indexOf(receivingTeamId);
-      const postProdPct=prodPcts[idx];
-      const postWinPct=winPcts[idx];
-      const archBefore=mBefore.archetype;
-      const tempObj={prodPct:postProdPct,windowPct:postWinPct,avgAge:postAvgAge,picksPct:pickPcts[idx]};
-      const archAfter=(ARCHETYPES.find(a=>a.cond(tempObj))||{name:'Unknown'}).name;
-      const dPPG=afterOpt.total-beforeOpt.total;
-      const dProd=postProdPct-mBefore.prodPct;
-      const dWin=postWinPct-mBefore.windowPct;
-      const fit=getFitSentence(archBefore,archAfter,dProd,dWin);
-      const needsBefore=computePositionalNeeds(receivingTeamId);
-      const origPlayers=r.players;
-      r.players=postPlayers.map(p=>p.id);
-      const needsAfter=computePositionalNeeds(receivingTeamId);
-      r.players=origPlayers;
-      const topBefore=getTopHeavyPct(beforeOpt.starters);
-      const topAfter=getTopHeavyPct(afterOpt.starters);
-      const ageBefore=getAgeDistribution(mBefore.players);
-      const ageAfter=getAgeDistribution(postPlayers);
-      const inVal=incoming.reduce((s,a)=>s+a.value,0);
-      const outVal=outgoing.reduce((s,a)=>s+a.value,0);
-      const netVal=inVal-outVal;
-      const newStarters=afterOpt.starters.filter(s=>!beforeOpt.starters.some(b=>b.id===s.id));
-      let html=`<div class="space-y-4">`;
-      html+=`<div class="p-4 rounded-2xl bg-slate-800/70 border border-white/10"><div class="flex items-center justify-between"><div><div class="text-xs uppercase opacity-70">Net Value</div><div class="text-2xl font-bold ${netVal>=0?'text-emerald-400':'text-rose-400'}">${netVal>=0?'+':''}${fmt(netVal)}</div></div><div class="text-right text-xs opacity-80">PPG ${dPPG>=0?'+':''}${dPPG.toFixed(1)}<br>Prod ${dProd>=0?'+':''}${dProd.toFixed(0)}%<br>Win ${dWin>=0?'+':''}${dWin.toFixed(0)}%</div></div></div>`;
-      html+=`<div class="p-4 rounded-2xl bg-slate-800/70 border border-white/10"><div class="text-xs uppercase opacity-70 mb-1">Archetype Shift</div><div class="text-sm">${archBefore} → <span class="font-semibold">${archAfter}</span></div><div class="text-xs opacity-80 mt-1">${fit}</div></div>`;
-      if(newStarters.length){
-        html+=`<div class="p-4 rounded-2xl bg-slate-800/70 border border-white/10"><div class="text-xs uppercase opacity-70 mb-2">New Starters</div>`+newStarters.map(s=>`<div class="flex justify-between text-sm py-0.5"><span>${s.slot}: ${s.name}</span><span class="opacity-70">${s.pos} ${s.ppg.toFixed(1)}</span></div>`).join('')+`</div>`;
-      }
-      html+=`<div class="grid grid-cols-2 gap-3"><div class="p-3 rounded-xl bg-slate-800/60 border border-white/10"><div class="text-xs uppercase opacity-70">Top Heavy</div><div class="text-sm">${topBefore.toFixed(0)}% → ${topAfter.toFixed(0)}%</div></div><div class="p-3 rounded-xl bg-slate-800/60 border border-white/10"><div class="text-xs uppercase opacity-70">Avg Age</div><div class="text-sm">${mBefore.avgAge.toFixed(1)} → ${postAvgAge.toFixed(1)}</div></div></div>`;
-      html+=`<div class="p-4 rounded-2xl bg-slate-800/70 border border-white/10"><div class="text-xs uppercase opacity-70 mb-2">Positional Needs</div><div class="grid grid-cols-2 gap-2 text-xs"><div><div class="opacity-70 mb-1">Before</div>${needsBefore.length?needsBefore.map(n=>`<div>${n.pos} (${n.deficit})</div>`).join(''):'<div class="opacity-60">None</div>'}</div><div><div class="opacity-70 mb-1">After</div>${needsAfter.length?needsAfter.map(n=>`<div>${n.pos} (${n.deficit})</div>`).join(''):'<div class="opacity-60">None</div>'}</div></div></div>`;
-      html+=`<div class="p-4 rounded-2xl bg-slate-800/70 border border-white/10"><div class="text-xs uppercase opacity-70 mb-2">Age Distribution</div><div class="grid grid-cols-2 gap-3 text-xs"><div><div class="opacity-70 mb-1">Before</div>${Object.entries(ageBefore).map(([k,v])=>`<div class="flex justify-between"><span>${k}</span><span>${v}%</span></div>`).join('')}</div><div><div class="opacity-70 mb-1">After</div>${Object.entries(ageAfter).map(([k,v])=>`<div class="flex justify-between"><span>${k}</span><span>${v}%</span></div>`).join('')}</div></div></div>`;
-      html+=`</div>`;
-      cont.innerHTML=html;
-    }catch(e){
-      cont.innerHTML=`<div class="p-3 rounded-xl bg-red-900/30 border border-red-700 text-xs">Impact error: ${e.message}</div>`;
-      console.error(e);
-    }
-  }
+let chart;
+function calc(){
+  const sum = arr => arr.reduce((s,p)=>s+baseValue(p),0);
+  const vA = sum(state.A), vB = sum(state.B);
+  el('valueA').textContent = fmt(vA);
+  el('valueB').textContent = fmt(vB);
 
-  function sumAssets(rosterId,selSet){
-    return getSelectedAssets(rosterId,selSet).reduce((s,x)=>s+x.value,0);
-  }
+  const has = state.A.length+state.B.length>0;
+  el('analysis').classList.toggle('hidden', !has);
+  if(!has) return;
 
-  function renderNeeds(rosterId, containerId){
-    const cont=$(containerId);
-    const needs=computePositionalNeeds(rosterId);
-    if(!needs.length){ cont.innerHTML='<span class="text-xs text-slate-600">No urgent needs</span>'; return; }
-    cont.innerHTML = needs.map(n=>`<span class="badge badge-need">Need ${n.pos}</span>`).join('');
-  }
+  const diff = vA - vB;
+  const fairness = Math.max(0, 100 - Math.abs(diff)/Math.max(1,((vA+vB)/2))*100 );
+  el('diffVal').textContent = (diff>=0?'+':'')+fmt(diff);
+  el('diffVal').className = 'font-mono text-[20px] mt-0.5 ' + (Math.abs(diff)<50?'text-white/90': diff>0?'text-emerald-300':'text-rose-300');
+  el('fairVal').textContent = Math.round(fairness) + '%';
+  el('fairBar').style.width = Math.round(fairness) + '%';
 
-  function updateTeamHeaders(){
-    const aRoster = state.rosters.find(r=>r.roster_id===state.teamA);
-    const bRoster = state.rosters.find(r=>r.roster_id===state.teamB);
-    if(aRoster){
-      const info = teamInfo(aRoster);
-      const el = $('#team-a-name');
-      el.textContent = info.teamName;
-      el.title = info.teamName;
-      $('#team-a-owner').textContent = info.distinct? `Owner: ${info.ownerName}` : info.ownerName;
-    }
-    if(bRoster){
-      const info = teamInfo(bRoster);
-      const el = $('#team-b-name');
-      el.textContent = info.teamName;
-      el.title = info.teamName;
-      $('#team-b-owner').textContent = info.distinct? `Owner: ${info.ownerName}` : info.ownerName;
-    }
-  }
+  const ageA = state.A.length? state.A.reduce((s,p)=>s+p.age,0)/state.A.length : 0;
+  const ageB = state.B.length? state.B.reduce((s,p)=>s+p.age,0)/state.B.length : 0;
+  el('ageDelta').textContent = state.A.length&&state.B.length ? (ageA-ageB).toFixed(1) : '—';
 
-  function updateAll(){
-    updateTeamHeaders();
-    $('#pill-a').innerHTML = pillHTML(state.teamA);
-    $('#pill-b').innerHTML = pillHTML(state.teamB);
-    renderNeeds(state.teamA,'#needs-a');
-    renderNeeds(state.teamB,'#needs-b');
-    renderPicks(state.teamA,'#picks-a',state.selectedA,'A');
-    renderPicks(state.teamB,'#picks-b',state.selectedB,'B');
-    renderRoster(state.teamA,'#roster-a',state.selectedA,'A');
-    renderRoster(state.teamB,'#roster-b',state.selectedB,'B');
-    renderImpactPanel('#impact-a', state.teamA, state.teamB, state.selectedA, state.selectedB);
-    renderImpactPanel('#impact-b', state.teamB, state.teamA, state.selectedB, state.selectedA);
-    const aVal=sumAssets(state.teamA,state.selectedA);
-    const bVal=sumAssets(state.teamB,state.selectedB);
-    $('#send-a').textContent=fmt(aVal);
-    $('#send-b').textContent=fmt(bVal);
-    $('#count-a').textContent=state.selectedA.size;
-    $('#count-b').textContent=state.selectedB.size;
-    const diff=bVal-aVal;
-    $('#fairness-label').textContent= diff>500?'A wins big': diff>100?'A wins': diff<-500?'B wins big': diff<-100?'B wins':'Even';
-  }
+  const verdict = Math.abs(diff) < 75 ? 'Fair Trade' : Math.abs(diff) < 200 ? (diff>0?'Slight Edge A':'Slight Edge B') : (diff>0?'Team A Wins':'Team B Wins');
+  const pill = el('verdictPill');
+  pill.textContent = verdict;
+  pill.className = 'ml-1 text-[11px] px-2 py-0.5 rounded-full border ' + (verdict.includes('Fair')?'bg-white/5 border-white/10 text-white/80': verdict.includes('A')?'bg-emerald-500/15 border-emerald-500/20 text-emerald-300':'bg-cyan-500/15 border-cyan-500/20 text-cyan-300');
 
-  function setupExclude(){
-    const container = $('#pkg-exclude-combo');
-    if(!container || container.dataset.initialized) return;
-    container.dataset.initialized = '1';
-    container.innerHTML = `<div class="relative"><input id="pkg-exclude-input" type="text" placeholder="Search players to exclude..." class="combo-input w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm" autocomplete="off"><div id="pkg-exclude-dropdown" class="combo-dropdown hidden absolute z-20 mt-1 w-full bg-slate-950 border border-white/10 rounded-lg max-h-60 overflow-y-auto"></div></div>`;
-    const input = $('#pkg-exclude-input');
-    const dropdown = $('#pkg-exclude-dropdown');
-    const chips = $('#pkg-exclude-chips');
-    function getAllPlayers(){
-      const set = new Map();
-      state.rosters.forEach(r=>{
-        (r.players||[]).forEach(pid=>{
-          const p = playerFromId(pid);
-          if(p && p.name) set.set(pid, p);
-        });
-      });
-      return Array.from(set.values()).sort((a,b)=>b.value-a.value);
-    }
-    function renderChips(){
-      chips.innerHTML = '';
-      if(state.pkgExclude.size===0){
-        chips.innerHTML = '<span class="text-xs text-slate-600">No players excluded</span>';
-        return;
-      }
-      state.pkgExclude.forEach(pid=>{
-        const p = playerFromId(pid);
-        if(!p) return;
-        const chip = document.createElement('span');
-        chip.className = 'badge flex items-center gap-2';
-        chip.innerHTML = `${p.name} <span class="text-[10px] opacity-70">(${p.pos})</span> <button class="ml-1 text-slate-400 hover:text-white">×</button>`;
-        chip.querySelector('button').onclick = ()=>{ state.pkgExclude.delete(pid); renderChips(); };
-        chips.appendChild(chip);
-      });
-    }
-    function showDropdown(q){
-      const query = q.trim().toLowerCase();
-      const players = getAllPlayers().filter(p=>!state.pkgExclude.has(p.id) && (!query || p.name.toLowerCase().includes(query))).slice(0,50);
-      if(!players.length){ dropdown.classList.add('hidden'); return; }
-      dropdown.innerHTML = players.map(p=>`<div class="px-3 py-2 hover:bg-white/5 cursor-pointer" data-id="${p.id}">${p.name} <span class="text-xs text-slate-500">(${p.pos})</span></div>`).join('');
-      dropdown.classList.remove('hidden');
-    }
-    input.addEventListener('input', ()=>showDropdown(input.value));
-    input.addEventListener('focus', ()=>showDropdown(input.value));
-    dropdown.addEventListener('click', e=>{
-      const item = e.target.closest('[data-id]');
-      if(item){
-        state.pkgExclude.add(item.dataset.id);
-        renderChips();
-        input.value='';
-        dropdown.classList.add('hidden');
-      }
-    });
-    document.addEventListener('click', e=>{ if(!container.contains(e.target)) dropdown.classList.add('hidden'); });
-    renderChips();
-  }
-
-  function setupPackageUI(){
-    const similarTeam = $('#similar-team');
-    const pkgTargetTeam = $('#pkg-target-team');
-    const pkgSourceTeam = $('#pkg-source-team');
-    if(!similarTeam) return;
-    const options = state.rosters.map(r=>`<option value="${r.roster_id}">${teamName(r)}</option>`).join('');
-    similarTeam.innerHTML = options;
-    if(pkgTargetTeam) pkgTargetTeam.innerHTML = options;
-    if(pkgSourceTeam) pkgSourceTeam.innerHTML = options;
-    if(state.rosters.length){
-      similarTeam.value = state.rosters[0].roster_id;
-      if(pkgTargetTeam) pkgTargetTeam.value = state.rosters[0].roster_id;
-      if(pkgSourceTeam) pkgSourceTeam.value = state.rosters[1]?.roster_id || state.rosters[0].roster_id;
-    }
-    function populateSimilarAssets(){
-      const rosterId = +similarTeam.value;
-      const assets = getAllAssetsForTeam(rosterId).filter(a=>a.type==='player');
-      const sel = $('#similar-asset');
-      if(sel) sel.innerHTML = assets.map(a=>`<option value="${a.id}">${a.name} (${a.pos}) - ${fmt(a.value)}</option>`).join('');
-    }
-    similarTeam.addEventListener('change', populateSimilarAssets);
-    populateSimilarAssets();
-    function populateMustSelect(){
-      const sel = $('#pkg-must-select');
-      if(!sel || !pkgSourceTeam) return;
-      const rosterId = +pkgSourceTeam.value;
-      const assets = getAllAssetsForTeam(rosterId).filter(a=>a.type==='player');
-      sel.innerHTML = assets.map(a=>`<option value="${a.id}">${a.name} (${a.pos})</option>`).join('');
-    }
-    if(pkgSourceTeam) pkgSourceTeam.addEventListener('change', populateMustSelect);
-    populateMustSelect();
-
-    // Segmented button handlers
-    function setupSegGroup(id){
-      const grp = $('#'+id);
-      if(!grp) return;
-      grp.addEventListener('click', e=>{
-        const btn = e.target.closest('button[data-val]');
-        if(!btn) return;
-        grp.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-      });
-    }
-    setupSegGroup('similar-tol-group');
-    setupSegGroup('pkg-tol-group');
-
-    // Must include add/remove
-    const mustAdd = $('#pkg-must-add');
-    const mustSel = $('#pkg-must-select');
-    const mustChips = $('#pkg-must-chips');
-    function renderMustChips(){
-      if(!mustChips) return;
-      mustChips.innerHTML = '';
-      state.pkgMust.forEach(pid=>{
-        const p = playerFromId(pid);
-        if(!p) return;
-        const chip = document.createElement('span');
-        chip.className = 'badge flex items-center gap-2';
-        chip.innerHTML = `${p.name} <span class="text-[10px] opacity-70">(${p.pos})</span> <button class="ml-1 text-slate-400 hover:text-white">×</button>`;
-        chip.querySelector('button').onclick = ()=>{ state.pkgMust.delete(pid); renderMustChips(); };
-        mustChips.appendChild(chip);
-      });
-      const warn = $('#pkg-must-warning');
-      if(warn) warn.classList.toggle('hidden', state.pkgMust.size <=2);
-    }
-    mustAdd?.addEventListener('click', ()=>{
-      const pid = mustSel.value;
-      if(pid && state.pkgMust.size <2 && !state.pkgMust.has(pid)){
-        state.pkgMust.add(pid);
-        renderMustChips();
-      }
-    });
-    renderMustChips();
-
-    // Button listeners
-    $('#similar-find')?.addEventListener('click', findSimilar);
-    $('#pkg-find')?.addEventListener('click', findPackageCombos);
-  }
-
-  function getActiveTol(groupId){
-    const grp = $('#'+groupId);
-    const btn = grp?.querySelector('button.active');
-    return btn ? +btn.dataset.val : 10;
-  }
-
-  function findSimilar(){
-    const assetSel = $('#similar-asset');
-    if(!assetSel) return;
-    const assetId = assetSel.value;
-    if(!assetId) return;
-    const refAsset = playerFromId(assetId);
-    if(!refAsset) return;
-    const tol = getActiveTol('similar-tol-group')/100;
-    const targetVal = refAsset.value;
-    const min = targetVal*(1-tol);
-    const max = targetVal*(1+tol);
-    const results = [];
-    state.rosters.forEach(r=>{
-      const assets = getAllAssetsForTeam(r.roster_id).filter(a=>a.type==='player' && a.id!==assetId);
-      assets.forEach(a=>{
-        if(a.value>=min && a.value<=max){
-          results.push({team:teamName(r), asset:a, delta:a.value-targetVal});
-        }
-      });
-    });
-    results.sort((a,b)=>Math.abs(a.delta)-Math.abs(b.delta));
-    const tbody = $('#similar-results');
-    if(!tbody) return;
-    if(!results.length){
-      tbody.innerHTML = `<tr><td colspan="8" class="py-6 text-center text-slate-500">No similar assets found</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = results.slice(0,50).map(r=>`
-      <tr class="hover:bg-white/5">
-        <td class="py-2 px-4">${r.team}</td>
-        <td class="py-2 px-3">${r.asset.name}</td>
-        <td class="py-2 px-3">${r.asset.pos}</td>
-        <td class="py-2 px-3">${r.asset.age??'—'}</td>
-        <td class="py-2 px-3">${r.asset.ppg?r.asset.ppg.toFixed(1):'—'}</td>
-        <td class="py-2 px-3 mono">${fmt(r.asset.value)}</td>
-        <td class="py-2 px-3 mono ${r.delta>=0?'text-green-400':'text-red-400'}">${r.delta>=0?'+':''}${fmt(r.delta)}</td>
-        <td class="py-2 px-4 text-right"><button class="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20">Add</button></td>
-      </tr>`).join('');
-  }
-
-  function findPackageCombos(){
-    const targetTeamEl = $('#pkg-target-team');
-    const sourceTeamEl = $('#pkg-source-team');
-    if(!targetTeamEl || !sourceTeamEl) return;
-    const targetTeamId = +targetTeamEl.value;
-    const sourceTeamId = +sourceTeamEl.value;
-    const targetValInput = +$('#pkg-value').value || 0;
-    const tol = getActiveTol('pkg-tol-group')/100;
-    let targetVal = targetValInput;
-    if(!targetVal){
-      alert('Enter Target Value');
-      return;
-    }
-    const min = targetVal*(1-tol);
-    const max = targetVal*(1+tol);
-    const candidates = getAllAssetsForTeam(sourceTeamId).filter(a=>{
-      if(state.pkgExclude.has(a.id)) return false;
-      if(a.type==='player' && a.value<500) return false;
-      return true;
-    });
-    const mustIds = Array.from(state.pkgMust);
-    const mustAssets = mustIds.map(id=>candidates.find(c=>c.id===id)).filter(Boolean);
-    const remaining = candidates.filter(c=>!mustIds.includes(c.id));
-    const req = {
-      QB: +$('#pkg-req-qb').value||0,
-      RB: +$('#pkg-req-rb').value||0,
-      WR: +$('#pkg-req-wr').value||0,
-      TE: +$('#pkg-req-te').value||0,
-      picks: +$('#pkg-req-picks').value||0
-    };
-    const combos = [];
-    const maxSize = 4;
-    function meetsReq(combo){
-      const cnt = {QB:0,RB:0,WR:0,TE:0,picks:0};
-      combo.forEach(a=>{
-        if(a.type==='pick') cnt.picks++;
-        else if(cnt[a.pos]!==undefined) cnt[a.pos]++;
-      });
-      return cnt.QB>=req.QB && cnt.RB>=req.RB && cnt.WR>=req.WR && cnt.TE>=req.TE && cnt.picks>=req.picks;
-    }
-    const n = remaining.length;
-    for(let i=0;i<n;i++){
-      const c=[...mustAssets, remaining[i]];
-      const val=c.reduce((s,a)=>s+a.value,0);
-      if(val>=min && val<=max && meetsReq(c)) combos.push(c);
-    }
-    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
-      const c=[...mustAssets, remaining[i], remaining[j]];
-      if(c.length>maxSize) continue;
-      const val=c.reduce((s,a)=>s+a.value,0);
-      if(val>=min && val<=max && meetsReq(c)) combos.push(c);
-    }
-    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++) for(let k=j+1;k<n;k++){
-      const c=[...mustAssets, remaining[i], remaining[j], remaining[k]];
-      if(c.length>maxSize) continue;
-      const val=c.reduce((s,a)=>s+a.value,0);
-      if(val>=min && val<=max && meetsReq(c)) combos.push(c);
-    }
-    combos.sort((a,b)=>{
-      const va=a.reduce((s,x)=>s+x.value,0);
-      const vb=b.reduce((s,x)=>s+x.value,0);
-      return Math.abs(va-targetVal)-Math.abs(vb-targetVal);
-    });
-    const tbody = $('#pkg-results');
-    if(!tbody) return;
-    if(!combos.length){
-      tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-500">No combos found. Try looser tolerance or adjust requirements.</td></tr>`;
-      return;
-    }
-    tbody.innerHTML = combos.slice(0,30).map(c=>{
-      const val=c.reduce((s,a)=>s+a.value,0);
-      const names=c.map(a=>a.type==='pick'?`${a.year} ${a.round}.${a.pick}`:a.name).join(', ');
-      const posCounts={QB:0,RB:0,WR:0,TE:0};
-      c.forEach(a=>{ if(a.pos && posCounts[a.pos]!==undefined) posCounts[a.pos]++; });
-      const comp = Object.entries(posCounts).filter(([,v])=>v>0).map(([k,v])=>`${v} ${k}`).join(', ') || '—';
-      return `<tr class="hover:bg-white/5">
-        <td class="py-2 px-4">${names}</td>
-        <td class="py-2 px-3 mono">${fmt(val)}</td>
-        <td class="py-2 px-3 mono ${val>=targetVal?'text-green-400':'text-red-400'}">${val>=targetVal?'+':''}${fmt(val-targetVal)}</td>
-        <td class="py-2 px-3">${c.length}</td>
-        <td class="py-2 px-3 text-xs">${comp}</td>
-        <td class="py-2 px-4 text-right"><button class="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20">Add</button></td>
-      </tr>`;
-    }).join('');
-  }
-
-  
-  function renderLineupDebug(){
-    const container = document.getElementById('lineup-debug');
-    if(!container) return;
-    let html = '<table class="w-full"><thead><tr class="text-left border-b border-white/10"><th>Team</th><th>PPG</th><th>Prod %</th><th>Window %</th><th>Value</th><th>Picks</th><th>Age</th><th>Optimal Lineup</th><th>Full Roster (PPG)</th></tr></thead><tbody>';
-    state.rosters.forEach(r=>{
-      const name = state.users.find(u=>u.user_id===r.owner_id)?.display_name || `Team ${r.roster_id}`;
-      const opt = computeOptimalLineup(r.roster_id);
-      const m = state.teamMetrics.get(r.roster_id);
-      const lineupStr = (opt.starters||[]).map(s=>`${s.slot}: ${s.name} (${s.pos} ${s.ppg.toFixed(1)})`).join('<br>');
-      // Full roster
-      const allPlayers = (r.players||[]).map(pid=>{
-        const p = playerFromId(pid);
-        const ppg = state.ppg.get(pid)||0;
-        return {...p, ppg};
-      }).sort((a,b)=>b.ppg-a.ppg);
-      const rosterStr = allPlayers.map(p=>`${p.full_name} (${p.pos} ${p.ppg.toFixed(1)})`).join('<br>');
-      const zeroCount = allPlayers.filter(p=>p.ppg===0).length;
-      html += `<tr class="border-b border-white/5 align-top"><td class="py-2 pr-4">${name}</td><td class="py-2 pr-4 mono">${opt.total.toFixed(1)}${zeroCount?` <span class="text-amber-300">(${zeroCount} zero)</span>`:''}</td><td class="py-2 pr-4 mono">${m?m.prodPct.toFixed(0):'-'}</td><td class="py-2 pr-4 mono">${m?m.windowPct.toFixed(0):'-'}</td><td class="py-2 pr-4 mono">${m?fmt(m.rosterValue):'-'}</td><td class="py-2 pr-4 mono">${m?m.pickScore:'-'}</td><td class="py-2 pr-4 mono">${m&&m.avgAge?m.avgAge.toFixed(1):'-'}</td><td class="py-2">${lineupStr}</td><td class="py-2 text-xs opacity-80">${rosterStr}</td></tr>`;
-    });
-    html += '</tbody></table>';
-    container.innerHTML = html;
-  }
-
-async function init(){
-    setStatus('Loading league…');
-    const [league,users,rosters,players,traded]=await Promise.all([
-      fetchJSON(`https://api.sleeper.app/v1/league/${league_id}`),
-      fetchJSON(`https://api.sleeper.app/v1/league/${league_id}/users`),
-      fetchJSON(`https://api.sleeper.app/v1/league/${league_id}/rosters`),
-      fetchJSON('https://api.sleeper.app/v1/players/nfl'),
-      fetchJSON(`https://api.sleeper.app/v1/league/${league_id}/traded_picks`).catch(()=>[])
-    ]);
-    state.league=league; state.users=users; state.rosters=rosters; state.players=players; state.tradedPicks=traded;
-    $('#league-name').textContent=league.name;
-    await loadPickValues();
-    await loadAuditValues();
-    await loadPPG();
-    computeSlots();
-    buildPickInventory();
-    computeTeamMetrics();
-    renderLineupDebug();
-    renderSelect();
-    setupExclude();
-    setupPackageUI();
-    setStatus('Ready • computed on refresh');
-    updateAll();
-  }
-
-  document.addEventListener('DOMContentLoaded',()=>{
-    $('#team-a-select')?.addEventListener('change',e=>{state.teamA=+e.target.value;state.selectedA.clear();updateAll();});
-    $('#team-b-select')?.addEventListener('change',e=>{state.teamB=+e.target.value;state.selectedB.clear();updateAll();});
-    $('#reset-btn')?.addEventListener('click',()=>{state.selectedA.clear();state.selectedB.clear();updateAll();});
-    $('#swap-btn')?.addEventListener('click',()=>{
-      [state.teamA,state.teamB]=[state.teamB,state.teamA];
-      [state.selectedA,state.selectedB]=[state.selectedB,state.selectedA];
-      [state.lastClickedA,state.lastClickedB]=[state.lastClickedB,state.lastClickedA];
-      $('#team-a-select').value=state.teamA;
-      $('#team-b-select').value=state.teamB;
-      updateAll();
-    });
-    init();
+  // chart
+  const ctx = el('valueChart').getContext('2d');
+  if(chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type:'bar',
+    data:{ labels:['Team A','Team B'], datasets:[{ data:[vA,vB], backgroundColor:['rgba(139,92,246,0.8)','rgba(34,211,238,0.8)'], borderRadius:12, borderSkipped:false }] },
+    options:{ plugins:{legend:{display:false}}, scales:{ y:{display:false}, x:{ticks:{color:'#9aa3b2'}} }, maintainAspectRatio:false }
   });
-})();
+
+  // archetypes
+  const archEl = el('archetypes');
+  archEl.innerHTML = ARCHETYPES.map(a=>{
+    const aA = state.A.reduce((s,p)=>s+archetypeValue(p,a.key),0);
+    const aB = state.B.reduce((s,p)=>s+archetypeValue(p,a.key),0);
+    const total = Math.max(1,aA+aB);
+    const pctA = Math.round(aA/total*100);
+    const pctB = 100-pctA;
+    const winner = aA===aB?'Even': aA>aB?'A':'B';
+    const edge = Math.abs(aA-aB);
+    const edgePct = total? Math.round(edge/Math.max(aA,aB)*100):0;
+    return `
+    <div class="p-4 rounded-2xl bg-black/30 border border-white/5 hover:border-white/10 transition">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-white/5 grid place-items-center"><i data-lucide="${a.icon}" class="w-4 h-4 text-white/70"></i></div>
+          <div>
+            <div class="text-[14px] font-medium leading-tight">${a.name}</div>
+            <div class="text-[11px] text-white/50 -mt-0.5">${a.desc}</div>
+          </div>
+        </div>
+        <span class="text-[11px] px-2 py-0.5 rounded-full ${winner==='Even'?'bg-white/5 text-white/70 border-white/10': winner==='A'?'bg-violet-500/15 text-violet-300 border border-violet-500/20':'bg-cyan-500/15 text-cyan-300 border border-cyan-500/20'}">${winner==='Even'?'Even':`Team ${winner} +${edgePct}%`}</span>
+      </div>
+      <div class="mt-3">
+        <div class="flex justify-between text-[11px] text-white/60 mb-1"><span>A: ${fmt(aA)}</span><span>B: ${fmt(aB)}</span></div>
+        <div class="h-2 w-full rounded-full bg-white/5 overflow-hidden flex">
+          <div style="width:${pctA}%" class="h-full bg-gradient-to-r from-violet-500 to-violet-400"></div>
+          <div style="width:${pctB}%" class="h-full bg-gradient-to-r from-cyan-400 to-cyan-500"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+// events
+['A','B'].forEach(t=>{
+  const s = el('search'+t), r = el('results'+t);
+  s.addEventListener('input', ()=>search(s,r,t));
+  s.addEventListener('focus', ()=>search(s,r,t));
+  document.addEventListener('click', e=>{ if(!r.contains(e.target) && e.target!==s) r.classList.add('hidden'); });
+  el('list'+t).addEventListener('click', e=>{});
+  document.querySelector(`[data-clear="${t}"]`).onclick = ()=>{ state[t]=[]; renderList(t); };
+});
+
+el('swapBtn').onclick = ()=>{ const tmp=state.A; state.A=state.B; state.B=tmp; renderList('A'); renderList('B'); };
+el('resetBtn').onclick = ()=>{ state.A=[]; state.B=[]; renderList('A'); renderList('B'); };
+
+// quick add demo
+state.A.push(PLAYERS.find(p=>p.id==='jj'), PLAYERS.find(p=>p.id==='breece'));
+state.B.push(PLAYERS.find(p=>p.id==='lamb'), PLAYERS.find(p=>p.id==='gibbs'), PLAYERS.find(p=>p.id==='laporta'));
+renderList('A'); renderList('B');
+
+lucide.createIcons();
+document.addEventListener('keydown', e=>{ if(e.key==='/'){ e.preventDefault(); el('searchA').focus(); }});
 </script>
+<script>(function(){document.addEventListener("click",function(e){var a=e.target.closest("[data-product-id]");if(!a)return;e.preventDefault();var pid=a.getAttribute("data-product-id");if(pid)parent.postMessage({type:"ecto-artifact-link-click",productId:pid},"*")})})();</script>
 </body>
 </html>
