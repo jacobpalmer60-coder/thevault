@@ -1,145 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TradeCalc Pro — 4 Column</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TradeCalc Pro — Position Groups</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
-<style>body{font-family:Outfit,system-ui;background:#050810;color:#fff}:root{color-scheme:dark}.glass{backdrop-filter:blur(16px)}</style>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>:root{color-scheme:dark}body{font-family:Outfit,system-ui;background:#050810}.glass{backdrop-filter:blur(20px)}</style>
 </head>
-<body>
-<header class="sticky top-0 border-b border-white/10 bg-black/50 glass z-40">
-  <div class="max-w-[1600px] mx-auto px-6 h-14 flex items-center justify-between">
+<body class="text-white">
+<header class="sticky top-0 z-40 border-b border-white/5 bg-black/30 glass">
+  <div class="max-w-[1200px] mx-auto px-6 h-[64px] flex items-center justify-between">
     <div class="font-semibold">TradeCalc Pro</div>
-    <button id="reset" class="text-xs px-3 py-1.5 bg-white/5 rounded-lg border border-white/10">Reset</button>
+    <button id="resetBtn" class="text-xs px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">Reset</button>
   </div>
 </header>
 
-<main class="max-w-[1600px] mx-auto px-6 py-8">
-  <div class="grid grid-cols-1 xl:grid-cols-4 gap-5 items-start">
-
-    <!-- 1. TEAM A ROSTER -->
-    <section class="xl:col-span-1 glass rounded-2xl border border-white/10 bg-white/[0.02] p-4 h-[720px] flex flex-col">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-semibold text-violet-300">Team A</h2>
-        <select id="teamA" class="bg-black/50 border-white/10 rounded px-2 py-1 text-xs"></select>
+<main class="max-w-[1200px] mx-auto px-6 py-8">
+  <section id="analysis" class="mb-8 hidden">
+    <div class="glass rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="font-semibold text-[18px]">Trade Evaluation</h3>
+        <span id="verdictPill" class="text-[11px] px-2.5 py-1 rounded-full bg-white/10">—</span>
       </div>
-      <div id="rosterA" class="flex-1 overflow-auto space-y-1 text-[12px] pr-2"></div>
-      <div class="mt-3 pt-3 border-t border-white/10 text-[11px] text-white/50">
-        <div>Picks: <span id="picksA" class="text-white/80">—</span></div>
+      <div class="grid md:grid-cols-2 gap-5">
+        <div class="rounded-2xl bg-violet-500/5 border border-violet-500/20 p-5">
+          <div class="font-medium text-violet-200 mb-3">Team A Impact</div>
+          <div id="statsA" class="space-y-2.5 text-[13px]"></div>
+        </div>
+        <div class="rounded-2xl bg-cyan-500/5 border border-cyan-500/20 p-5">
+          <div class="font-medium text-cyan-200 mb-3">Team B Impact</div>
+          <div id="statsB" class="space-y-2.5 text-[13px]"></div>
+        </div>
       </div>
-    </section>
-
-    <!-- 2. IMPACT ON TEAM A -->
-    <section class="xl:col-span-1 glass rounded-2xl border border-violet-500/20 bg-violet-500/5 p-5">
-      <h3 class="font-semibold text-violet-200 mb-4 flex items-center gap-2">
-        <span class="w-6 h-6 rounded bg-violet-500/20 grid place-items-center text-xs">A</span>
-        Impact on Team A
-      </h3>
-      <div id="impactA" class="space-y-3"></div>
-    </section>
-
-    <!-- 3. IMPACT ON TEAM B -->
-    <section class="xl:col-span-1 glass rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-5">
-      <h3 class="font-semibold text-cyan-200 mb-4 flex items-center gap-2">
-        <span class="w-6 h-6 rounded bg-cyan-500/20 grid place-items-center text-xs">B</span>
-        Impact on Team B
-      </h3>
-      <div id="impactB" class="space-y-3"></div>
-    </section>
-
-    <!-- 4. TEAM B ROSTER -->
-    <section class="xl:col-span-1 glass rounded-2xl border border-white/10 bg-white/[0.02] p-4 h-[720px] flex flex-col">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-semibold text-cyan-300">Team B</h2>
-        <select id="teamB" class="bg-black/50 border border-white/10 rounded px-2 py-1 text-xs"></select>
+      <div class="mt-5 pt-4 border-t border-white/10">
+        <div class="flex justify-between text-[12px] mb-2"><span class="text-white/60">Fairness</span><span id="fairText" class="font-mono">—</span></div>
+        <div class="h-2 bg-white/5 rounded-full overflow-hidden"><div id="fairBar" class="h-full w-0 bg-gradient-to-r from-violet-500 to-cyan-400"></div></div>
       </div>
-      <div id="rosterB" class="flex-1 overflow-auto space-y-1 text-[12px] pr-2"></div>
-      <div class="mt-3 pt-3 border-t border-white/10 text-[11px] text-white/50">
-        <div>Picks: <span id="picksB" class="text-white/80">—</span></div>
-      </div>
+    </div>
+  </section>
+
+  <div class="grid lg:grid-cols-[1fr_72px_1fr] gap-5">
+    <section class="glass rounded-[24px] border border-white/10 p-5">
+      <div class="flex justify-between mb-3"><select id="teamSelectA" class="bg-black/40 border border-white/10 rounded px-2 py-1 text-sm"></select><span class="text-xs text-white/50">Team A</span></div>
+      <div id="listA" class="space-y-3 max-h-[520px] overflow-auto pr-2 text-[13px]">Loading...</div>
     </section>
-
-  </div>
-
-  <!-- Fairness bar underneath -->
-  <div class="mt-6 glass rounded-2xl border border-white/10 p-4">
-    <div class="flex justify-between text-sm mb-2"><span>Trade Fairness</span><span id="fairLabel" class="font-mono">—</span></div>
-    <div class="h-2 bg-white/5 rounded-full overflow-hidden"><div id="fairBar" class="h-full w-0 bg-gradient-to-r from-violet-500 to-cyan-400 transition-all"></div></div>
+    <div class="hidden lg:grid place-items-center"><div class="w-10 h-10 rounded-full bg-white/5 grid place-items-center">VS</div></div>
+    <section class="glass rounded-[24px] border border-white/10 p-5">
+      <div class="flex justify-between mb-3"><select id="teamSelectB" class="bg-black/40 border border-white/10 rounded px-2 py-1 text-sm"></select><span class="text-xs text-white/50">Team B</span></div>
+      <div id="listB" class="space-y-3 max-h-[520px] overflow-auto pr-2 text-[13px]">Loading...</div>
+    </section>
   </div>
 </main>
 
 <script>
-const LEAGUE='1313454100225990656';
-const VAL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
-const PPG='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
-const PICKS='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
+const LEAGUE_ID='1313454100225990656';
+const VALUES_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
+const PPG_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
 
-let S={users:[],rosters:[],players:{},vals:new Map(),ppg:new Map(),picks:new Map(),slots:[]};
-let teams={A:[],B:[]};
+let sleeper={users:[],rosters:[],players:{},values:new Map(),ppg:new Map(),slots:[]};
+const state={A:[],B:[]};
 
-async function init(){
-  const [lg,us,ro,pl,v,p,pi]=await Promise.all([
-    fetch(`https://api.sleeper.app/v1/league/${LEAGUE}`).then(r=>r.json()),
-    fetch(`https://api.sleeper.app/v1/league/${LEAGUE}/users`).then(r=>r.json()),
-    fetch(`https://api.sleeper.app/v1/league/${LEAGUE}/rosters`).then(r=>r.json()),
+async function load(){
+  const [league,users,rosters,players,vCsv,pCsv]=await Promise.all([
+    fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}`).then(r=>r.json()),
+    fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/users`).then(r=>r.json()),
+    fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/rosters`).then(r=>r.json()),
     fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),
-    fetch(VAL).then(r=>r.text()), fetch(PPG).then(r=>r.text()), fetch(PICKS).then(r=>r.text())
+    fetch(VALUES_URL).then(r=>r.text()),
+    fetch(PPG_URL).then(r=>r.text())
   ]);
-  S.users=us; S.rosters=ro; S.players=pl; S.slots=lg.roster_positions.filter(x=>!['BN','IR','TAXI'].includes(x));
-  const sf=lg.roster_positions.includes('SUPER_FLEX');
-  Papa.parse(v,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.sleeper_id)S.vals.set(r.sleeper_id,parseFloat(sf?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05)||0)});
-  Papa.parse(p,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.Player)S.ppg.set(r.Player.toLowerCase(),parseFloat(r['Avg_PPR_0.5_TEP'])||0)});
-  Papa.parse(pi,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.season)S.picks.set(`${r.season}-${r.round}`,parseFloat(sf?r.sf_value:r.qb_value)||0)});
+  sleeper.users=users; sleeper.rosters=rosters; sleeper.players=players;
+  sleeper.slots=(league.roster_positions||[]).filter(s=>!['BN','IR','TAXI'].includes(s));
+  const isSF=league.roster_positions.includes('SUPER_FLEX');
+  Papa.parse(vCsv,{header:true,skipEmptyLines:true}).data.forEach(r=>{const id=String(r.sleeper_id||'').trim();if(id)sleeper.values.set(id,parseFloat(isSF?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05)||0)});
+  Papa.parse(pCsv,{header:true,skipEmptyLines:true}).data.forEach(r=>{const n=r.Player||'';if(n)sleeper.ppg.set(n.toLowerCase(),parseFloat(r['Avg_PPR_0.5_TEP'])||0)});
 
-  const a=document.getElementById('teamA'), b=document.getElementById('teamB'); a.innerHTML=''; b.innerHTML='';
-  us.forEach(u=>{const r=ro.find(x=>x.owner_id===u.user_id);if(!r)return;const n=u.metadata?.team_name||u.display_name;const o=document.createElement('option');o.value=r.roster_id;o.textContent=n;a.appendChild(o.cloneNode(true));b.appendChild(o)});
-  a.onchange=()=>load('A',+a.value); b.onchange=()=>load('B',+b.value);
-  a.value=ro[0].roster_id; b.value=ro[1].roster_id; load('A',ro[0].roster_id); load('B',ro[1].roster_id);
+  const a=document.getElementById('teamSelectA'), b=document.getElementById('teamSelectB'); a.innerHTML=''; b.innerHTML='';
+  users.forEach(u=>{const r=rosters.find(x=>x.owner_id===u.user_id);if(!r)return;const n=u.metadata?.team_name||u.display_name;const o=document.createElement('option');o.value=r.roster_id;o.textContent=n;a.appendChild(o.cloneNode(true));b.appendChild(o);});
+  a.onchange=()=>loadTeam('A',+a.value); b.onchange=()=>loadTeam('B',+b.value);
+  if(rosters[0]){a.value=rosters[0].roster_id;loadTeam('A',rosters[0].roster_id)}
+  if(rosters[1]){b.value=rosters[1].roster_id;loadTeam('B',rosters[1].roster_id)}
 }
 
-function load(side,id){
-  const r=S.rosters.find(x=>x.roster_id===id);
-  teams[side]=(r.players||[]).map(pid=>{const p=S.players[pid]||{};const nm=`${p.first_name||''} ${p.last_name||''}`.trim();return{id:pid,n:nm,pos:p.position,age:p.age||0,val:S.vals.get(pid)||0,ppg:S.ppg.get(nm.toLowerCase())||0}}).filter(x=>x.n);
-  document.getElementById('roster'+side).innerHTML=teams[side].map(p=>`<div class="flex justify-between py-0.5 hover:bg-white/5 px-1 rounded"><span class="truncate">${p.pos} ${p.n}</span><span class="font-mono text-white/50">${Math.round(p.val)}</span></div>`).join('');
-  document.getElementById('picks'+side).textContent = (r.settings?.total_roster_points||'—'); // placeholder
-  update();
+function loadTeam(side,id){
+  const r=sleeper.rosters.find(x=>x.roster_id===id);
+  state[side]=(r.players||[]).map(pid=>{const p=sleeper.players[pid]||{};const nm=`${p.first_name||''} ${p.last_name||''}`.trim();return{id:pid,n:nm,pos:p.position||'?',age:p.age||0,value:sleeper.values.get(pid)||0,ppg:sleeper.ppg.get(nm.toLowerCase())||0}}).filter(p=>p.n);
+
+  // ORGANIZE BY POSITION, DESCENDING VALUE
+  const grouped={}; state[side].forEach(p=>{(grouped[p.pos]=grouped[p.pos]||[]).push(p)});
+  const order=['QB','RB','WR','TE','K','DEF'];
+  const allPos=[...order.filter(p=>grouped[p]),...Object.keys(grouped).filter(p=>!order.includes(p)).sort()];
+
+  const html=allPos.map(pos=>{
+    const players=grouped[pos].sort((a,b)=>b.value-a.value);
+    return `<div>
+      <div class="text-[11px] uppercase tracking-wider text-white/40 mb-1.5 mt-3 first:mt-0">${pos} <span class="text-white/20">(${players.length})</span></div>
+      <div class="space-y-1">
+        ${players.map(p=>`
+          <div class="flex items-center justify-between py-1.5 px-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] border border-white/5">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="text-[11px] w-5 text-white/40">${players.indexOf(p)+1}</span>
+              <span class="truncate">${p.n}</span>
+              <span class="text-[10px] text-white/30">${p.age}y</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-[11px] text-white/40">${p.ppg.toFixed(1)}</span>
+              <span class="font-mono text-[12px] w-12 text-right">${Math.round(p.value).toLocaleString()}</span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('list'+side).innerHTML=html;
+  calc();
 }
 
 const long=(a,pos)=>{const pk={QB:30,RB:24,WR:26,TE:27}[pos]||26;return Math.max(.3,1-Math.abs(a-pk)*.06)};
-const base=p=>Math.round((p.val||p.ppg*10)*long(p.age,p.pos)*({QB:1.2,RB:1.05,WR:1.08,TE:.82}[p.pos]||1));
-const optimal=team=>{const pool=[...team].sort((x,y)=>y.ppg-x.ppg);const used=new Set();let t=0;for(const s of S.slots){let pos=[s];if(s==='FLEX')pos=['RB','WR','TE'];if(s==='SUPER_FLEX')pos=['QB','RB','WR','TE'];if(s==='WRRB_FLEX')pos=['RB','WR'];if(s==='REC_FLEX')pos=['WR','TE'];const i=pool.findIndex(p=>!used.has(p.id)&&pos.includes(p.pos));if(i>=0){t+=pool[i].ppg;used.add(pool[i].id)}}return t};
+const base=p=>Math.round((p.value||p.ppg*10)*long(p.age,p.pos)*({QB:1.2,RB:1.05,WR:1.08,TE:.82}[p.pos]||1));
 
-function update(){
-  const stats=t=>{const v=t.reduce((s,p)=>s+base(p),0);const age=t.length?t.reduce((s,p)=>s+p.age,0)/t.length:0;const opt=optimal(t);const long=t.length?t.reduce((s,p)=>s+long(p.age,p.pos),0)/t.length*100:0;return{v,age,opt,long}};
-  const A=stats(teams.A), B=stats(teams.B);
-  const fmt=(l,v,f=x=>x)=>`<div class="flex justify-between py-1.5 border-b border-white/5 last:border-0"><span class="text-white/60">${l}</span><span class="font-mono">${f(v)}</span></div>`;
-
-  document.getElementById('impactA').innerHTML = [
-    fmt('Value',A.v,x=>x.toLocaleString()),
-    fmt('Opt PPG',A.opt,x=>x.toFixed(1)),
-    fmt('Productivity',A.opt,x=>x.toFixed(1)),
-    fmt('Longevity',A.long,x=>x.toFixed(0)+'%'),
-    fmt('Age',A.age,x=>x.toFixed(1))
-  ].join('');
-
-  document.getElementById('impactB').innerHTML = [
-    fmt('Value',B.v,x=>x.toLocaleString()),
-    fmt('Opt PPG',B.opt,x=>x.toFixed(1)),
-    fmt('Productivity',B.opt,x=>x.toFixed(1)),
-    fmt('Longevity',B.long,x=>x.toFixed(0)+'%'),
-    fmt('Age',B.age,x=>x.toFixed(1))
-  ].join('');
-
-  const diff=A.v-B.v; const fair=Math.max(0,100-Math.abs(diff)/Math.max(1,(A.v+B.v)/2)*100);
-  document.getElementById('fairBar').style.width=fair+'%';
-  document.getElementById('fairLabel').textContent = Math.abs(diff)<200?'Even':diff>0?`A +${Math.round(diff).toLocaleString()}`:`B +${Math.round(-diff).toLocaleString()}`;
+function optimal(team){
+  const pool=[...team].sort((x,y)=>y.ppg-x.ppg); const used=new Set(); let t=0;
+  for(const s of sleeper.slots){
+    let pos=[s]; if(s==='FLEX')pos=['RB','WR','TE']; if(s==='SUPER_FLEX')pos=['QB','RB','WR','TE']; if(s==='WRRB_FLEX')pos=['RB','WR']; if(s==='REC_FLEX')pos=['WR','TE'];
+    const i=pool.findIndex(p=>!used.has(p.id)&&pos.includes(p.pos)); if(i>=0){t+=pool[i].ppg;used.add(pool[i].id)}
+  }
+  return t;
 }
 
-document.getElementById('reset').onclick=init;
-init();
+function calc(){
+  const getStats=team=>{
+    const val=team.reduce((s,p)=>s+base(p),0);
+    const age=team.length?team.reduce((s,p)=>s+p.age,0)/team.length:0;
+    const opt=optimal(team);
+    const long=team.length?team.reduce((s,p)=>s+long(p.age,p.pos),0)/team.length*100:0;
+    return {val,age,opt,prod:opt,long};
+  };
+  const A=getStats(state.A), B=getStats(state.B);
+  document.getElementById('analysis').classList.toggle('hidden',!(A.val+B.val));
+
+  const row=(l,v,f=x=>x)=>`<div class="flex justify-between"><span class="text-white/60">${l}</span><span class="font-mono">${f(v)}</span></div>`;
+  document.getElementById('statsA').innerHTML=[row('Value',A.val,x=>x.toLocaleString()),row('Opt PPG',A.opt,x=>x.toFixed(1)),row('Productivity',A.prod,x=>x.toFixed(1)),row('Longevity',A.long,x=>x.toFixed(0)+'%'),row('Age',A.age,x=>x.toFixed(1))].join('');
+  document.getElementById('statsB').innerHTML=[row('Value',B.val,x=>x.toLocaleString()),row('Opt PPG',B.opt,x=>x.toFixed(1)),row('Productivity',B.prod,x=>x.toFixed(1)),row('Longevity',B.long,x=>x.toFixed(0)+'%'),row('Age',B.age,x=>x.toFixed(1))].join('');
+
+  const diff=A.val-B.val; const fair=Math.max(0,100-Math.abs(diff)/Math.max(1,(A.val+B.val)/2)*100);
+  document.getElementById('verdictPill').textContent=Math.abs(diff)<200?'Even':diff>0?'A +'+Math.round(diff).toLocaleString():'B +'+Math.round(-diff).toLocaleString();
+  document.getElementById('fairText').textContent=Math.round(fair)+'% fair';
+  document.getElementById('fairBar').style.width=Math.round(fair)+'%';
+}
+
+document.getElementById('resetBtn').onclick=load;
+load();
 </script>
 </body>
 </html>
