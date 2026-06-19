@@ -1,39 +1,63 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><title>Pick Debug</title><script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script><style>body{background:#000;color:#0f0;font-family:monospace;padding:20px}table{border-collapse:collapse;margin:20px 0}td,th{border:1px solid #333;padding:4px 8px}th{background:#111}</style></head>
-<body>
-<h2>DEBUG — Picks Only</h2>
-<div id="out"></div>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vault TradeCalc Pro</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>body{font-family:Inter;background:#000;color:#e5e7eb}.display{font-family:Cinzel}.card{background:rgba(12,12,12,.92);border:1px solid rgba(250,204,21,.15);border-radius:16px}.team{padding:8px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,255,.08)}.team:hover{border-color:rgba(250,204,21,.4)}.team.active{background:rgba(250,204,21,.12);border-color:#facc15}.player{padding:5px 7px;border-radius:6px;cursor:pointer;font-size:13px}.player:hover{background:rgba(255,255,255,.04)}.player.sel{background:rgba(250,204,21,.18)}.pick{padding:3px 5px;border-radius:5px;cursor:pointer;font-size:12px}.pick:hover{background:rgba(255,255,255,.04)}.pick.sel{background:rgba(250,204,21,.18)}</style>
+</head>
+<body class="p-4">
+<div class="max-w-[1700px] mx-auto">
+  <h1 class="display text-2xl text-amber-300 mb-3">Vault Trade Calculator</h1>
+  <div id="status" class="text-amber-200/60 text-sm mb-3">Loading league...</div>
+
+  <div class="card p-4 mb-4">
+    <div id="impact" class="grid md:grid-cols-2 gap-3 text-sm"></div>
+    <div id="verdict" class="mt-2 text-center font-medium"></div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-5">
+    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team A</div><div id="gridA" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pa" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="ka" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div></div></div></div>
+    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team B</div><div id="gridB" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="kb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div></div></div></div>
+  </div>
+</div>
+
+<select id="teamA" class="hidden"></select><select id="teamB" class="hidden"></select>
+
 <script>
-const L='1313454100225990656';
-const K='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
+const L=new URLSearchParams(location.search).get('league_id')||'1313454100225990656';
+const V='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
 const P='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
+const K='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
+const clean=v=>parseFloat(String(v||'').replace(/,/g,''))||0, norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+function arch(t){const{valP,ppgP,age,bal}=t;if(valP>=75&&ppgP>=75&&age>=24&&age<=27.5)return'Elite Contender';if(ppgP>=70&&age>=27.5)return'Aging Contender';if(ppgP>=60&&ppgP<75&&age>=26)return'Win-Now Fringe';if(age<25.5&&valP>=45&&ppgP>=40&&ppgP<65)return'Young Riser';if(ppgP<40&&age<26&&valP>=35)return'Pick-Rich Rebuilder';if(bal>=70)return'Balanced Core';if(valP>=70&&ppgP<=45)return'Volatile';if(valP<=25&&ppgP<=25)return'Stripped Rebuilder';return'Stuck Middle';}
+let TEAMS=[],USERS=[], selA={p:new Set(),k:new Set()}, selB={p:new Set(),k:new Set()};
 
-(async()=>{
- const [lg,ro,tr,pk,ppg]=await Promise.all([fetch(`https://api.sleeper.app/v1/league/${L}`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/rosters`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(r=>r.json()),fetch(K).then(r=>r.text()),fetch(P).then(r=>r.text())]);
- const slots=lg.roster_positions.filter(x=>!['BN','IR','TAXI'].includes(x));
- const ppgMap=new Map(); Papa.parse(ppg,{header:true}).data.forEach(r=>r.Player&&ppgMap.set(r.Player.toLowerCase().replace(/[^a-z0-9]/g,''),+r['Avg_PPR_0.5_TEP']||0));
- const pl=await fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json());
- 
- // calc OPT for tier
- const teams=ro.map(r=>{const ps=(r.players||[]).map(id=>{const p=pl[id]||{};const nm=`${p.first_name||''} ${p.last_name||''}`.trim().toLowerCase().replace(/[^a-z0-9]/g,'');return{ppg:ppgMap.get(nm)||0,pos:p.position}});let u=new Set(),o=0;for(const s of slots){let ps=[s];if(s==='FLEX')ps=['RB','WR','TE'];if(s==='SUPER_FLEX')ps=['QB','RB','WR','TE'];const f=ps.filter(x=>!u.has(x.id)&&ps.includes(x.pos)).sort((a,b)=>b.ppg-a.ppg)[0];if(f){o+=f.ppg;u.add(f.id)}}return{rid:r.roster_id,opt:o}});
- const sorted=[...teams].sort((a,b)=>b.opt-a.opt);
- const tier=new Map(sorted.map((x,i,a)=>[x.rid,i<Math.ceil(a.length*0.3)?'late':i<Math.ceil(a.length*0.7)?'mid':'early']));
-
- const pm=new Map(); Papa.parse(pk,{header:true}).data.forEach(r=>{pm.set(`${r.season}-${r.round}-${(r.slot||'').toLowerCase()}`,+r.sf_value||0)});
-
- let html='<h3>1. Tier Assignment</h3><table><tr><th>Team</th><th>OPT</th><th>Tier</th></tr>';
- sorted.forEach(t=>{html+=`<tr><td>${t.rid}</td><td>${t.opt.toFixed(1)}</td><td>${tier.get(t.rid)}</td></tr>`});html+='</table>';
-
- html+='<h3>2. Pick Values from Sheet (2027-29)</h3><table><tr><th>Year-Rd-Slot</th><th>Value</th></tr>';
- [2027,2028,2029].forEach(y=>[1,2,3,4].forEach(rd=>['early','mid','late'].forEach(s=>{html+=`<tr><td>${y}-${rd}-${s}</td><td>${pm.get(`${y}-${rd}-${s}`)||0}</td></tr>`})));html+='</table>';
-
- html+='<h3>3. Calculated Totals</h3><table><tr><th>RID</th><th>Base (own)</th><th>After Trades</th><th>Vault Should Be</th></tr>';
- const us=await fetch(`https://api.sleeper.app/v1/league/${L}/users`).then(r=>r.json());
- ro.forEach(r=>{let base=0;[2027,2028,2029].forEach(y=>[1,2,3,4].forEach(rd=>{base+=pm.get(`${y}-${rd}-${tier.get(r.roster_id)}`)||0}));let after=base;tr.filter(t=>+t.season>=2027&&+t.season<=2029).forEach(t=>{if(+t.roster_id===r.roster_id)after-=pm.get(`${t.season}-${t.round}-${tier.get(r.roster_id)}`)||0;if(+t.owner_id===r.roster_id)after+=pm.get(`${t.season}-${t.round}-${tier.get(+t.roster_id)}`)||0});const name=us.find(u=>u.user_id===r.owner_id)?.metadata?.team_name||r.roster_id;const vault={'1':4611,'2':5014,'3':5246,'4':8351,'5':8351,'6':15490,'7':8351,'8':14971,'9':8351,'10':14971}[r.roster_id]||0;html+=`<tr><td>${name} (${r.roster_id})</td><td>${base}</td><td>${after}</td><td>${vault}</td></tr>`});
- html+='</table>';
- document.getElementById('out').innerHTML=html;
-})();
+async function load(){
+ try{
+  const [lg,us,ro,pl,v,ppg,tr,pk]=await Promise.all([fetch(`https://api.sleeper.app/v1/league/${L}`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/users`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/rosters`).then(r=>r.json()),fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),fetch(V).then(r=>r.text()),fetch(P).then(r=>r.text()),fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(r=>r.json()),fetch(K).then(r=>r.text())]);
+  USERS=us; const isSF=lg.roster_positions.includes('SUPER_FLEX'); const vm=new Map(); Papa.parse(v,{header:true}).data.forEach(r=>{if(r.sleeper_id)vm.set(r.sleeper_id,clean(isSF?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05))}); const pm=new Map(); Papa.parse(ppg,{header:true}).data.forEach(r=>{if(r.Player)pm.set(norm(r.Player),+r['Avg_PPR_0.5_TEP']||0)}); const km=new Map(); Papa.parse(pk,{header:true}).data.forEach(r=>{if(r.season)km.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`,isSF?clean(r.sf_value):clean(r.qb_value))});
+  const slots=lg.roster_positions.filter(s=>!['BN','IR','TAXI'].includes(s)); const opt=pls=>{const pool=[...pls].sort((a,b)=>b.ppg-a.ppg);const u=new Set();let t=0;for(const s of slots){let a=[s];if(s==='FLEX')a=['RB','WR','TE'];if(s==='SUPER_FLEX')a=['QB','RB','WR','TE'];const i=pool.findIndex(p=>!u.has(p.id)&&a.includes(p.pos));if(i>=0){t+=pool[i].ppg;u.add(pool[i].id)}}return t};
+  const Y=[2027,2028,2029],R=[1,2,3,4]; const own=new Map(ro.map(r=>[r.roster_id,[]])); const po=new Map(); Y.forEach(y=>R.forEach(r=>ro.forEach(rr=>po.set(`${y}-${r}-${rr.roster_id}`,rr.roster_id)))); tr.filter(p=>Y.includes(+p.season)).forEach(p=>po.set(`${p.season}-${p.round}-${p.roster_id}`,+p.owner_id)); po.forEach((o,k)=>{const[s,r,oi]=k.split('-');own.get(o).push({season:+s,round:+r,orig:+oi})});
+  TEAMS=ro.map(r=>{const pls=(r.players||[]).map(id=>{const p=pl[id]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id,name:n,pos:p.position||'',age:p.age||0,value:vm.get(String(id))||0,ppg:pm.get(norm(n))||0}});const tot=pls.reduce((s,p)=>s+p.value,0);const v=pls.filter(p=>p.value>0);const sum=v.reduce((s,p)=>s+p.value,0);const age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;const o=opt(pls);const qb=pls.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0);const rb=pls.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0);const wr=pls.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0);const te=pls.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0);const sh=[qb,rb,wr,te].map(v=>v/(qb+rb+wr+te||1));const m=sh.reduce((a,b)=>a+b)/4;const sd=Math.sqrt(sh.reduce((s,x)=>s+(x-m)**2,0)/4);const bal=100-sd*200;return{rid:r.roster_id,uid:r.owner_id,pls,tot,age,opt:o,bal,picks:own.get(r.roster_id)||[]}});
+  const avgO=TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length; TEAMS.forEach(t=>t.prod=avgO?t.opt/avgO*100:100);
+  const srt=[...TEAMS].sort((a,b)=>b.opt-a.opt); const n=srt.length; const late=n===10?3:n===12?4:Math.ceil(n*.3); const mid=4; const tier=new Map(srt.map((t,i)=>[t.rid,i<late?'late':i<late+mid?'mid':'early']));
+  TEAMS.forEach(t=>{let sum=0;t.picks.forEach(p=>{p.tier=tier.get(p.orig)||'mid';p.val=km.get(`${p.season}-${p.round}-${p.tier}`)||0;sum+=p.val});t.pv=sum});
+  const maxV=Math.max(...TEAMS.map(t=>t.tot)), maxP=Math.max(...TEAMS.map(t=>t.pv)); TEAMS.forEach(t=>{const vs=maxV?t.tot/maxV*100:50;const as=Math.max(0,Math.min(100,100-((t.age-23)*8)));const ps=maxP?t.pv/maxP*100:50;t.lr=vs*.6+as*.2+ps*.2});
+  const avgL=TEAMS.reduce((s,t)=>s+t.lr,0)/TEAMS.length; TEAMS.forEach(t=>t.long=avgL?t.lr/avgL*100:100);
+  const vs=TEAMS.map(t=>t.tot).sort((a,b)=>a-b), os=TEAMS.map(t=>t.opt).sort((a,b)=>a-b); TEAMS.forEach(t=>{t.valP=vs.indexOf(t.tot)/(vs.length-1)*100; t.ppgP=os.indexOf(t.opt)/(os.length-1)*100; t.arch=arch(t); t.name=(USERS.find(u=>u.user_id===t.uid)?.metadata?.team_name)||USERS.find(u=>u.user_id===t.uid)?.display_name||`Team ${t.rid}`});
+  document.getElementById('teamA').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join(''); document.getElementById('teamB').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join(''); teamA.value=TEAMS[0].rid; teamB.value=TEAMS[1].rid;
+  document.getElementById('status').textContent=`Loaded ${TEAMS.length} teams`; renderGrids(); render();
+ }catch(e){document.getElementById('status').textContent='Error loading: '+e.message}
+}
+function renderGrids(){document.getElementById('gridA').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamA.value?'active':''}" onclick="setTeam('A',${t.rid})"><div class="truncate">${t.name}</div><div class="text-[10px] opacity-60">${t.arch}</div></div>`).join(''); document.getElementById('gridB').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamB.value?'active':''}" onclick="setTeam('B',${t.rid})"><div class="truncate">${t.name}</div><div class="text-[10px] opacity-60">${t.arch}</div></div>`).join('');}
+function setTeam(side,rid){if(side==='A'){teamA.value=rid;selA={p:new Set(),k:new Set()}}else{teamB.value=rid;selB={p:new Set(),k:new Set()}} renderGrids(); render();}
+function render(){const A=TEAMS.find(t=>t.rid==teamA.value), B=TEAMS.find(t=>t.rid==teamB.value); if(!A||!B)return; document.getElementById('pa').innerHTML=A.pls.sort((a,b)=>b.value-a.value).map(p=>`<div class="player ${selA.p.has(p.id)?'sel':''}" onclick="tog('A','p','${p.id}')">${p.name} <span class="opacity-50 text-[11px]">${p.pos}</span> <span class="float-right opacity-70">${Math.round(p.value).toLocaleString()}</span></div>`).join(''); document.getElementById('pb').innerHTML=B.pls.sort((a,b)=>b.value-a.value).map(p=>`<div class="player ${selB.p.has(p.id)?'sel':''}" onclick="tog('B','p','${p.id}')">${p.name} <span class="opacity-50 text-[11px]">${p.pos}</span> <span class="float-right opacity-70">${Math.round(p.value).toLocaleString()}</span></div>`).join(''); document.getElementById('ka').innerHTML=A.picks.sort((a,b)=>a.season-b.season||a.round-b.round).map((p,i)=>`<div class="pick ${selA.k.has(i)?'sel':''}" onclick="tog('A','k',${i})">${p.season} R${p.round} (${p.tier}) ${Math.round(p.val).toLocaleString()}</div>`).join(''); document.getElementById('kb').innerHTML=B.picks.sort((a,b)=>a.season-b.season||a.round-b.round).map((p,i)=>`<div class="pick ${selB.k.has(i)?'sel':''}" onclick="tog('B','k',${i})">${p.season} R${p.round} (${p.tier}) ${Math.round(p.val).toLocaleString()}</div>`).join(''); update(A,B);}
+function tog(side,type,id){const s=side==='A'?selA:selB; const set=type==='p'?s.p:s.k; set.has(id)?set.delete(id):set.add(id); render();}
+function update(A,B){const a=JSON.parse(JSON.stringify(A)), b=JSON.parse(JSON.stringify(B)); selA.p.forEach(id=>{const i=a.pls.findIndex(p=>p.id===id);if(i>=0){b.pls.push(a.pls[i]);a.pls.splice(i,1)}}); selB.p.forEach(id=>{const i=b.pls.findIndex(p=>p.id===id);if(i>=0){a.pls.push(b.pls[i]);b.pls.splice(i,1)}}); [...selA.k].sort((a,b)=>b-a).forEach(i=>{const p=a.picks[i];if(p){b.picks.push(p);a.picks.splice(i,1)}}); [...selB.k].sort((a,b)=>b-a).forEach(i=>{const p=b.picks[i];if(p){a.picks.push(p);b.picks.splice(i,1)}}); [a,b].forEach(t=>{t.tot=t.pls.reduce((s,p)=>s+p.value,0);const v=t.pls.filter(p=>p.value>0);const sum=v.reduce((s,p)=>s+p.value,0);t.age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;t.pv=t.picks.reduce((s,p)=>s+p.val,0);const vs=Math.max(...TEAMS.map(x=>x.tot),a.tot,b.tot)?t.tot/Math.max(...TEAMS.map(x=>x.tot),a.tot,b.tot)*100:50;const as=Math.max(0,Math.min(100,100-((t.age-23)*8)));const ps=Math.max(...TEAMS.map(x=>x.pv),a.pv,b.pv)?t.pv/Math.max(...TEAMS.map(x=>x.pv),a.pv,b.pv)*100:50;t.lr=vs*.6+as*.2+ps*.2}); const avgL=TEAMS.reduce((s,t)=>s+t.lr,0)/TEAMS.length; [a,b].forEach(t=>t.long=avgL?t.lr/avgL*100:100); document.getElementById('impact').innerHTML=`<div class="bg-black/40 p-2 rounded"><b>${A.name}</b><div class="text-xs mt-1">Long ${Math.round(A.long)} → ${Math.round(a.long)}<br>Prod ${Math.round(A.prod)} → ${Math.round(A.prod)}<br>${A.arch} → ${arch({...a,valP:A.valP,ppgP:A.ppgP,bal:A.bal})}</div></div><div class="bg-black/40 p-2 rounded"><b>${B.name}</b><div class="text-xs mt-1">Long ${Math.round(B.long)} → ${Math.round(b.long)}<br>Prod ${Math.round(B.prod)} → ${Math.round(B.prod)}<br>${B.arch} → ${arch({...b,valP:B.valP,ppgP:B.ppgP,bal:B.bal})}</div></div>`; const d=Math.abs(a.long-A.long)+Math.abs(b.long-B.long); document.getElementById('verdict').textContent=d<5?'⚖️ Fair':d<15?'↔️ Slight edge':'🔥 Big swing';}
+load();
 </script>
 </body>
 </html>
