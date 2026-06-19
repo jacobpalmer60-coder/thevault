@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TradeCalc Pro — Full Names</title>
+<title>TradeCalc Pro — Age Display</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -60,7 +60,8 @@ function getOptimal(team){const pool=[...team].sort((a,b)=>b.ppg-a.ppg);const us
 
 function render(s){
   const team=rosters[s];const lineup=getOptimal(team);const ids=new Set(lineup.filter(l=>l.player).map(l=>l.player.id));const bench=team.filter(p=>!ids.has(p.id)).sort((a,b)=>b.val-a.val);
-  const row=(p,slot='')=>{const sel=trade[s].some(x=>x.id===p.id);return`<div class="flex items-center justify-between px-2 py-1.5 mb-1 rounded-lg border ${sel?'border-violet-500 bg-violet-500/10':'border-white/10 hover:bg-white/5'} cursor-pointer text-[12px]" onclick="toggle('${s}','${p.id}')"><div class="flex items-center gap-2 truncate">${slot?`<span class="text-[10px] w-12 text-emerald-400/60">${slot}</span>`:''}<span class="truncate">${p.pos} ${p.n}</span></div><span class="mono text-[10px]">${Math.round(p.val/1000)}k</span></div>`};
+  // AGE ADDED HERE
+  const row=(p,slot='')=>{const sel=trade[s].some(x=>x.id===p.id);return`<div class="flex items-center justify-between px-2 py-1.5 mb-1 rounded-lg border ${sel?'border-violet-500 bg-violet-500/10':'border-white/10 hover:bg-white/5'} cursor-pointer text-[12px]" onclick="toggle('${s}','${p.id}')"><div class="flex items-center gap-2 truncate">${slot?`<span class="text-[10px] w-12 text-emerald-400/60">${slot}</span>`:''}<span class="truncate">${p.pos} ${p.n} <span class="text-[10px] text-amber-300/70 ml-1">${p.age}y</span></span></div><span class="mono text-[10px]">${Math.round(p.val/1000)}k</span></div>`};
   document.getElementById('list'+s).innerHTML=`<div class="mb-2"><div class="text-[9px] uppercase text-emerald-400/70 mb-1 px-1">Starters</div>${lineup.map(l=>l.player?row(l.player,l.slot):'').join('')}</div><div><div class="text-[9px] uppercase text-white/30 mb-1 px-1">Bench</div>${bench.map(p=>row(p)).join('')}</div>`;
 }
 
@@ -69,7 +70,7 @@ function toggle(s,id){const p=rosters[s].find(x=>x.id===id);const i=trade[s].fin
 function getStats(team){const val=team.reduce((s,p)=>s+p.val,0);const optRoster=team.reduce((s,p)=>s+p.ppg,0);const lineup=getOptimal(team);const opt=lineup.reduce((s,l)=>s+(l.player?.ppg||0),0);const production=opt*17;const long=team.length?team.reduce((s,p)=>{const pk={QB:30,RB:24,WR:26,TE:27}[p.pos]||26;return s+Math.max(30,100-Math.abs(p.age-pk)*5)},0)/team.length:0;const age=team.length?team.reduce((s,p)=>s+p.age,0)/team.length:0;const starters=lineup.filter(l=>l.player);const ageStarter=starters.length?starters.reduce((s,l)=>s+l.player.age,0)/starters.length:0;return{val,optRoster,opt,production,long,age,ageStarter,lineup};}
 
 function update(){
-  ['A','B'].forEach(s=>{document.getElementById('count'+s).textContent=trade[s].length;document.getElementById('trade'+s).innerHTML=trade[s].map(p=>`<span class="px-1.5 py-0.5 bg-white/10 rounded text-[11px] cursor-pointer" onclick="toggle('${s}','${p.id}')">${p.n} ✕</span>`).join('');});
+  ['A','B'].forEach(s=>{document.getElementById('count'+s).textContent=trade[s].length;document.getElementById('trade'+s).innerHTML=trade[s].map(p=>`<span class="px-1.5 py-0.5 bg-white/10 rounded text-[11px] cursor-pointer" onclick="toggle('${s}','${p.id}')">${p.n} (${p.age}) ✕</span>`).join('');});
   const teamA=[...rosters.A.filter(p=>!trade.A.some(t=>t.id===p.id)),...trade.B];
   const teamB=[...rosters.B.filter(p=>!trade.B.some(t=>t.id===p.id)),...trade.A];
   const A=getStats(teamA),B=getStats(teamB),bA=getStats(rosters.A),bB=getStats(rosters.B);
@@ -77,8 +78,7 @@ function update(){
   const renderStats=(el,after,before)=>{
     const metrics=[['Value',after.val,before.val,0],['Roster',after.optRoster,before.optRoster,1],['Start',after.opt,before.opt,1],['Prod',after.production,before.production,0],['Long',after.long,before.long,0],['Age',after.age,before.age,1],['AgeS',after.ageStarter,before.ageStarter,1]];
     const metricsHtml=`<div class="grid grid-cols-7 gap-1 mb-2">${metrics.map(([l,a,b,d])=>{const delta=a-b;return`<div class="bg-black/40 rounded p-1 text-center"><div class="text-[8px] text-white/40">${l}</div><div class="mono text-[11px]">${(l==='Value'?Math.round(a/1000)+'k':a.toFixed(d))}</div><div class="text-[9px] ${delta>0?'text-emerald-400':delta<0?'text-red-400':'text-white/20'}">${delta?(delta>0?'+':'')+(l==='Value'?Math.round(delta/1000)+'k':delta.toFixed(d)):''}</div></div>`}).join('')}</div>`;
-    // FULL NAMES NOW
-    const lineupHtml=after.lineup.map((l,i)=>{const bp=before.lineup[i]?.player;const changed=l.player?.id!==bp?.id;return`<div class="flex items-center gap-1 py-0.5 ${changed?'text-amber-300':''}"><span class="text-[8px] w-8 text-white/30">${l.slot.replace('SUPER_FLEX','SF')}</span><span class="text-[11px] truncate flex-1" title="${l.player?.n||''}">${l.player?l.player.n:''}</span><span class="mono text-[9px] w-8 text-right">${l.player?l.player.ppg.toFixed(1):''}</span></div>`}).join('');
+    const lineupHtml=after.lineup.map((l,i)=>{const bp=before.lineup[i]?.player;const changed=l.player?.id!==bp?.id;return`<div class="flex items-center gap-1 py-0.5 ${changed?'text-amber-300':''}"><span class="text-[8px] w-8 text-white/30">${l.slot.replace('SUPER_FLEX','SF')}</span><span class="text-[11px] truncate flex-1" title="${l.player?.n||''}">${l.player?`${l.player.n} <span class="text-[9px] text-white/40">${l.player.age}</span>`:''}</span><span class="mono text-[9px] w-8 text-right">${l.player?l.player.ppg.toFixed(1):''}</span></div>`}).join('');
     el.innerHTML=`${metricsHtml}<div class="grid grid-cols-2 gap-x-3">${lineupHtml}</div>`;
   };
   renderStats(statsA,A,bA); renderStats(statsB,B,bB);
