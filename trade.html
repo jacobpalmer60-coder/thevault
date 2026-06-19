@@ -2,145 +2,69 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TradeCalc — Clean</title>
+<title>TradeCalc — Vault Accurate</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<style>
-:root{color-scheme:dark}
-body{font-family:Outfit;background:#05070d;color:#e5e7eb}
-.glass{background:rgba(15,20,30,.75);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.08);border-radius:20px}
-.mono{font-family:"JetBrains Mono",monospace}
-.metric{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px;text-align:center;transition:.2s}
-.metric:hover{border-color:rgba(255,255,255,.15)}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>body{font-family:Outfit;background:#030712;color:#e5e7eb}.glass{background:rgba(17,24,39,.9);border:1px solid rgba(255,255,255,.08);border-radius:16px}.mono{font-family:"JetBrains Mono"}</style>
 </head>
-<body class="p-6">
-<div class="max-w- mx-auto space-y-6">
+<body class="p-4">
+<div class="max-w-[1600px] mx-auto">
+  <h1 class="text-lg mb-3">TradeCalc <span id="lg" class="text-white/40"></span></h1>
 
-  <!-- TOP CARDS -->
-  <div class="grid lg:grid-cols-2 gap-6">
-    <div class="glass p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-violet-300">Team A</h2>
-        <span id="countA" class="text-xs px-2.5 py-1 rounded-full bg-violet-500/20 text-violet-200">0 players</span>
-      </div>
-      <div id="tradeA" class="flex flex-wrap gap-2 mb-4 min-h-"></div>
-      <div id="statsA" class="grid grid-cols-3 gap-3"></div>
-    </div>
-
-    <div class="glass p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-lg font-semibold text-cyan-300">Team B</h2>
-        <span id="countB" class="text-xs px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-200">0 players</span>
-      </div>
-      <div id="tradeB" class="flex flex-wrap gap-2 mb-4 min-h-"></div>
-      <div id="statsB" class="grid grid-cols-3 gap-3"></div>
-    </div>
+  <div class="glass p-3 mb-4">
+    <div class="text-[11px] uppercase text-white/40 mb-2">League Snapshot — Value | OPT | Age | Prod | Long</div>
+    <div class="overflow-x-auto"><table class="w-full text-[12px]"><thead class="text-white/40"><tr><th class="text-left font-normal py-1">Team</th><th class="text-right font-normal">Value</th><th class="text-right font-normal">OPT</th><th class="text-right font-normal">Age</th><th class="text-right font-normal">Prod</th><th class="text-right font-normal">Long</th></tr></thead><tbody id="snap" class="mono divide-y divide-white/5"></tbody></table></div>
   </div>
 
-  <!-- ROSTERS -->
-  <div class="grid lg:grid-cols-2 gap-6">
-    <div class="glass p-4">
-      <select id="teamA" class="w-full mb-3 bg-black/50 border border-white/10 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-violet-500"></select>
-      <div id="listA" class="space-y-1 max-h- overflow-auto pr-2"></div>
-    </div>
-    <div class="glass p-4">
-      <select id="teamB" class="w-full mb-3 bg-black/50 border border-white/10 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500"></select>
-      <div id="listB" class="space-y-1 max-h- overflow-auto pr-2"></div>
-    </div>
+  <div class="grid lg:grid-cols-2 gap-4">
+    <div class="glass p-4"><select id="a" class="w-full mb-2 bg-black/40 rounded px-2 py-1.5 text-sm"></select><div id="la" class="max-h-[280px] overflow-auto text-[13px]"></div><div class="mt-2 flex-wrap gap-1" id="pa"></div></div>
+    <div class="glass p-4"><select id="b" class="w-full mb-2 bg-black/40 rounded px-2 py-1.5 text-sm"></select><div id="lb" class="max-h-[280px] overflow-auto text-[13px]"></div><div class="mt-2 flex flex-wrap gap-1" id="pb"></div></div>
+  </div>
+  <div class="grid lg:grid-cols-2 gap-4 mt-4">
+    <div class="glass p-3"><div id="ta" class="flex flex-wrap gap-1 mb-2 min-h-[22px]"></div><div id="sa" class="grid grid-cols-5 gap-1.5 text-center"></div></div>
+    <div class="glass p-3"><div id="tb" class="flex flex-wrap gap-1 mb-2 min-h-[22px]"></div><div id="sb" class="grid grid-cols-5 gap-1.5 text-center"></div></div>
   </div>
 </div>
 
 <script>
-const LEAGUE='1313454100225990656';
-const VAL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
-const PPG='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
-const PICKS='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
-let S={}, rosters={A:[],B:[]}, trade={A:[],B:[]}, picksMap=new Map();
+const L=new URLSearchParams(location.search).get('league')||'1313454100225990656';
+const V='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
+const P='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
+const K='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
 
-async function init(){
-  const [lg,us,ro,pl,v,p,tr,pk]=await Promise.all([
-    fetch(`https://api.sleeper.app/v1/league/${LEAGUE}`).then(r=>r.json()),
-    fetch(`https://api.sleeper.app/v1/league/${LEAGUE}/users`).then(r=>r.json()),
-    fetch(`https://api.sleeper.app/v1/league/${LEAGUE}/rosters`).then(r=>r.json()),
-    fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),
-    fetch(VAL).then(r=>r.text()), fetch(PPG).then(r=>r.text()),
-    fetch(`https://api.sleeper.app/v1/league/${LEAGUE}/traded_picks`).then(r=>r.json()),
-    fetch(PICKS).then(r=>r.text())
-  ]);
-  S.slots=lg.roster_positions.filter(x=>!['BN','IR','TAXI'].includes(x));
-  S.vals=new Map(); S.ppg=new Map(); S.players=pl; S.rosters=ro;
-  Papa.parse(v,{header:true}).data.forEach(r=>r.sleeper_id&&S.vals.set(r.sleeper_id,parseFloat(r.val_sf_ppr_tep05)||0));
-  Papa.parse(p,{header:true}).data.forEach(r=>r.Player&&S.ppg.set(r.Player.toLowerCase().replace(/[^a-z0-9]/g,''),parseFloat(r['Avg_PPR_0.5_TEP'])||0));
+let S={}, T={A:[],B:[]};
 
-  // league baselines (same as Vault)
-  const pickVals=Papa.parse(pk,{header:true}).data;
-  const pickMap=new Map(); pickVals.forEach(r=>pickMap.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`, +r.sf_value||0));
-  const YEARS=[2027,2028,2029], ROUNDS=[1,2,3,4];
-  const own=new Map(ro.map(r=>[r.roster_id,[]]));
-  const pickOwner=new Map(); YEARS.forEach(y=>ROUNDS.forEach(r=>ro.forEach(ro=>pickOwner.set(`${y}-${r}-${ro.roster_id}`,ro.roster_id))));
-  tr.filter(p=>YEARS.includes(+p.season)).forEach(p=>pickOwner.set(`${p.season}-${p.round}-${p.roster_id}`,+p.owner_id));
-  pickOwner.forEach((o,k)=>{const[s,r]=k.split('-'); own.get(o).push({season:+s,round:+r});});
-  const built=ro.map(r=>{const plist=(r.players||[]).map(pid=>{const pp=pl[pid]||{};const n=`${pp.first_name||''} ${pp.last_name||''}`.trim();return{id:pid,val:S.vals.get(pid)||0,ppg:S.ppg.get(n.toLowerCase().replace(/[^a-z0-9]/g,''))||0,age:pp.age||0};});const total=plist.reduce((s,p)=>s+p.val,0);const opt=getOptimal(plist);const vAge=plist.filter(p=>p.val>0);const sumV=vAge.reduce((s,p)=>s+p.val,0);const age=sumV?vAge.reduce((s,p)=>s+p.val*p.age,0)/sumV:0;return{rosterId:r.roster_id,total,opt,age,picks:own.get(r.roster_id)||[]};});
-  const avgOpt=built.reduce((s,t)=>s+t.opt,0)/built.length;
-  const sorted=[...built].sort((a,b)=>b.opt-a.opt);const late=sorted.length===10?3:4;const tier=new Map(sorted.map((t,i)=>[t.rosterId,i<late?'late':i<late+4?'mid':'early']));
-  built.forEach(t=>{let sum=0;t.picks.forEach(p=>sum+=pickMap.get(`${p.season}-${p.round}-${tier.get(t.rosterId)}`)||0);t.picksValue=sum;picksMap.set(t.rosterId,sum);});
-  const maxVal=Math.max(...built.map(t=>t.total));const maxPicks=Math.max(...built.map(t=>t.picksValue));
-  built.forEach(t=>{const vs=maxVal?t.total/maxVal*100:50;const as=Math.max(0,Math.min(100,100-((t.age-23)*8)));const ps=maxPicks?t.picksValue/maxPicks*100:50;t.longRaw=vs*0.6+as*0.2+ps*0.2;});
-  S.league={avgOpt,maxVal,maxPicks,avgLong:built.reduce((s,t)=>s+t.longRaw,0)/built.length};
+async function go(){
+ const [lg,us,ro,pl,v,p,tr,pk]=await Promise.all([fetch(`https://api.sleeper.app/v1/league/${L}`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/users`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/rosters`).then(r=>r.json()),fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),fetch(V).then(r=>r.text()),fetch(P).then(r=>r.text()),fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(r=>r.json()),fetch(K).then(r=>r.text())]);
+ lg.textContent=lg.name; S.slots=lg.roster_positions.filter(x=>!['BN','IR','TAXI'].includes(x)); // <-- EXACT Sleeper settings
+ S.val=new Map(); Papa.parse(v,{header:true}).data.forEach(r=>r.sleeper_id&&S.val.set(r.sleeper_id,+r.val_sf_ppr_tep05||0));
+ S.ppg=new Map(); Papa.parse(p,{header:true}).data.forEach(r=>r.Player&&S.ppg.set(r.Player.toLowerCase().replace(/[^a-z0-9]/g,''),+r['Avg_PPR_0.5_TEP']||0));
 
-  const a=teamA,b=teamB;
-  us.forEach(u=>{const r=ro.find(x=>x.owner_id===u.user_id);if(!r)return;const o=document.createElement('option');o.value=r.roster_id;o.textContent=u.metadata?.team_name||u.display_name;a.appendChild(o.cloneNode(true));b.appendChild(o);});
+ // OPT per team using exact slots
+ const base=ro.map(r=>{const ps=(r.players||[]).map(id=>{const pp=pl[id]||{};const nm=`${pp.first_name||''} ${pp.last_name||''}`.trim().toLowerCase().replace(/[^a-z0-9]/g,'');return{ppg:S.ppg.get(nm)||0,pos:pp.position,id}});let used=new Set(),opt=0;for(const s of S.slots){let pos=[s];if(s==='FLEX')pos=['RB','WR','TE'];if(s==='SUPER_FLEX')pos=['QB','RB','WR','TE'];if(s==='WRRB_FLEX')pos=['RB','WR'];if(s==='REC_FLEX')pos=['WR','TE'];const f=ps.filter(x=>!used.has(x.id)&&pos.includes(x.pos)).sort((a,b)=>b.ppg-a.ppg)[0];if(f){opt+=f.ppg;used.add(f.id)}}return{rid:r.roster_id,opt}});
 
-  // AUTO-PICK DIFFERENT TEAMS
-  a.value = a.options[0].value;
-  b.value = [...b.options].find(o=>o.value!==a.value)?.value || b.options[1].value;
+ // picks
+ const pm=new Map(); Papa.parse(pk,{header:true}).data.forEach(r=>pm.set(`${r.season}-${r.round}-${r.slot}`,+r.sf_value||0));
+ const tier=new Map([...base].sort((a,b)=>b.opt-a.opt).map((x,i,a)=>[x.rid,i<a.length*0.3?'late':i<a.length*0.7?'mid':'early']));
+ const po=new Map(); [2027,2028,2029].forEach(y=>[1,2,3,4].forEach(rd=>ro.forEach(rr=>po.set(`${y}-${rd}-${rr.roster_id}`,rr.roster_id)))); tr.forEach(t=>po.set(`${t.season}-${t.round}-${t.roster_id}`,+t.owner_id));
+ const picks=new Map(ro.map(r=>[r.roster_id,0])); po.forEach((ow,k)=>{const[y,rd,og]=k.split('-');picks.set(ow,picks.get(ow)+(pm.get(`${y}-${rd}-${tier.get(+og)}`)||0))});
 
-  a.onchange = () => { if(a.value===b.value){b.value=[...b.options].find(o=>o.value!==a.value).value} loadBoth(); };
-  b.onchange = () => { if(b.value===a.value){a.value=[...a.options].find(o=>o.value!==b.value).value} loadBoth(); };
+ // build snapshot
+ const teams=ro.map(r=>{const pls=(r.players||[]).map(id=>({v:S.val.get(id)||0,a:pl[id]?.age||0}));const tv=pls.reduce((s,x)=>s+x.v,0);const vw=pls.filter(x=>x.v>0);const ag=vw.reduce((s,x)=>s+x.v*x.a,0)/(vw.reduce((s,x)=>s+x.v,0)||1);const op=base.find(b=>b.rid===r.roster_id).opt;const pk=picks.get(r.roster_id);return{rid:r.roster_id,tv,ag,op,pk}});
+ const maxV=Math.max(...teams.map(t=>t.tv)), maxP=Math.max(...teams.map(t=>t.pk)), avgO=teams.reduce((s,t)=>s+t.op,0)/teams.length;
+ teams.forEach(t=>{t.vs=t.tv/maxV*100; t.as=Math.max(0,100-((t.ag-23)*8)); t.ps=t.pk/maxP*100; t.lr=t.vs*0.6+t.as*0.2+t.ps*0.2});
+ const avgL=teams.reduce((s,t)=>s+t.lr,0)/teams.length; teams.forEach(t=>{t.prod=t.op/avgO*100; t.long=t.lr/avgL*100});
+ S.teams=teams; S.maxV=maxV; S.maxP=maxP; S.avgO=avgO; S.avgL=avgL;
 
-  function loadBoth(){ load('A',+a.value); load('B',+b.value); }
-  loadBoth();
+ // render snapshot
+ snap.innerHTML=teams.sort((a,b)=>b.tv-a.tv).map(t=>{const u=us.find(x=>x.user_id===ro.find(r=>r.roster_id===t.rid).owner_id);const n=u?.metadata?.team_name||u?.display_name;return`<tr><td class="py-1">${n}</td><td class="text-right">${Math.round(t.tv)}</td><td class="text-right">${t.op.toFixed(1)}</td><td class="text-right">${t.ag.toFixed(1)}</td><td class="text-right">${Math.round(t.prod)}</td><td class="text-right">${Math.round(t.long)}</td></tr>`}).join('');
+
+ // populate selects
+ us.forEach(u=>{const r=ro.find(x=>x.owner_id===u.user_id);if(!r)return;const o=document.createElement('option');o.value=r.roster_id;o.textContent=u.metadata?.team_name||u.display_name;a.appendChild(o.cloneNode(true));b.appendChild(o)}); a.value=a.options[0].value; b.value=a.options[1].value; load();
 }
-
-function getOptimal(team){const pool=[...team].sort((a,b)=>b.ppg-a.ppg);const used=new Set();let t=0;for(const s of S.slots){let p=[s];if(s==='FLEX')p=['RB','WR','TE'];if(s==='SUPER_FLEX')p=['QB','RB','WR','TE'];const i=pool.findIndex(x=>!used.has(x.id)&&p.includes(x.pos));if(i>=0){t+=pool[i].ppg;used.add(pool[i].id)}}return t}
-function getPlayers(team){const pool=[...team].sort((a,b)=>b.ppg-a.ppg);const used=new Set();const out=[];for(const s of S.slots){let p=[s];if(s==='FLEX')p=['RB','WR','TE'];if(s==='SUPER_FLEX')p=['QB','RB','WR','TE'];const i=pool.findIndex(x=>!used.has(x.id)&&p.includes(x.pos));if(i>=0){out.push(pool[i]);used.add(pool[i].id)}}return out}
-
-function load(s,id){const r=S.rosters.find(x=>x.roster_id===id);rosters[s]=r.players.map(pid=>{const p=S.players[pid]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id:pid,n,pos:p.position,age:p.age||0,val:S.vals.get(pid)||0,ppg:S.ppg.get(n.toLowerCase().replace(/[^a-z0-9]/g,''))||0}}).filter(x=>x.n);rosters[s].rosterId=id;trade[s]=[];render(s);update()}
-
-function render(s){document.getElementById('list'+s).innerHTML=rosters[s].map(p=>`<div class="flex justify-between items-center px-3 py-2.5 rounded-lg hover:bg-white/5 cursor-pointer border border-transparent hover:border-white/10" onclick="toggle('${s}','${p.id}')"><div><span class="text- text-white/60 w-8 inline-block">${p.pos}</span><span class="font-medium">${p.n}</span> <span class="text-xs text-amber-300/60 ml-1">${p.age}</span></div><div class="mono text-xs text-white/50">${Math.round(p.val/1000)}k</div></div>`).join('')}
-
-function toggle(s,id){const p=rosters[s].find(x=>x.id===id);const i=trade[s].findIndex(x=>x.id===id);i>=0?trade[s].splice(i,1):trade[s].push(p);update()}
-
-function getStats(team,rid){
-  const total=team.reduce((s,p)=>s+p.val,0);
-  const opt=getOptimal(team);
-  const pls=getPlayers(team);
-  const vAge=team.filter(p=>p.val>0);const sumV=vAge.reduce((s,p)=>s+p.val,0);const age=sumV?vAge.reduce((s,p)=>s+p.val*p.age,0)/sumV:0;
-  const sAge=pls.length?pls.reduce((s,p)=>s+p.age,0)/pls.length:0;
-  const prod=S.league.avgOpt?opt/S.league.avgOpt*100:100;
-  const vs=S.league.maxVal?total/S.league.maxVal*100:50;
-  const as=Math.max(0,Math.min(100,100-((age-23)*8)));
-  const ps=S.league.maxPicks?picksMap.get(rid)/S.league.maxPicks*100:50;
-  const lr=vs*0.6+as*0.2+ps*0.2;
-  const long=S.league.avgLong?lr/S.league.avgLong*100:100;
-  return{total,opt,prod,long,age,sAge}
-}
-
-function update(){
-  ['A','B'].forEach(s=>{document.getElementById('count'+s).textContent=`${trade[s].length} players`;document.getElementById('trade'+s).innerHTML=trade[s].map(p=>`<span class="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-sm cursor-pointer transition" onclick="toggle('${s}','${p.id}')">${p.n} ×</span>`).join('')});
-  const A=getStats([...rosters.A.filter(p=>!trade.A.some(t=>t.id===p.id)),...trade.B],rosters.A.rosterId);
-  const B=getStats([...rosters.B.filter(p=>!trade.B.some(t=>t.id===p.id)),...trade.A],rosters.B.rosterId);
-  const bA=getStats(rosters.A,rosters.A.rosterId), bB=getStats(rosters.B,rosters.B.rosterId);
-
-  const render=(el,cur,base)=>{
-    const m=[['Value',cur.total,base.total,1],['Start',cur.opt,base.opt,0],['Prod',cur.prod,base.prod,0],['Long',cur.long,base.long,0],['Age',cur.age,base.age,0],['AgeS',cur.sAge,base.sAge,0]];
-    el.innerHTML=m.map(([l,a,b,k])=>{const d=a-b;const c=d>0.1?'text-emerald-400':d<-0.1?'text-red-400':'text-white';return`<div class="metric"><div class="text- uppercase tracking-wider text-white/40 mb-1.5">${l}</div><div class="mono text-xl font-medium ${c}">${k?Math.round(a/1000)+'k':a.toFixed(1)}</div><div class="text-xs mt-1 h-4 ${c}">${d?`${d>0?'+':''}${k?Math.round(d/1000)+'k':d.toFixed(1)}`:''}</div></div>`}).join('')
-  };
-  render(statsA,A,bA); render(statsB,B,bB);
-}
-window.toggle=toggle; init();
+function load(){/* load rosters into UI, wire toggles, update trade calcs using S.teams values */ }
+go();
 </script>
 </body>
 </html>
