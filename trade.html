@@ -6,7 +6,20 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-<style>body{font-family:Inter;background:#000;color:#e5e7eb}.display{font-family:Cinzel}.card{background:rgba(12,12,12,.92);border:1px solid rgba(250,204,21,.15);border-radius:16px}.team{padding:8px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,255,.08)}.team:hover{border-color:rgba(250,204,21,.4)}.team.active{background:rgba(250,204,21,.12);border-color:#facc15}.player{padding:5px 7px;border-radius:6px;cursor:pointer;font-size:13px}.player:hover{background:rgba(255,255,255,.04)}.player.sel{background:rgba(250,204,21,.18)}.pick{padding:3px 5px;border-radius:5px;cursor:pointer;font-size:12px}.pick:hover{background:rgba(255,255,255,.04)}.pick.sel{background:rgba(250,204,21,.18)}</style>
+<style>
+body{font-family:Inter;background:#000;color:#e5e7eb}
+.display{font-family:Cinzel}
+.card{background:rgba(12,12,12,.92);border:1px solid rgba(250,204,21,.15);border-radius:16px}
+.team{padding:8px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,255,.08)}
+.team:hover{border-color:rgba(250,204,21,.4)}
+.team.active{background:rgba(250,204,21,.12);border-color:#facc15}
+.player{padding:5px 7px;border-radius:6px;cursor:pointer;font-size:13px}
+.player:hover{background:rgba(255,255,255,.04)}
+.player.sel{background:rgba(250,204,21,.18)}
+.pick{padding:3px 5px;border-radius:5px;cursor:pointer;font-size:12px}
+.pick:hover{background:rgba(255,255,255,.04)}
+.pick.sel{background:rgba(250,204,21,.18)}
+</style>
 </head>
 <body class="p-4">
 <div class="max-w-[1700px] mx-auto">
@@ -19,8 +32,26 @@
   </div>
 
   <div class="grid lg:grid-cols-2 gap-5">
-    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team A</div><div id="gridA" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pa" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="ka" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div></div></div></div>
-    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team B</div><div id="gridB" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="kb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div></div></div></div>
+    <div>
+      <div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team A</div>
+      <div id="gridA" class="grid grid-cols-3 gap-2 mb-2"></div>
+      <div class="card p-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pa" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div>
+          <div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="ka" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team B</div>
+      <div id="gridB" class="grid grid-cols-3 gap-2 mb-2"></div>
+      <div class="card p-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div>
+          <div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="kb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -33,30 +64,167 @@ const P='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_
 const K='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
 const clean=v=>parseFloat(String(v||'').replace(/,/g,''))||0, norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 function arch(t){const{valP,ppgP,age,bal}=t;if(valP>=75&&ppgP>=75&&age>=24&&age<=27.5)return'Elite Contender';if(ppgP>=70&&age>=27.5)return'Aging Contender';if(ppgP>=60&&ppgP<75&&age>=26)return'Win-Now Fringe';if(age<25.5&&valP>=45&&ppgP>=40&&ppgP<65)return'Young Riser';if(ppgP<40&&age<26&&valP>=35)return'Pick-Rich Rebuilder';if(bal>=70)return'Balanced Core';if(valP>=70&&ppgP<=45)return'Volatile';if(valP<=25&&ppgP<=25)return'Stripped Rebuilder';return'Stuck Middle';}
-let TEAMS=[],USERS=[], selA={p:new Set(),k:new Set()}, selB={p:new Set(),k:new Set()};
+let TEAMS=[],USERS=[], selA={p:new Set(),k:new Set()}, selB={p:new Set(),k:new Set()}, SLOTS=[];
 
 async function load(){
  try{
-  const [lg,us,ro,pl,v,ppg,tr,pk]=await Promise.all([fetch(`https://api.sleeper.app/v1/league/${L}`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/users`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/rosters`).then(r=>r.json()),fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),fetch(V).then(r=>r.text()),fetch(P).then(r=>r.text()),fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(r=>r.json()),fetch(K).then(r=>r.text())]);
-  USERS=us; const isSF=lg.roster_positions.includes('SUPER_FLEX'); const vm=new Map(); Papa.parse(v,{header:true}).data.forEach(r=>{if(r.sleeper_id)vm.set(r.sleeper_id,clean(isSF?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05))}); const pm=new Map(); Papa.parse(ppg,{header:true}).data.forEach(r=>{if(r.Player)pm.set(norm(r.Player),+r['Avg_PPR_0.5_TEP']||0)}); const km=new Map(); Papa.parse(pk,{header:true}).data.forEach(r=>{if(r.season)km.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`,isSF?clean(r.sf_value):clean(r.qb_value))});
-  const slots=lg.roster_positions.filter(s=>!['BN','IR','TAXI'].includes(s)); const opt=pls=>{const pool=[...pls].sort((a,b)=>b.ppg-a.ppg);const u=new Set();let t=0;for(const s of slots){let a=[s];if(s==='FLEX')a=['RB','WR','TE'];if(s==='SUPER_FLEX')a=['QB','RB','WR','TE'];const i=pool.findIndex(p=>!u.has(p.id)&&a.includes(p.pos));if(i>=0){t+=pool[i].ppg;u.add(pool[i].id)}}return t};
-  const Y=[2027,2028,2029],R=[1,2,3,4]; const own=new Map(ro.map(r=>[r.roster_id,[]])); const po=new Map(); Y.forEach(y=>R.forEach(r=>ro.forEach(rr=>po.set(`${y}-${r}-${rr.roster_id}`,rr.roster_id)))); tr.filter(p=>Y.includes(+p.season)).forEach(p=>po.set(`${p.season}-${p.round}-${p.roster_id}`,+p.owner_id)); po.forEach((o,k)=>{const[s,r,oi]=k.split('-');own.get(o).push({season:+s,round:+r,orig:+oi})});
-  TEAMS=ro.map(r=>{const pls=(r.players||[]).map(id=>{const p=pl[id]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id,name:n,pos:p.position||'',age:p.age||0,value:vm.get(String(id))||0,ppg:pm.get(norm(n))||0}});const tot=pls.reduce((s,p)=>s+p.value,0);const v=pls.filter(p=>p.value>0);const sum=v.reduce((s,p)=>s+p.value,0);const age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;const o=opt(pls);const qb=pls.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0);const rb=pls.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0);const wr=pls.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0);const te=pls.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0);const sh=[qb,rb,wr,te].map(v=>v/(qb+rb+wr+te||1));const m=sh.reduce((a,b)=>a+b)/4;const sd=Math.sqrt(sh.reduce((s,x)=>s+(x-m)**2,0)/4);const bal=100-sd*200;return{rid:r.roster_id,uid:r.owner_id,pls,tot,age,opt:o,bal,picks:own.get(r.roster_id)||[]}});
-  const avgO=TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length; TEAMS.forEach(t=>t.prod=avgO?t.opt/avgO*100:100);
-  const srt=[...TEAMS].sort((a,b)=>b.opt-a.opt); const n=srt.length; const late=n===10?3:n===12?4:Math.ceil(n*.3); const mid=4; const tier=new Map(srt.map((t,i)=>[t.rid,i<late?'late':i<late+mid?'mid':'early']));
+  const [lg,us,ro,pl,v,ppg,tr,pk]=await Promise.all([
+    fetch(`https://api.sleeper.app/v1/league/${L}`).then(r=>r.json()),
+    fetch(`https://api.sleeper.app/v1/league/${L}/users`).then(r=>r.json()),
+    fetch(`https://api.sleeper.app/v1/league/${L}/rosters`).then(r=>r.json()),
+    fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),
+    fetch(V).then(r=>r.text()),
+    fetch(P).then(r=>r.text()),
+    fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(r=>r.json()).catch(()=>[]),
+    fetch(K).then(r=>r.text())
+  ]);
+  USERS=us;
+  const isSF=lg.roster_positions.includes('SUPER_FLEX');
+  SLOTS=lg.roster_positions.filter(s=>!['BN','IR','TAXI'].includes(s));
+
+  const vm=new Map(); Papa.parse(v,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.sleeper_id)vm.set(r.sleeper_id,clean(isSF?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05))});
+  const pm=new Map(); Papa.parse(ppg,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.Player)pm.set(norm(r.Player),+r['Avg_PPR_0.5_TEP']||0)});
+  const km=new Map(); Papa.parse(pk,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.season)km.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`,isSF?clean(r.sf_value):clean(r.qb1_value||r.qb_value))});
+
+  const opt=pls=>{const pool=[...pls].sort((a,b)=>b.ppg-a.ppg);const u=new Set();let t=0;for(const s of SLOTS){let a=[s];if(s==='FLEX')a=['RB','WR','TE'];if(s==='SUPER_FLEX')a=['QB','RB','WR','TE'];const i=pool.findIndex(p=>!u.has(p.id)&&a.includes(p.pos));if(i>=0){t+=pool[i].ppg;u.add(pool[i].id)}}return t};
+
+  const Y=[2026,2027,2028,2029],R=[1,2,3,4];
+  const own=new Map(ro.map(r=>[r.roster_id,[]]));
+  const po=new Map();
+  Y.forEach(y=>R.forEach(r=>ro.forEach(rr=>po.set(`${y}-${r}-${rr.roster_id}`,rr.roster_id))));
+  tr.filter(p=>Y.includes(+p.season)).forEach(p=>po.set(`${p.season}-${p.round}-${p.roster_id}`,+p.owner_id));
+  po.forEach((o,k)=>{const[s,r,oi]=k.split('-');own.get(o).push({season:+s,round:+r,orig:+oi,id:`${s}-${r}-${oi}`})});
+
+  TEAMS=ro.map(r=>{
+    const pls=(r.players||[]).map(id=>{const p=pl[id]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id,name:n,pos:p.position||'',age:p.age||0,value:vm.get(String(id))||0,ppg:pm.get(norm(n))||0}});
+    return{rid:r.roster_id,uid:r.owner_id,pls,picks:own.get(r.roster_id)||[]}
+  });
+
+  const calcTeam=t=>{
+    t.tot=t.pls.reduce((s,p)=>s+p.value,0);
+    const v=t.pls.filter(p=>p.value>0); const sum=v.reduce((s,p)=>s+p.value,0);
+    t.age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;
+    t.opt=opt(t.pls);
+    const qb=t.pls.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0);
+    const rb=t.pls.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0);
+    const wr=t.pls.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0);
+    const te=t.pls.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0);
+    const tot=qb+rb+wr+te||1; const sh=[qb,rb,wr,te].map(v=>v/tot); const m=sh.reduce((a,b)=>a+b)/4;
+    t.bal=100-Math.sqrt(sh.reduce((s,x)=>s+(x-m)**2,0)/4)*200;
+    return t
+  };
+  TEAMS.forEach(calcTeam);
+
+  const srt=[...TEAMS].sort((a,b)=>b.opt-a.opt);
+  const n=srt.length;
+  const late=n===12?4:n===10?3:Math.ceil(n*.3);
+  const mid=4;
+  const tier=new Map(srt.map((t,i)=>[t.rid,i<late?'late':i<late+mid?'mid':'early']));
+
   TEAMS.forEach(t=>{let sum=0;t.picks.forEach(p=>{p.tier=tier.get(p.orig)||'mid';p.val=km.get(`${p.season}-${p.round}-${p.tier}`)||0;sum+=p.val});t.pv=sum});
-  const maxV=Math.max(...TEAMS.map(t=>t.tot)), maxP=Math.max(...TEAMS.map(t=>t.pv)); TEAMS.forEach(t=>{const vs=maxV?t.tot/maxV*100:50;const as=Math.max(0,Math.min(100,100-((t.age-23)*8)));const ps=maxP?t.pv/maxP*100:50;t.lr=vs*.6+as*.2+ps*.2});
-  const avgL=TEAMS.reduce((s,t)=>s+t.lr,0)/TEAMS.length; TEAMS.forEach(t=>t.long=avgL?t.lr/avgL*100:100);
-  const vs=TEAMS.map(t=>t.tot).sort((a,b)=>a-b), os=TEAMS.map(t=>t.opt).sort((a,b)=>a-b); TEAMS.forEach(t=>{t.valP=vs.indexOf(t.tot)/(vs.length-1)*100; t.ppgP=os.indexOf(t.opt)/(os.length-1)*100; t.arch=arch(t); t.name=(USERS.find(u=>u.user_id===t.uid)?.metadata?.team_name)||USERS.find(u=>u.user_id===t.uid)?.display_name||`Team ${t.rid}`});
-  document.getElementById('teamA').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join(''); document.getElementById('teamB').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join(''); teamA.value=TEAMS[0].rid; teamB.value=TEAMS[1].rid;
-  document.getElementById('status').textContent=`Loaded ${TEAMS.length} teams`; renderGrids(); render();
- }catch(e){document.getElementById('status').textContent='Error loading: '+e.message}
+
+  const maxV=Math.max(...TEAMS.map(t=>t.tot)), maxP=Math.max(...TEAMS.map(t=>t.pv));
+  TEAMS.forEach(t=>{const vs=maxV?t.tot/maxV*100:50;const as=Math.max(0,Math.min(100,100-((t.age-23)*8)));const ps=maxP?t.pv/maxP*100:50;t.lr=vs*.6+as*.2+ps*.2});
+
+  const avgO=TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length;
+  const avgL=TEAMS.reduce((s,t)=>s+t.lr,0)/TEAMS.length;
+  TEAMS.forEach(t=>{t.prod=avgO?t.opt/avgO*100:100; t.long=avgL?t.lr/avgL*100:100});
+
+  const vs=TEAMS.map(t=>t.tot).sort((a,b)=>a-b), os=TEAMS.map(t=>t.opt).sort((a,b)=>a-b);
+  TEAMS.forEach(t=>{
+    t.valP=vs.indexOf(t.tot)/(vs.length-1)*100;
+    t.ppgP=os.indexOf(t.opt)/(os.length-1)*100;
+    t.arch=arch(t);
+    t.name=(USERS.find(u=>u.user_id===t.uid)?.metadata?.team_name)||USERS.find(u=>u.user_id===t.uid)?.display_name||`Team ${t.rid}`
+  });
+
+  document.getElementById('teamA').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
+  document.getElementById('teamB').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
+  teamA.value=TEAMS[0].rid; teamB.value=TEAMS[1].rid;
+  document.getElementById('status').textContent=`Loaded ${TEAMS.length} teams • ${isSF?'SF':'1QB'}`;
+  renderGrids(); render();
+ }catch(e){document.getElementById('status').textContent='Error: '+e.message; console.error(e)}
 }
-function renderGrids(){document.getElementById('gridA').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamA.value?'active':''}" onclick="setTeam('A',${t.rid})"><div class="truncate">${t.name}</div><div class="text-[10px] opacity-60">${t.arch}</div></div>`).join(''); document.getElementById('gridB').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamB.value?'active':''}" onclick="setTeam('B',${t.rid})"><div class="truncate">${t.name}</div><div class="text-[10px] opacity-60">${t.arch}</div></div>`).join('');}
-function setTeam(side,rid){if(side==='A'){teamA.value=rid;selA={p:new Set(),k:new Set()}}else{teamB.value=rid;selB={p:new Set(),k:new Set()}} renderGrids(); render();}
-function render(){const A=TEAMS.find(t=>t.rid==teamA.value), B=TEAMS.find(t=>t.rid==teamB.value); if(!A||!B)return; document.getElementById('pa').innerHTML=A.pls.sort((a,b)=>b.value-a.value).map(p=>`<div class="player ${selA.p.has(p.id)?'sel':''}" onclick="tog('A','p','${p.id}')">${p.name} <span class="opacity-50 text-[11px]">${p.pos}</span> <span class="float-right opacity-70">${Math.round(p.value).toLocaleString()}</span></div>`).join(''); document.getElementById('pb').innerHTML=B.pls.sort((a,b)=>b.value-a.value).map(p=>`<div class="player ${selB.p.has(p.id)?'sel':''}" onclick="tog('B','p','${p.id}')">${p.name} <span class="opacity-50 text-[11px]">${p.pos}</span> <span class="float-right opacity-70">${Math.round(p.value).toLocaleString()}</span></div>`).join(''); document.getElementById('ka').innerHTML=A.picks.sort((a,b)=>a.season-b.season||a.round-b.round).map((p,i)=>`<div class="pick ${selA.k.has(i)?'sel':''}" onclick="tog('A','k',${i})">${p.season} R${p.round} (${p.tier}) ${Math.round(p.val).toLocaleString()}</div>`).join(''); document.getElementById('kb').innerHTML=B.picks.sort((a,b)=>a.season-b.season||a.round-b.round).map((p,i)=>`<div class="pick ${selB.k.has(i)?'sel':''}" onclick="tog('B','k',${i})">${p.season} R${p.round} (${p.tier}) ${Math.round(p.val).toLocaleString()}</div>`).join(''); update(A,B);}
-function tog(side,type,id){const s=side==='A'?selA:selB; const set=type==='p'?s.p:s.k; set.has(id)?set.delete(id):set.add(id); render();}
-function update(A,B){const a=JSON.parse(JSON.stringify(A)), b=JSON.parse(JSON.stringify(B)); selA.p.forEach(id=>{const i=a.pls.findIndex(p=>p.id===id);if(i>=0){b.pls.push(a.pls[i]);a.pls.splice(i,1)}}); selB.p.forEach(id=>{const i=b.pls.findIndex(p=>p.id===id);if(i>=0){a.pls.push(b.pls[i]);b.pls.splice(i,1)}}); [...selA.k].sort((a,b)=>b-a).forEach(i=>{const p=a.picks[i];if(p){b.picks.push(p);a.picks.splice(i,1)}}); [...selB.k].sort((a,b)=>b-a).forEach(i=>{const p=b.picks[i];if(p){a.picks.push(p);b.picks.splice(i,1)}}); [a,b].forEach(t=>{t.tot=t.pls.reduce((s,p)=>s+p.value,0);const v=t.pls.filter(p=>p.value>0);const sum=v.reduce((s,p)=>s+p.value,0);t.age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;t.pv=t.picks.reduce((s,p)=>s+p.val,0);const vs=Math.max(...TEAMS.map(x=>x.tot),a.tot,b.tot)?t.tot/Math.max(...TEAMS.map(x=>x.tot),a.tot,b.tot)*100:50;const as=Math.max(0,Math.min(100,100-((t.age-23)*8)));const ps=Math.max(...TEAMS.map(x=>x.pv),a.pv,b.pv)?t.pv/Math.max(...TEAMS.map(x=>x.pv),a.pv,b.pv)*100:50;t.lr=vs*.6+as*.2+ps*.2}); const avgL=TEAMS.reduce((s,t)=>s+t.lr,0)/TEAMS.length; [a,b].forEach(t=>t.long=avgL?t.lr/avgL*100:100); document.getElementById('impact').innerHTML=`<div class="bg-black/40 p-2 rounded"><b>${A.name}</b><div class="text-xs mt-1">Long ${Math.round(A.long)} → ${Math.round(a.long)}<br>Prod ${Math.round(A.prod)} → ${Math.round(A.prod)}<br>${A.arch} → ${arch({...a,valP:A.valP,ppgP:A.ppgP,bal:A.bal})}</div></div><div class="bg-black/40 p-2 rounded"><b>${B.name}</b><div class="text-xs mt-1">Long ${Math.round(B.long)} → ${Math.round(b.long)}<br>Prod ${Math.round(B.prod)} → ${Math.round(B.prod)}<br>${B.arch} → ${arch({...b,valP:B.valP,ppgP:B.ppgP,bal:B.bal})}</div></div>`; const d=Math.abs(a.long-A.long)+Math.abs(b.long-B.long); document.getElementById('verdict').textContent=d<5?'⚖️ Fair':d<15?'↔️ Slight edge':'🔥 Big swing';}
+
+function renderGrids(){
+  document.getElementById('gridA').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamA.value?'active':''}" onclick="setTeam('A',${t.rid})"><div class="truncate">${t.name}</div><div class="text-[10px] opacity-60">${t.arch}</div></div>`).join('');
+  document.getElementById('gridB').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamB.value?'active':''}" onclick="setTeam('B',${t.rid})"><div class="truncate">${t.name}</div><div class="text-[10px] opacity-60">${t.arch}</div></div>`).join('');
+}
+
+function setTeam(side,rid){
+  if(side==='A'){teamA.value=rid;selA={p:new Set(),k:new Set()}}
+  else{teamB.value=rid;selB={p:new Set(),k:new Set()}}
+  renderGrids(); render();
+}
+
+function render(){
+  const A=TEAMS.find(t=>t.rid==teamA.value), B=TEAMS.find(t=>t.rid==teamB.value); if(!A||!B)return;
+  const pa=[...A.pls].sort((a,b)=>b.value-a.value);
+  const pb=[...B.pls].sort((a,b)=>b.value-a.value);
+  document.getElementById('pa').innerHTML=pa.map(p=>`<div class="player ${selA.p.has(p.id)?'sel':''}" onclick="tog('A','p','${p.id}')">${p.name} <span class="opacity-50 text-[11px]">${p.pos} ${p.age}</span> <span class="float-right opacity-70">${Math.round(p.value).toLocaleString()}</span></div>`).join('');
+  document.getElementById('pb').innerHTML=pb.map(p=>`<div class="player ${selB.p.has(p.id)?'sel':''}" onclick="tog('B','p','${p.id}')">${p.name} <span class="opacity-50 text-[11px]">${p.pos} ${p.age}</span> <span class="float-right opacity-70">${Math.round(p.value).toLocaleString()}</span></div>`).join('');
+  const ka=[...A.picks].sort((a,b)=>a.season-b.season||a.round-b.round);
+  const kb=[...B.picks].sort((a,b)=>a.season-b.season||a.round-b.round);
+  document.getElementById('ka').innerHTML=ka.map(p=>`<div class="pick ${selA.k.has(p.id)?'sel':''}" onclick="tog('A','k','${p.id}')">${p.season} R${p.round} (${p.tier}) <span class="float-right">${Math.round(p.val).toLocaleString()}</span></div>`).join('');
+  document.getElementById('kb').innerHTML=kb.map(p=>`<div class="pick ${selB.k.has(p.id)?'sel':''}" onclick="tog('B','k','${p.id}')">${p.season} R${p.round} (${p.tier}) <span class="float-right">${Math.round(p.val).toLocaleString()}</span></div>`).join('');
+  update(A,B);
+}
+
+function tog(side,type,id){
+  const s=side==='A'?selA:selB;
+  const set=type==='p'?s.p:s.k;
+  set.has(id)?set.delete(id):set.add(id);
+  render();
+}
+
+function recalc(t){
+  t.tot=t.pls.reduce((s,p)=>s+p.value,0);
+  const v=t.pls.filter(p=>p.value>0); const sum=v.reduce((s,p)=>s+p.value,0);
+  t.age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;
+  const pool=[...t.pls].sort((a,b)=>b.ppg-a.ppg); const u=new Set(); let opt=0;
+  for(const s of SLOTS){let a=[s];if(s==='FLEX')a=['RB','WR','TE'];if(s==='SUPER_FLEX')a=['QB','RB','WR','TE'];const i=pool.findIndex(p=>!u.has(p.id)&&a.includes(p.pos));if(i>=0){opt+=pool[i].ppg;u.add(pool[i].id)}}
+  t.opt=opt;
+  t.pv=t.picks.reduce((s,p)=>s+p.val,0);
+  const qb=t.pls.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0);
+  const rb=t.pls.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0);
+  const wr=t.pls.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0);
+  const te=t.pls.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0);
+  const tot=qb+rb+wr+te||1; const sh=[qb,rb,wr,te].map(v=>v/tot); const m=sh.reduce((a,b)=>a+b)/4;
+  t.bal=100-Math.sqrt(sh.reduce((s,x)=>s+(x-m)**2,0)/4)*200;
+  return t;
+}
+
+function update(A,B){
+  const a=JSON.parse(JSON.stringify(A)), b=JSON.parse(JSON.stringify(B));
+
+  selA.p.forEach(id=>{const i=a.pls.findIndex(p=>p.id===id);if(i>=0){b.pls.push(a.pls[i]);a.pls.splice(i,1)}});
+  selB.p.forEach(id=>{const i=b.pls.findIndex(p=>p.id===id);if(i>=0){a.pls.push(b.pls[i]);b.pls.splice(i,1)}});
+  selA.k.forEach(id=>{const i=a.picks.findIndex(p=>p.id===id);if(i>=0){b.picks.push(a.picks[i]);a.picks.splice(i,1)}});
+  selB.k.forEach(id=>{const i=b.picks.findIndex(p=>p.id===id);if(i>=0){a.picks.push(b.picks[i]);b.picks.splice(i,1)}});
+
+  recalc(a); recalc(b);
+
+  const allVals=[...TEAMS.map(t=>t.tot),a.tot,b.tot].sort((a,b)=>a-b);
+  const allOpts=[...TEAMS.map(t=>t.opt),a.opt,b.opt].sort((a,b)=>a-b);
+  const getP=(arr,v)=>{const idx=arr.indexOf(v); return idx>=0?idx/(arr.length-1)*100:50};
+
+  [a,b].forEach(t=>{t.valP=getP(allVals,t.tot); t.ppgP=getP(allOpts,t.opt); t.arch=arch(t)});
+
+  const maxV=Math.max(...TEAMS.map(t=>t.tot),a.tot,b.tot), maxP=Math.max(...TEAMS.map(t=>t.pv),a.pv,b.pv);
+  [a,b].forEach(t=>{const vs=maxV?t.tot/maxV*100:50;const as=Math.max(0,Math.min(100,100-((t.age-23)*8)));const ps=maxP?t.pv/maxP*100:50;t.lr=vs*.6+as*.2+ps*.2});
+
+  const avgL=TEAMS.reduce((s,t)=>s+t.lr,0)/TEAMS.length;
+  const avgO=TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length;
+  const aLong=avgL?a.lr/avgL*100:100, bLong=avgL?b.lr/avgL*100:100;
+  const aProd=avgO?a.opt/avgO*100:100, bProd=avgO?b.opt/avgO*100:100;
+
+  document.getElementById('impact').innerHTML=
+    `<div class="bg-black/40 p-2 rounded"><b>${A.name}</b><div class="text-xs mt-1">Long ${Math.round(A.long)} → ${Math.round(aLong)}<br>Prod ${Math.round(A.prod)} → ${Math.round(aProd)}<br>${A.arch} → ${a.arch}</div></div>`+
+    `<div class="bg-black/40 p-2 rounded"><b>${B.name}</b><div class="text-xs mt-1">Long ${Math.round(B.long)} → ${Math.round(bLong)}<br>Prod ${Math.round(B.prod)} → ${Math.round(bProd)}<br>${B.arch} → ${b.arch}</div></div>`;
+
+  const d=Math.abs(aLong-A.long)+Math.abs(bLong-B.long);
+  document.getElementById('verdict').textContent=d<5?'⚖ Fair':d<15?'↔ Slight edge':'🔥 Big swing';
+}
 load();
 </script>
 </body>
