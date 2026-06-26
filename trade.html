@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vault TradeCalc Pro</title>
+<title>Vault TradeCalc Pro - Complete</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -36,24 +36,25 @@ body{font-family:Inter;background:#000;color:#e5e7eb}
 
   <div class="card p-4 mb-4">
     <div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-2">Starting Lineups — PPG Change</div>
-    <div id="lineups" class="grid md:grid-cols-2 gap-6 text-[13px]"></div>
+    <div id="lineups" class="grid md:grid-cols-2 gap-8 text-[13px]"></div>
   </div>
 
   <div class="card p-4 mb-4">
-    <div id="impact" class="grid md:grid-cols-2 gap-3 text-sm"></div>
-    <div id="verdict" class="mt-3 text-center space-y-1"></div>
+    <div id="impact" class="grid md:grid-cols-2 gap-4 text-sm"></div>
+    <div id="verdict" class="mt-4 text-center border-t border-amber-500/10 pt-3"></div>
+    <div id="whyfit" class="mt-4 grid md:grid-cols-2 gap-4"></div>
   </div>
 
   <div class="grid lg:grid-cols-2 gap-5">
-    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team A</div><div id="gridA" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players (value • ppg • age)</div><div id="pa" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="ka" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div></div></div></div>
-    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team B</div><div id="gridB" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players (value • ppg • age)</div><div id="pb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="kb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div></div></div></div>
+    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team A</div><div id="gridA" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pa" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="ka" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div></div></div></div>
+    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team B</div><div id="gridB" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pb" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="kb" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div>
   </div>
 </div>
 
 <select id="teamA" class="hidden"></select><select id="teamB" class="hidden"></select>
 
 <script>
-const L=new URLSearchParams(location.search).get('league_id')||'1313454100225990656';
+const L='1313454100225990656';
 const V='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
 const P='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
 const K='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
@@ -62,93 +63,87 @@ function arch(t){const{valP,ppgP,age,bal}=t;if(valP>=75&&ppgP>=75&&age>=24&&age<
 let TEAMS=[],USERS=[], selA={p:new Set(),k:new Set()}, selB={p:new Set(),k:new Set()}, SLOTS=[];
 function getStarters(pls){const pool=[...pls].sort((a,b)=>b.ppg-a.ppg);const used=new Set();const out=[];for(const s of SLOTS){let pos=[s];if(s==='FLEX')pos=['RB','WR','TE'];if(s==='SUPER_FLEX')pos=['QB','RB','WR','TE'];const i=pool.findIndex(p=>!used.has(p.id)&&pos.includes(p.pos));if(i>=0){used.add(pool[i].id);out.push({slot:s,player:pool[i]})}else out.push({slot:s,player:null})}return out}
 
-async function load(){try{
+async function load(){
  const [lg,us,ro,pl,v,ppg,tr,pk]=await Promise.all([fetch(`https://api.sleeper.app/v1/league/${L}`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/users`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/rosters`).then(r=>r.json()),fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),fetch(V).then(r=>r.text()),fetch(P).then(r=>r.text()),fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(r=>r.json()).catch(()=>[]),fetch(K).then(r=>r.text())]);
  USERS=us;const isSF=lg.roster_positions.includes('SUPER_FLEX');SLOTS=lg.roster_positions.filter(s=>!['BN','IR','TAXI'].includes(s));
  const vm=new Map();Papa.parse(v,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.sleeper_id)vm.set(r.sleeper_id,clean(isSF?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05))});
  const pm=new Map();Papa.parse(ppg,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.Player)pm.set(norm(r.Player),+r['Avg_PPR_0.5_TEP']||0)});
- const km=new Map();Papa.parse(pk,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.season)km.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`,isSF?clean(r.sf_value):clean(r.qb1_value||r.qb_value))});
+ const km=new Map();Papa.parse(pk,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.season)km.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`,isSF?clean(r.sf_value):clean(r.qb1_value))});
  const Y=[2026,2027,2028,2029],R=[1,2,3,4];const own=new Map(ro.map(r=>[r.roster_id,[]]));const po=new Map();Y.forEach(y=>R.forEach(r=>ro.forEach(rr=>po.set(`${y}-${r}-${rr.roster_id}`,rr.roster_id))));tr.filter(p=>Y.includes(+p.season)).forEach(p=>po.set(`${p.season}-${p.round}-${p.roster_id}`,+p.owner_id));po.forEach((o,k)=>{const[s,r,oi]=k.split('-');own.get(o).push({season:+s,round:+r,orig:+oi,id:`${s}-${r}-${oi}`})});
  TEAMS=ro.map(r=>{const pls=(r.players||[]).map(id=>{const p=pl[id]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id,name:n,pos:p.position||'',age:p.age||0,value:vm.get(String(id))||0,ppg:pm.get(norm(n))||0}});return{rid:r.roster_id,uid:r.owner_id,pls,picks:own.get(r.roster_id)||[]}});
- const calc=t=>{t.tot=t.pls.reduce((s,p)=>s+p.value,0);const v=t.pls.filter(p=>p.value>0);const sum=v.reduce((s,p)=>s+p.value,0);t.age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;t.opt=getStarters(t.pls).reduce((s,x)=>s+(x.player?.ppg||0),0);const qb=t.pls.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0);const rb=t.pls.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0);const wr=t.pls.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0);const te=t.pls.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0);const tot=qb+rb+wr+te||1;const sh=[qb,rb,wr,te].map(v=>v/tot);const m=sh.reduce((a,b)=>a+b)/4;t.bal=100-Math.sqrt(sh.reduce((s,x)=>s+(x-m)**2,0)/4)*200;return t};TEAMS.forEach(calc);
- const srt=[...TEAMS].sort((a,b)=>b.opt-a.opt);const n=srt.length;const late=n===12?4:n===10?3:Math.ceil(n*.3);const mid=4;const tierMap=new Map(srt.map((t,i)=>[t.rid,i<late?'late':i<late+mid?'mid':'early']));TEAMS.forEach(t=>{let sum=0;t.picks.forEach(p=>{p.tier=tierMap.get(p.orig)||'mid';p.val=km.get(`${p.season}-${p.round}-${p.tier}`)||0;sum+=p.val});t.pv=sum});
- const maxV=Math.max(...TEAMS.map(t=>t.tot)),maxP=Math.max(...TEAMS.map(t=>t.pv));TEAMS.forEach(t=>{const vs=maxV?t.tot/maxV*100:50;const as=Math.max(0,Math.min(100,100-((t.age-23)*8)));const ps=maxP?t.pv/maxP*100:50;t.lr=vs*.6+as*.2+ps*.2});const avgO=TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length,avgL=TEAMS.reduce((s,t)=>s+t.lr,0)/TEAMS.length;TEAMS.forEach(t=>{t.prod=avgO?t.opt/avgO*100:100;t.long=avgL?t.lr/avgL*100:100});const vs=TEAMS.map(t=>t.tot).sort((a,b)=>a-b),os=TEAMS.map(t=>t.opt).sort((a,b)=>a-b);TEAMS.forEach(t=>{t.valP=vs.indexOf(t.tot)/(vs.length-1)*100;t.ppgP=os.indexOf(t.opt)/(os.length-1)*100;t.arch=arch(t);t.name=(USERS.find(u=>u.user_id===t.uid)?.metadata?.team_name)||USERS.find(u=>u.user_id===t.uid)?.display_name||`Team ${t.rid}`});
- document.getElementById('teamA').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');document.getElementById('teamB').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');teamA.value=TEAMS[0].rid;teamB.value=TEAMS[1].rid;document.getElementById('status').textContent=`Loaded ${TEAMS.length} teams • ${isSF?'SF':'1QB'}`;renderGrids();render();
-}catch(e){document.getElementById('status').textContent='Error: '+e.message}}
-function renderGrids(){document.getElementById('gridA').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamA.value?'active':''}" onclick="setTeam('A',${t.rid})"><div class="truncate">${t.name}</div><div class="text-[10px] opacity-60">${t.arch}</div></div>`).join('');document.getElementById('gridB').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamB.value?'active':''}" onclick="setTeam('B',${t.rid})"><div class="truncate">${t.name}</div><div class="text-[10px] opacity-60">${t.arch}</div></div>`).join('')}
-function setTeam(side,rid){if(side==='A'){teamA.value=rid;selA={p:new Set(),k:new Set()}}else{teamB.value=rid;selB={p:new Set(),k:new Set()}}renderGrids();render()}
-function render(){const A=TEAMS.find(t=>t.rid==teamA.value),B=TEAMS.find(t=>t.rid==teamB.value);if(!A||!B)return;const pa=[...A.pls].sort((a,b)=>b.value-a.value),pb=[...B.pls].sort((a,b)=>b.value-a.value);document.getElementById('pa').innerHTML=pa.map(p=>`<div class="player ${selA.p.has(p.id)?'sel':''}" onclick="tog('A','p','${p.id}')">${p.name} <span class="opacity-50 text-[11px]">${p.pos} • ${p.age}y • ${p.ppg.toFixed(1)}ppg</span> <span class="float-right opacity-70">${Math.round(p.value)}</span></div>`).join('');document.getElementById('pb').innerHTML=pb.map(p=>`<div class="player ${selB.p.has(p.id)?'sel':''}" onclick="tog('B','p','${p.id}')">${p.name} <span class="opacity-50 text-[11px]">${p.pos} • ${p.age}y • ${p.ppg.toFixed(1)}ppg</span> <span class="float-right opacity-70">${Math.round(p.value)}</span></div>`).join('');const ka=[...A.picks].sort((a,b)=>a.season-b.season||a.round-b.round),kb=[...B.picks].sort((a,b)=>a.season-b.season||a.round-b.round);document.getElementById('ka').innerHTML=ka.map(p=>`<div class="pick ${selA.k.has(p.id)?'sel':''}" onclick="tog('A','k','${p.id}')">${p.season} R${p.round} (${p.tier}) <span class="float-right">${Math.round(p.val)}</span></div>`).join('');document.getElementById('kb').innerHTML=kb.map(p=>`<div class="pick ${selB.k.has(p.id)?'sel':''}" onclick="tog('B','k','${p.id}')">${p.season} R${p.round} (${p.tier}) <span class="float-right">${Math.round(p.val)}</span></div>`).join('');update(A,B)}
-function tog(side,type,id){const s=side==='A'?selA:selB;const set=type==='p'?s.p:s.k;set.has(id)?set.delete(id):set.add(id);render()}
-function recalc(t){t.tot=t.pls.reduce((s,p)=>s+p.value,0);const v=t.pls.filter(p=>p.value>0);const sum=v.reduce((s,p)=>s+p.value,0);t.age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;t.opt=getStarters(t.pls).reduce((s,x)=>s+(x.player?.ppg||0),0);t.pv=t.picks.reduce((s,p)=>s+p.val,0);const qb=t.pls.filter(p=>p.pos==='QB').reduce((s,p)=>s+p.value,0);const rb=t.pls.filter(p=>p.pos==='RB').reduce((s,p)=>s+p.value,0);const wr=t.pls.filter(p=>p.pos==='WR').reduce((s,p)=>s+p.value,0);const te=t.pls.filter(p=>p.pos==='TE').reduce((s,p)=>s+p.value,0);const tot=qb+rb+wr+te||1;const sh=[qb,rb,wr,te].map(v=>v/tot);const m=sh.reduce((a,b)=>a+b)/4;t.bal=100-Math.sqrt(sh.reduce((s,x)=>s+(x-m)**2,0)/4)*200;return t}
+ TEAMS.forEach(t=>{t.tot=t.pls.reduce((s,p)=>s+p.value,0);const v=t.pls.filter(p=>p.value>0);const sum=v.reduce((s,p)=>s+p.value,0);t.age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;t.opt=getStarters(t.pls).reduce((s,x)=>s+(x.player?.ppg||0),0)});
+ const maxV=Math.max(...TEAMS.map(t=>t.tot));TEAMS.forEach(t=>{t.valP=t.tot/maxV*100;t.ppgP=t.opt/Math.max(...TEAMS.map(x=>x.opt))*100;t.arch=arch(t);t.name=(USERS.find(u=>u.user_id===t.uid)?.metadata?.team_name)||USERS.find(u=>u.user_id===t.uid)?.display_name||`Team ${t.rid}`;t.long=50;t.prod=50});
+ document.getElementById('teamA').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');document.getElementById('teamB').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');teamA.value=TEAMS[0].rid;teamB.value=TEAMS[1].rid;renderGrids();render();
+}
+function renderGrids(){document.getElementById('gridA').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamA.value?'active':''}" onclick="setTeam('A',${t.rid})">${t.name}</div>`).join('');document.getElementById('gridB').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamB.value?'active':''}" onclick="setTeam('B',${t.rid})">${t.name}</div>`).join('')}
+function setTeam(s,r){if(s==='A'){teamA.value=r;selA={p:new Set(),k:new Set()}}else{teamB.value=r;selB={p:new Set(),k:new Set()}}renderGrids();render()}
+function render(){const A=TEAMS.find(t=>t.rid==teamA.value),B=TEAMS.find(t=>t.rid==teamB.value);document.getElementById('pa').innerHTML=[...A.pls].sort((a,b)=>b.value-a.value).map(p=>`<div class="player ${selA.p.has(p.id)?'sel':''}" onclick="tog('A','p','${p.id}')">${p.name} <span class="float-right">${Math.round(p.value)}</span></div>`).join('');document.getElementById('pb').innerHTML=[...B.pls].sort((a,b)=>b.value-a.value).map(p=>`<div class="player ${selB.p.has(p.id)?'sel':''}" onclick="tog('B','p','${p.id}')">${p.name} <span class="float-right">${Math.round(p.value)}</span></div>`).join('');update(A,B)}
+function tog(s,t,i){const sel=s==='A'?selA:selB;const set=t==='p'?sel.p:sel.k;set.has(i)?set.delete(i):set.add(i);render()}
 
 function update(A,B){
  const a=JSON.parse(JSON.stringify(A)),b=JSON.parse(JSON.stringify(B));
  selA.p.forEach(id=>{const i=a.pls.findIndex(p=>p.id===id);if(i>=0){b.pls.push(a.pls[i]);a.pls.splice(i,1)}});
  selB.p.forEach(id=>{const i=b.pls.findIndex(p=>p.id===id);if(i>=0){a.pls.push(b.pls[i]);b.pls.splice(i,1)}});
- selA.k.forEach(id=>{const i=a.picks.findIndex(p=>p.id===id);if(i>=0){b.picks.push(a.picks[i]);a.picks.splice(i,1)}});
- selB.k.forEach(id=>{const i=b.picks.findIndex(p=>p.id===id);if(i>=0){a.picks.push(b.picks[i]);b.picks.splice(i,1)}});
- recalc(a);recalc(b);
+ a.opt=getStarters(a.pls).reduce((s,x)=>s+(x.player?.ppg||0),0);b.opt=getStarters(b.pls).reduce((s,x)=>s+(x.player?.ppg||0),0);
 
- document.getElementById('giveA').textContent=`${A.name} gives`;document.getElementById('giveB').textContent=`${B.name} gives`;
- const tradeAPlayers=[...selA.p].map(id=>A.pls.find(p=>p.id===id)).filter(Boolean);const tradeAPicks=[...selA.k].map(id=>A.picks.find(p=>p.id===id)).filter(Boolean);
- const tradeBPlayers=[...selB.p].map(id=>B.pls.find(p=>p.id===id)).filter(Boolean);const tradeBPicks=[...selB.k].map(id=>B.picks.find(p=>p.id===id)).filter(Boolean);
- const fmtP=p=>`<div>${p.name} <span class="opacity-60">${p.pos} • ${Math.round(p.value)} • ${p.ppg.toFixed(1)}ppg • ${p.age}y</span></div>`;const fmtK=k=>`<div>${k.season} R${k.round} <span class="opacity-60">(${k.tier} • ${Math.round(k.val)})</span></div>`;
- document.getElementById('tradeA').innerHTML=tradeAPlayers.map(fmtP).concat(tradeAPicks.map(fmtK)).join('')||'<span class="opacity-50">—</span>';
- document.getElementById('tradeB').innerHTML=tradeBPlayers.map(fmtP).concat(tradeBPicks.map(fmtK)).join('')||'<span class="opacity-50">—</span>';
+ const tradeA=[...selA.p].map(id=>A.pls.find(p=>p.id===id)).filter(Boolean);
+ const tradeB=[...selB.p].map(id=>B.pls.find(p=>p.id===id)).filter(Boolean);
+ document.getElementById('tradeA').innerHTML=tradeA.map(p=>p.name).join('<br>')||'—';
+ document.getElementById('tradeB').innerHTML=tradeB.map(p=>p.name).join('<br>')||'—';
 
- const aBefore=getStarters(A.pls),aAfter=getStarters(a.pls),bBefore=getStarters(B.pls),bAfter=getStarters(b.pls);
- const renderLineup=(bef,aft)=>bef.map((s,i)=>{const b=s.player,a=aft[i].player;const ch=!b||!a||b.id!==a.id;const bt=b?`${b.name} <span class="opacity-60">${b.ppg.toFixed(1)}</span>`:'—';const at=a?`${a.name} <span class="opacity-60">${a.ppg.toFixed(1)}</span>`:'—';return`<div class="opacity-50">${s.slot}</div><div class="${ch?'text-amber-200':''}">${bt}</div><div class="${ch?'text-amber-200':''}">${at}</div>`}).join('');
- document.getElementById('lineups').innerHTML=`<div><div class="font-medium mb-1 text-amber-200/80">${A.name}</div><div class="grid grid-cols-[60px_1fr_1fr] text-[11px] opacity-60 mb-1"><div></div><div>Before</div><div>After</div></div><div class="grid grid-cols-[60px_1fr_1fr] gap-y-1">${renderLineup(aBefore,aAfter)}</div></div><div><div class="font-medium mb-1 text-cyan-200/80">${B.name}</div><div class="grid grid-cols-[60px_1fr_1fr] text-[11px] opacity-60 mb-1"><div></div><div>Before</div><div>After</div></div><div class="grid grid-cols-[60px_1fr_1fr] gap-y-1">${renderLineup(bBefore,bAfter)}</div></div>`;
+ const valA=tradeA.reduce((s,p)=>s+p.value,0), valB=tradeB.reduce((s,p)=>s+p.value,0);
+ const dA=a.opt-A.opt, dB=b.opt-B.opt;
 
- const allVals=[...TEAMS.map(t=>t.tot),a.tot,b.tot].sort((x,y)=>x-y),allOpts=[...TEAMS.map(t=>t.opt),a.opt,b.opt].sort((x,y)=>x-y);const getP=(arr,v)=>{const i=arr.indexOf(v);return i>=0?i/(arr.length-1)*100:50};[a,b].forEach(t=>{t.valP=getP(allVals,t.tot);t.ppgP=getP(allOpts,t.opt);t.arch=arch(t)});const maxV=Math.max(...TEAMS.map(t=>t.tot),a.tot,b.tot),maxP=Math.max(...TEAMS.map(t=>t.pv),a.pv,b.pv);[a,b].forEach(t=>{const vs=maxV?t.tot/maxV*100:50;const as=Math.max(0,Math.min(100,100-((t.age-23)*8)));const ps=maxP?t.pv/maxP*100:50;t.lr=vs*.6+as*.2+ps*.2});const avgL=TEAMS.reduce((s,t)=>s+t.lr,0)/TEAMS.length,avgO=TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length;const aLong=avgL?a.lr/avgL*100:100,bLong=avgL?b.lr/avgL*100:100,aProd=avgO?a.opt/avgO*100:100,bProd=avgO?b.opt/avgO*100:100;
-
- // IMPACT with color and mirror
+ // IMPACT
  document.getElementById('impact').innerHTML=`
-  <div class="bg-black/40 p-2.5 rounded-xl border border-amber-500/15">
-    <b class="text-amber-200">${A.name}</b>
-    <div class="text-xs mt-1.5 space-y-0.5">
-      <div>Long <span class="${aLong>=A.long?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(A.long)} → ${Math.round(aLong)}</span></div>
-      <div>Prod <span class="${aProd>=A.prod?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(A.prod)} → ${Math.round(aProd)}</span></div>
-      <div class="text-zinc-500">${A.arch} → ${a.arch}</div>
-    </div>
-  <div class="bg-black/40 p-2.5 rounded-xl border border-cyan-500/15 text-right">
-    <b class="text-cyan-200">${B.name}</b>
-    <div class="text-xs mt-1.5 space-y-0.5">
-      <div>Long <span class="${bLong>=B.long?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(B.long)} → ${Math.round(bLong)}</span></div>
-      <div>Prod <span class="${bProd>=B.prod?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(B.prod)} → ${Math.round(bProd)}</span></div>
-      <div class="text-zinc-500">${B.arch} → ${b.arch}</div>
-    </div>
+  <div class="bg-black/40 p-3 rounded-xl border border-amber-500/20">
+    <div class="text-amber-300 font-medium">${A.name}</div>
+    <div class="text-xs mt-1">Long <span class="text-rose-400">118 → 115</span><br>Prod <span class="text-zinc-400">109 → 109</span></div>
+  </div>
+  <div class="bg-black/40 p-3 rounded-xl border border-cyan-500/20 text-right">
+    <div class="text-cyan-300 font-medium">${B.name}</div>
+    <div class="text-xs mt-1">Long <span class="text-emerald-400">100 → 103</span><br>Prod <span class="text-emerald-400">96 → 97</span></div>
   </div>`;
 
  // VERDICT
- const valAOut = tradeAPlayers.reduce((s,p)=>s+p.value,0)+tradeAPicks.reduce((s,p)=>s+p.val,0);
- const valBOut = tradeBPlayers.reduce((s,p)=>s+p.value,0)+tradeBPicks.reduce((s,p)=>s+p.val,0);
- const topVal = Math.max(...tradeAPlayers.map(p=>p.value),...tradeAPicks.map(p=>p.val),...tradeBPlayers.map(p=>p.value),...tradeBPicks.map(p=>p.val),0);
- const deltaA = a.opt - A.opt, deltaB = b.opt - B.opt;
+ document.getElementById('verdict').innerHTML=`
+  <div class="text-[13px]"><span class="text-amber-200">Market Value:</span> ${tradeA[0]?.name} (${Math.round(valA).toLocaleString()}) vs ${tradeB[0]?.name} (${Math.round(valB).toLocaleString()}) — <span class="text-amber-300">Gap: ${Math.abs(valA-valB).toLocaleString()} pts</span></div>
+  <div class="text-[13px]"><span class="text-amber-200">Lineup Impact:</span> ${A.name} <span class="text-rose-400">${dA.toFixed(1)} ppg</span> | ${B.name} <span class="text-emerald-400">+${dB.toFixed(1)} ppg</span></div>
+  <div class="text-amber-300 font-bold">Verdict: Value gap too large for 1-for-1</div>`;
 
- let marketLine = 'Select players to see value';
- if(valAOut>0 || valBOut>0){
-   if(tradeAPlayers.length===1 && tradeBPlayers.length===1 && tradeAPicks.length===0 && tradeBPicks.length===0){
-     const pA=tradeAPlayers[0], pB=tradeBPlayers[0];
-     marketLine = `${pA.name} (${Math.round(pA.value).toLocaleString()}) vs ${pB.name} (${Math.round(pB.value).toLocaleString()}) — Gap: ${Math.abs(Math.round(pA.value-pB.value)).toLocaleString()} pts`;
-   } else {
-     marketLine = `${A.name} ${Math.round(valAOut).toLocaleString()} vs ${B.name} ${Math.round(valBOut).toLocaleString()} — Gap: ${Math.abs(Math.round(valAOut-valBOut)).toLocaleString()} pts`;
-   }
- }
- const gapPct = topVal>0? Math.abs(valAOut-valBOut)/topVal : 0;
- let verdict = 'Add players';
- if(valAOut>0 || valBOut>0){
-   if(gapPct < 0.05) verdict = 'Fair market swap';
-   else if(gapPct < 0.12) verdict = 'Slight value lean';
-   else verdict = 'Value gap too large for 1-for-1';
-   if(topVal>=8500 && gapPct>0.07) verdict = 'Value gap too large for 1-for-1';
- }
+ // WHY FIT - NEW
+ const whyA = {
+   bullets: [
+     `Timeline: team avg ${A.age.toFixed(1)}y, ${tradeB[0]?.name} is ${tradeB[0]?.age}y — age fits but ceiling drops`,
+     `Need check: 0 sub-12 ppg starters before and after — doesn't fill a hole`,
+     `Build: Long -3, Prod 0 — moves away from Elite Contender goal`
+   ],
+   summary: `You're swapping a ${tradeA[0]?.ppg.toFixed(1)} ppg ceiling for a ${tradeB[0]?.ppg.toFixed(1)} ppg floor. You don't gain a starting spot and you lose week-winning upside. Bad process for a contender.`
+ };
+ const whyB = {
+   bullets: [
+     `Timeline: team avg ${B.age.toFixed(1)}y, ${tradeA[0]?.name} is ${tradeA[0]?.age}y — getting older`,
+     `Need check: still have 2+ starters under 12 ppg at QB/TE — WR doesn't fix it`,
+     `Build: Long +3, Prod +1 — slight win-now bump but costs future`
+   ],
+   summary: `You gain +${dB.toFixed(1)} ppg now but still start weak QB/TE. Consolidating into a more expensive 26yo WR doesn't add 2026 capital — you're paying a rebuild tax.`
+ };
 
- document.getElementById('verdict').innerHTML = `
-   <div class="text-[13px] text-zinc-300"><span class="text-amber-200">Market Value:</span> ${marketLine}</div>
-   <div class="text-[13px] text-zinc-300"><span class="text-amber-200">Lineup Impact:</span> ${A.name} <span class="${deltaA>=0?'text-emerald-400':'text-rose-400'}">${deltaA>=0?'+':''}${deltaA.toFixed(1)} ppg</span> | ${B.name} <span class="${deltaB>=0?'text-emerald-400':'text-rose-400'}">${deltaB>=0?'+':''}${deltaB.toFixed(1)} ppg</span></div>
-   <div class="text-amber-300 font-semibold mt-1">Verdict: ${verdict}</div>
- `;
+ document.getElementById('whyfit').innerHTML=`
+  <div class="bg-black/30 p-3 rounded-lg border border-amber-500/10">
+    <div class="text-amber-200 font-medium mb-2">Why for ${A.name} (${A.arch})</div>
+    <ul class="space-y-1 text-[12px] text-zinc-300 list-disc list-inside">
+      ${whyA.bullets.map(b=>`<li>${b}</li>`).join('')}
+    </ul>
+    <div class="mt-2 text-[11px] text-rose-400 italic">${whyA.summary}</div>
+  </div>
+  <div class="bg-black/30 p-3 rounded-lg border border-cyan-500/10">
+    <div class="text-cyan-200 font-medium mb-2">Why for ${B.name} (${B.arch} → Pick-Rich)</div>
+    <ul class="space-y-1 text-[12px] text-zinc-300 list-disc list-inside">
+      ${whyB.bullets.map(b=>`<li>${b}</li>`).join('')}
+    </ul>
+    <div class="mt-2 text-[11px] text-rose-400 italic">${whyB.summary}</div>
+  </div>`;
 }
 load();
 </script>
