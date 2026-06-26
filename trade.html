@@ -19,11 +19,20 @@ body{font-family:Inter;background:#000;color:#e5e7eb}
 .pick{padding:3px 5px;border-radius:5px;cursor:pointer;font-size:12px}
 .pick:hover{background:rgba(255,255,255,.04)}
 .pick.sel{background:rgba(250,204,21,.18)}
+.modal{backdrop-filter:blur(8px)}
 </style>
 </head>
 <body class="p-4">
 <div class="max-w-[1700px] mx-auto">
   <h1 class="display text-2xl text-amber-300 mb-3">Vault Trade Calculator</h1>
+
+  <!-- NEW BUTTON BAR -->
+  <div class="flex gap-2 mb-3">
+    <button id="btnSimilar" class="px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 rounded text-xs hover:bg-amber-500/30">Similar Value</button>
+    <button id="btnPackage" class="px-3 py-1.5 bg-cyan-500/20 border border-cyan-500/30 rounded text-xs hover:bg-cyan-500/30">Package Finder</button>
+    <button id="btnReset" class="px-3 py-1.5 bg-zinc-800 border border-zinc-700 rounded text-xs hover:bg-zinc-700 ml-auto">Reset Trade</button>
+  </div>
+
   <div id="status" class="text-amber-200/60 text-sm mb-3">Loading league...</div>
 
   <div class="card p-4 mb-4">
@@ -46,8 +55,28 @@ body{font-family:Inter;background:#000;color:#e5e7eb}
   </div>
 
   <div class="grid lg:grid-cols-2 gap-5">
-    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team A</div><div id="gridA" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pa" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="ka" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div></div></div></div>
-    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team B</div><div id="gridB" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pb" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="kb" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div></div></div></div>
+    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team A</div><div id="gridA" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pa" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="ka" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div></div></div>
+    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team B</div><div id="gridB" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players</div><div id="pb" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="kb" class="space-y-0.5 max-h-[300px] overflow-auto"></div></div></div></div>
+  </div>
+</div>
+
+<!-- SIMILAR VALUE MODAL -->
+<div id="modalSimilar" class="fixed inset-0 bg-black/90 hidden z-50 modal flex items-center justify-center p-4">
+  <div class="bg-zinc-950 border border-amber-500/20 rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+    <div class="p-4 border-b border-zinc-800 flex justify-between"><h3 class="text-amber-300">Similar Value — Whole League (±5%)</h3><button onclick="closeModal('similar')" class="text-zinc-500">✕</button></div>
+    <div id="similarContent" class="p-4 overflow-auto flex-1 text-sm"></div>
+  </div>
+</div>
+
+<!-- PACKAGE FINDER MODAL -->
+<div id="modalPackage" class="fixed inset-0 bg-black/90 hidden z-50 modal flex items-center justify-center p-4">
+  <div class="bg-zinc-950 border border-cyan-500/20 rounded-xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+    <div class="p-4 border-b border-zinc-800 flex justify-between"><h3 class="text-cyan-300">Package Finder — Equal Value</h3><button onclick="closeModal('package')" class="text-zinc-500">✕</button></div>
+    <div class="p-3 border-b border-zinc-800 text-xs flex gap-4">
+      <div>Must: <span id="pkgMust" class="text-amber-300"></span></div>
+      <div>Exclude: <span id="pkgEx" class="text-rose-400"></span></div>
+    </div>
+    <div id="packageContent" class="p-4 overflow-auto flex-1 text-sm"></div>
   </div>
 </div>
 
@@ -61,6 +90,8 @@ const K='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_
 const clean=v=>parseFloat(String(v||'').replace(/,/g,''))||0, norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 function arch(t){const{valP,ppgP,age,bal}=t;if(valP>=75&&ppgP>=75&&age>=24&&age<=27.5)return'Elite Contender';if(ppgP>=70&&age>=27.5)return'Aging Contender';if(ppgP>=60&&ppgP<75&&age>=26)return'Win-Now Fringe';if(age<25.5&&valP>=45&&ppgP>=40&&ppgP<65)return'Young Riser';if(ppgP<40&&age<26&&valP>=35)return'Pick-Rich Rebuilder';if(bal>=70)return'Balanced Core';if(valP>=70&&ppgP<=45)return'Volatile';if(valP<=25&&ppgP<=25)return'Stripped Rebuilder';return'Stuck Middle';}
 let TEAMS=[],USERS=[], selA={p:new Set(),k:new Set()}, selB={p:new Set(),k:new Set()}, SLOTS=[];
+let mustA=new Set(), exA=new Set(), mustB=new Set(), exB=new Set();
+
 function getStarters(pls){const pool=[...pls].sort((a,b)=>b.ppg-a.ppg);const used=new Set();const out=[];for(const s of SLOTS){let pos=[s];if(s==='FLEX')pos=['RB','WR','TE'];if(s==='SUPER_FLEX')pos=['QB','RB','WR','TE'];const i=pool.findIndex(p=>!used.has(p.id)&&pos.includes(p.pos));if(i>=0){used.add(pool[i].id);out.push({slot:s,player:pool[i]})}else out.push({slot:s,player:null})}return out}
 
 async function load(){
@@ -85,71 +116,65 @@ function update(A,B){
 
  const tradeA=[...selA.p].map(id=>A.pls.find(p=>p.id===id)).filter(Boolean);
  const tradeB=[...selB.p].map(id=>B.pls.find(p=>p.id===id)).filter(Boolean);
- const tradeAPicks=[...selA.k].map(id=>A.picks.find(p=>p.id===id)).filter(Boolean);
- const tradeBPicks=[...selB.k].map(id=>B.picks.find(p=>p.id===id)).filter(Boolean);
 
  document.getElementById('tradeA').innerHTML=tradeA.map(p=>p.name).join('<br>')||'—';
  document.getElementById('tradeB').innerHTML=tradeB.map(p=>p.name).join('<br>')||'—';
  document.getElementById('giveA').textContent=`${A.name} gives`; document.getElementById('giveB').textContent=`${B.name} gives`;
 
- const hasSelection = tradeA.length + tradeB.length + tradeAPicks.length + tradeBPicks.length > 0;
-
- // LINEUPS always show
+ const hasSelection = tradeA.length + tradeB.length > 0;
  const aBefore=getStarters(A.pls),aAfter=getStarters(a.pls),bBefore=getStarters(B.pls),bAfter=getStarters(b.pls);
  const rl=(b,a)=>b.map((s,i)=>{const bp=s.player,ap=a[i].player;return`<div class="opacity-50">${s.slot}</div><div>${bp?bp.name:''}</div><div class="text-amber-200">${ap?ap.name:''}</div>`}).join('');
  document.getElementById('lineups').innerHTML=`<div><div class="mb-1 text-amber-200/80">${A.name}</div><div class="grid grid-cols-[60px_1fr_1fr] gap-y-1 text-[12px]">${rl(aBefore,aAfter)}</div></div><div><div class="mb-1 text-cyan-200/80 text-right">${B.name}</div><div class="grid grid-cols-[60px_1fr_1fr] gap-y-1 text-[12px]">${rl(bBefore,bAfter)}</div></div>`;
 
  if(!hasSelection){
-   document.getElementById('impact').innerHTML=`
-    <div class="bg-black/40 p-3 rounded-xl border border-amber-500/10"><div class="text-amber-300">${A.name}</div><div class="text-xs text-zinc-500 mt-1">Select players to begin</div></div>
-    <div class="bg-black/40 p-3 rounded-xl border border-cyan-500/10 text-right"><div class="text-cyan-300">${B.name}</div><div class="text-xs text-zinc-500 mt-1">Select players to begin</div></div>`;
-   document.getElementById('verdict').innerHTML=`<div class="text-zinc-500 text-[13px]">Select players to see trade analysis</div>`;
-   document.getElementById('whyfit').innerHTML='';
-   return;
+   document.getElementById('impact').innerHTML=`<div class="bg-black/40 p-3 rounded-xl border border-amber-500/10"><div class="text-amber-300">${A.name}</div><div class="text-xs text-zinc-500 mt-1">Select players to begin</div></div><div class="bg-black/40 p-3 rounded-xl border border-cyan-500/10 text-right"><div class="text-cyan-300">${B.name}</div><div class="text-xs text-zinc-500 mt-1">Select players to begin</div></div>`;
+   document.getElementById('verdict').innerHTML=`<div class="text-zinc-500 text-[13px]">Select players to see trade analysis</div>`;document.getElementById('whyfit').innerHTML='';return;
  }
 
- // IF WE HAVE A TRADE - populate everything
  const valA=tradeA.reduce((s,p)=>s+p.value,0), valB=tradeB.reduce((s,p)=>s+p.value,0);
  const dA=a.opt-A.opt, dB=b.opt-B.opt;
-
- document.getElementById('impact').innerHTML=`
-  <div class="bg-black/40 p-3 rounded-xl border border-amber-500/20">
-    <div class="text-amber-300 font-medium">${A.name}</div>
-    <div class="text-xs mt-1">Long <span class="text-rose-400">118 → 115</span><br>Prod <span class="text-zinc-400">109 → 109</span></div>
-  </div>
-  <div class="bg-black/40 p-3 rounded-xl border border-cyan-500/20 text-right">
-    <div class="text-cyan-300 font-medium">${B.name}</div>
-    <div class="text-xs mt-1">Long <span class="text-emerald-400">100 → 103</span><br>Prod <span class="text-emerald-400">96 → 97</span></div>
-  </div>`;
-
+ document.getElementById('impact').innerHTML=`<div class="bg-black/40 p-3 rounded-xl border border-amber-500/20"><div class="text-amber-300 font-medium">${A.name}</div><div class="text-xs mt-1">Long <span class="text-rose-400">118 → 115</span><br>Prod <span class="text-zinc-400">109 → 109</span></div></div><div class="bg-black/40 p-3 rounded-xl border border-cyan-500/20 text-right"><div class="text-cyan-300 font-medium">${B.name}</div><div class="text-xs mt-1">Long <span class="text-emerald-400">100 → 103</span><br>Prod <span class="text-emerald-400">96 → 97</span></div></div>`;
  const gap=Math.abs(valA-valB);
- document.getElementById('verdict').innerHTML=`
-  <div class="space-y-1">
-    <div class="text-[13px]"><span class="text-amber-200">Market Value:</span> <span class="text-white">${tradeA[0]?.name} (${Math.round(valA).toLocaleString()})</span> vs <span class="text-white">${tradeB[0]?.name} (${Math.round(valB).toLocaleString()})</span> — <span class="text-amber-300">Gap: ${gap.toLocaleString()} pts</span></div>
-    <div class="text-[13px]"><span class="text-amber-200">Lineup Impact:</span> ${A.name} <span class="text-rose-400">${dA.toFixed(1)} ppg</span> | ${B.name} <span class="text-emerald-400">+${dB.toFixed(1)} ppg</span></div>
-    <div class="text-amber-300 font-bold">Verdict: Value gap too large for 1-for-1</div>
-  </div>`;
-
- document.getElementById('whyfit').innerHTML=`
-  <div class="bg-black/30 p-3 rounded-lg border border-amber-500/10">
-    <div class="text-amber-200 font-medium mb-2">Why for ${A.name} (${A.arch})</div>
-    <ul class="space-y-1 text-[12px] text-zinc-300 list-disc list-inside">
-      <li>Timeline: team avg ${A.age.toFixed(1)}y, ${tradeB[0]?.name} is ${tradeB[0]?.age}y — age fits but ceiling drops</li>
-      <li>Need check: 0 sub-12 ppg starters before and after — doesn't fill a hole</li>
-      <li>Build: Long -3, Prod 0 — moves away from Elite Contender goal</li>
-    </ul>
-    <div class="mt-2 text-[11px] text-rose-400 italic">You're swapping a ${tradeA[0]?.ppg.toFixed(1)} ppg ceiling for a ${tradeB[0]?.ppg.toFixed(1)} ppg floor. You don't gain a starting spot and you lose week-winning upside. Bad process for a contender.</div>
-  </div>
-  <div class="bg-black/30 p-3 rounded-lg border border-cyan-500/10">
-    <div class="text-cyan-200 font-medium mb-2">Why for ${B.name} (${B.arch})</div>
-    <ul class="space-y-1 text-[12px] text-zinc-300 list-disc list-inside">
-      <li>Timeline: team avg ${B.age.toFixed(1)}y, ${tradeA[0]?.name} is ${tradeA[0]?.age}y — getting older</li>
-      <li>Need check: still have 2+ starters under 12 ppg at QB/TE — WR doesn't fix it</li>
-      <li>Build: Long +3, Prod +1 — slight win-now bump but costs future</li>
-    </ul>
-    <div class="mt-2 text-[11px] text-rose-400 italic">You gain +${dB.toFixed(1)} ppg now but still start weak QB/TE. Consolidating into a more expensive 26yo WR doesn't add 2026 capital — you're paying a rebuild tax.</div>
-  </div>`;
+ document.getElementById('verdict').innerHTML=`<div class="space-y-1"><div class="text-[13px]"><span class="text-amber-200">Market Value:</span> <span class="text-white">${tradeA[0]?.name} (${Math.round(valA).toLocaleString()})</span> vs <span class="text-white">${tradeB[0]?.name} (${Math.round(valB).toLocaleString()})</span> — <span class="text-amber-300">Gap: ${gap.toLocaleString()} pts</span></div><div class="text-[13px]"><span class="text-amber-200">Lineup Impact:</span> ${A.name} <span class="text-rose-400">${dA.toFixed(1)} ppg</span> | ${B.name} <span class="text-emerald-400">+${dB.toFixed(1)} ppg</span></div><div class="text-amber-300 font-bold">Verdict: Value gap too large for 1-for-1</div></div>`;
+ document.getElementById('whyfit').innerHTML=`<div class="bg-black/30 p-3 rounded-lg border border-amber-500/10"><div class="text-amber-200 font-medium mb-2">Why for ${A.name} (${A.arch})</div><ul class="space-y-1 text-[12px] text-zinc-300 list-disc list-inside"><li>Timeline: team avg ${A.age.toFixed(1)}y, ${tradeB[0]?.name} is ${tradeB[0]?.age}y — age fits but ceiling drops</li><li>Need check: 0 sub-12 ppg starters before and after — doesn't fill a hole</li><li>Build: Long -3, Prod 0 — moves away from Elite Contender goal</li></ul><div class="mt-2 text-[11px] text-rose-400 italic">You're swapping a ${tradeA[0]?.ppg.toFixed(1)} ppg ceiling for a ${tradeB[0]?.ppg.toFixed(1)} ppg floor. You don't gain a starting spot and you lose week-winning upside. Bad process for a contender.</div></div><div class="bg-black/30 p-3 rounded-lg border border-cyan-500/10"><div class="text-cyan-200 font-medium mb-2">Why for ${B.name} (${B.arch})</div><ul class="space-y-1 text-[12px] text-zinc-300 list-disc list-inside"><li>Timeline: team avg ${B.age.toFixed(1)}y, ${tradeA[0]?.name} is ${tradeA[0]?.age}y — getting older</li><li>Need check: still have 2+ starters under 12 ppg at QB/TE — WR doesn't fix it</li><li>Build: Long +3, Prod +1 — slight win-now bump but costs future</li></ul><div class="mt-2 text-[11px] text-rose-400 italic">You gain +${dB.toFixed(1)} ppg now but still start weak QB/TE. Consolidating into a more expensive 26yo WR doesn't add 2026 capital — you're paying a rebuild tax.</div></div>`;
 }
+
+// NEW FUNCTIONS FOR POPUPS
+function getFitColor(p, team){const a=team.arch||'';const reb=a.includes('Rebuilder');const con=a.includes('Contender');if(reb) return p.age<=24?'text-emerald-400':p.age<=26?'text-amber-300':'text-rose-400';if(con) return p.age>=25&&p.age<=28?'text-emerald-400':p.age<=24||p.age===29?'text-amber-300':'text-rose-400';return'text-amber-300'}
+
+function openSimilar(){
+  const A=TEAMS.find(t=>t.rid==teamA.value), B=TEAMS.find(t=>t.rid==teamB.value);
+  const p=[...selA.p][0]? A.pls.find(x=>x.id=== [...selA.p][0]) : [...selB.p][0]? B.pls.find(x=>x.id=== [...selB.p][0]) : null;
+  const el=document.getElementById('similarContent');
+  if(!p){el.innerHTML='<div class="text-zinc-500">Select a player first</div>';} else {
+    const sims=TEAMS.flatMap(t=>t.pls.map(x=>({...x,team:t}))).filter(x=>x.id!==p.id && Math.abs(x.value-p.value)<=p.value*0.05).sort((a,b)=>Math.abs(a.value-p.value)-Math.abs(b.value-p.value)).slice(0,40);
+    el.innerHTML=sims.map(x=>`<div class="flex justify-between py-1.5 px-2 hover:bg-white/5 rounded cursor-pointer" onclick="addPlayer('${x.id}','${x.team.rid}')"><span class="${getFitColor(x,x.team)}">${x.name} <span class="opacity-50">(${x.team.name})</span></span><span class="opacity-60">${Math.round(x.value)}</span></div>`).join('');
+  }
+  document.getElementById('modalSimilar').classList.remove('hidden');
+}
+function openPackage(){
+  const A=TEAMS.find(t=>t.rid==teamA.value), B=TEAMS.find(t=>t.rid==teamB.value);
+  const p=[...selA.p][0]? A.pls.find(x=>x.id=== [...selA.p][0]) : null;
+  const el=document.getElementById('packageContent');
+  if(!p){el.innerHTML='<div class="text-zinc-500">Select a target player first</div>';} else {
+    const pool=B.pls.filter(x=>!exB.has(x.id)); const combos=[]; const target=p.value;
+    const check=arr=>{const v=arr.reduce((s,x)=>s+x.value,0); if(Math.abs(v-target)/target<0.03) combos.push(arr)};
+    for(let i=0;i<pool.length;i++) check([pool[i]]);
+    for(let i=0;i<pool.length;i++) for(let j=i+1;j<pool.length;j++) check([pool[i],pool[j]]);
+    for(let i=0;i<pool.length;i++) for(let j=i+1;j<pool.length;j++) for(let k=j+1;k<pool.length;k++) check([pool[i],pool[j],pool[k]]);
+    el.innerHTML=combos.slice(0,100).map(arr=>`<div class="py-2 px-2 hover:bg-white/5 rounded cursor-pointer border-b border-zinc-800" onclick="applyPkg([${arr.map(x=>`'${x.id}'`).join(',')}])"><div>${arr.map(x=>`<span class="${getFitColor(x,B)}">${x.name}</span>`).join(' + ')}</div><div class="text-[11px] opacity-50">${Math.round(arr.reduce((s,x)=>s+x.value,0))} pts</div></div>`).join('') || '<div class="text-zinc-500">No equal packages</div>';
+  }
+  document.getElementById('modalPackage').classList.remove('hidden');
+}
+function addPlayer(id,rid){if(rid==teamA.value) selA.p.add(id); else selB.p.add(id); closeModal('similar'); render()}
+function applyPkg(ids){selB.p=new Set(ids); closeModal('package'); render()}
+function closeModal(t){document.getElementById(t==='similar'?'modalSimilar':'modalPackage').classList.add('hidden')}
+function resetTrade(){selA={p:new Set(),k:new Set()};selB={p:new Set(),k:new Set()};mustA.clear();exA.clear();mustB.clear();exB.clear();render()}
+
+document.getElementById('btnSimilar').onclick=openSimilar;
+document.getElementById('btnPackage').onclick=openPackage;
+document.getElementById('btnReset').onclick=resetTrade;
+
 load();
 </script>
 </body>
