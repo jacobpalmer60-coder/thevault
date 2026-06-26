@@ -41,12 +41,12 @@ body{font-family:Inter;background:#000;color:#e5e7eb}
 
   <div class="card p-4 mb-4">
     <div id="impact" class="grid md:grid-cols-2 gap-3 text-sm"></div>
-    <div id="verdict" class="mt-3 text-center"></div>
+    <div id="verdict" class="mt-3 text-center space-y-1"></div>
   </div>
 
   <div class="grid lg:grid-cols-2 gap-5">
     <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team A</div><div id="gridA" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players (value • ppg • age)</div><div id="pa" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="ka" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div></div></div></div>
-    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team B</div><div id="gridB" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players (value • ppg • age)</div><div id="pb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="kb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div></div>
+    <div><div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-1">Team B</div><div id="gridB" class="grid grid-cols-3 gap-2 mb-2"></div><div class="card p-3"><div class="grid grid-cols-2 gap-3"><div><div class="text-[11px] opacity-60 mb-1">Players (value • ppg • age)</div><div id="pb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div><div><div class="text-[11px] opacity-60 mb-1">Picks</div><div id="kb" class="space-y-0.5 max-h-[320px] overflow-auto"></div></div></div></div></div>
   </div>
 </div>
 
@@ -98,31 +98,57 @@ function update(A,B){
 
  const aBefore=getStarters(A.pls),aAfter=getStarters(a.pls),bBefore=getStarters(B.pls),bAfter=getStarters(b.pls);
  const renderLineup=(bef,aft)=>bef.map((s,i)=>{const b=s.player,a=aft[i].player;const ch=!b||!a||b.id!==a.id;const bt=b?`${b.name} <span class="opacity-60">${b.ppg.toFixed(1)}</span>`:'—';const at=a?`${a.name} <span class="opacity-60">${a.ppg.toFixed(1)}</span>`:'—';return`<div class="opacity-50">${s.slot}</div><div class="${ch?'text-amber-200':''}">${bt}</div><div class="${ch?'text-amber-200':''}">${at}</div>`}).join('');
- document.getElementById('lineups').innerHTML=`<div><div class="font-medium mb-1">${A.name}</div><div class="grid grid-cols-[60px_1fr_1fr] text-[11px] opacity-60 mb-1"><div></div><div>Before</div><div>After</div></div><div class="grid grid-cols-[60px_1fr_1fr] gap-y-1">${renderLineup(aBefore,aAfter)}</div></div><div><div class="font-medium mb-1">${B.name}</div><div class="grid grid-cols-[60px_1fr_1fr] text-[11px] opacity-60 mb-1"><div></div><div>Before</div><div>After</div></div><div class="grid grid-cols-[60px_1fr_1fr] gap-y-1">${renderLineup(bBefore,bAfter)}</div></div>`;
+ document.getElementById('lineups').innerHTML=`<div><div class="font-medium mb-1 text-amber-200/80">${A.name}</div><div class="grid grid-cols-[60px_1fr_1fr] text-[11px] opacity-60 mb-1"><div></div><div>Before</div><div>After</div></div><div class="grid grid-cols-[60px_1fr_1fr] gap-y-1">${renderLineup(aBefore,aAfter)}</div></div><div><div class="font-medium mb-1 text-cyan-200/80">${B.name}</div><div class="grid grid-cols-[60px_1fr_1fr] text-[11px] opacity-60 mb-1"><div></div><div>Before</div><div>After</div></div><div class="grid grid-cols-[60px_1fr_1fr] gap-y-1">${renderLineup(bBefore,bAfter)}</div></div>`;
 
  const allVals=[...TEAMS.map(t=>t.tot),a.tot,b.tot].sort((x,y)=>x-y),allOpts=[...TEAMS.map(t=>t.opt),a.opt,b.opt].sort((x,y)=>x-y);const getP=(arr,v)=>{const i=arr.indexOf(v);return i>=0?i/(arr.length-1)*100:50};[a,b].forEach(t=>{t.valP=getP(allVals,t.tot);t.ppgP=getP(allOpts,t.opt);t.arch=arch(t)});const maxV=Math.max(...TEAMS.map(t=>t.tot),a.tot,b.tot),maxP=Math.max(...TEAMS.map(t=>t.pv),a.pv,b.pv);[a,b].forEach(t=>{const vs=maxV?t.tot/maxV*100:50;const as=Math.max(0,Math.min(100,100-((t.age-23)*8)));const ps=maxP?t.pv/maxP*100:50;t.lr=vs*.6+as*.2+ps*.2});const avgL=TEAMS.reduce((s,t)=>s+t.lr,0)/TEAMS.length,avgO=TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length;const aLong=avgL?a.lr/avgL*100:100,bLong=avgL?b.lr/avgL*100:100,aProd=avgO?a.opt/avgO*100:100,bProd=avgO?b.opt/avgO*100:100;
 
- // COLORED MIRRORED IMPACT
- document.getElementById('impact').innerHTML=`<div class="bg-black/40 p-2.5 rounded-xl border border-amber-500/15"><b class="text-amber-200">${A.name}</b><div class="text-xs mt-1.5 space-y-0.5"><div>Long <span class="${aLong>=A.long?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(A.long)} → ${Math.round(aLong)}</span></div><div>Prod <span class="${aProd>=A.prod?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(A.prod)} → ${Math.round(aProd)}</span></div><div class="text-zinc-500">${A.arch} → ${a.arch}</div></div></div><div class="bg-black/40 p-2.5 rounded-xl border border-cyan-500/15 text-right"><b class="text-cyan-200">${B.name}</b><div class="text-xs mt-1.5 space-y-0.5"><div>Long <span class="${bLong>=B.long?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(B.long)} → ${Math.round(bLong)}</span></div><div>Prod <span class="${bProd>=B.prod?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(B.prod)} → ${Math.round(bProd)}</span></div><div class="text-zinc-500">${B.arch} → ${b.arch}</div></div></div>`;
+ // IMPACT with color and mirror
+ document.getElementById('impact').innerHTML=`
+  <div class="bg-black/40 p-2.5 rounded-xl border border-amber-500/15">
+    <b class="text-amber-200">${A.name}</b>
+    <div class="text-xs mt-1.5 space-y-0.5">
+      <div>Long <span class="${aLong>=A.long?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(A.long)} → ${Math.round(aLong)}</span></div>
+      <div>Prod <span class="${aProd>=A.prod?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(A.prod)} → ${Math.round(aProd)}</span></div>
+      <div class="text-zinc-500">${A.arch} → ${a.arch}</div>
+    </div>
+  <div class="bg-black/40 p-2.5 rounded-xl border border-cyan-500/15 text-right">
+    <b class="text-cyan-200">${B.name}</b>
+    <div class="text-xs mt-1.5 space-y-0.5">
+      <div>Long <span class="${bLong>=B.long?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(B.long)} → ${Math.round(bLong)}</span></div>
+      <div>Prod <span class="${bProd>=B.prod?'text-emerald-400':'text-rose-400'} font-medium">${Math.round(B.prod)} → ${Math.round(bProd)}</span></div>
+      <div class="text-zinc-500">${B.arch} → ${b.arch}</div>
+    </div>
+  </div>`;
 
- // THREE-LINE VERDICT WITH COLOR
+ // VERDICT
  const valAOut = tradeAPlayers.reduce((s,p)=>s+p.value,0)+tradeAPicks.reduce((s,p)=>s+p.val,0);
  const valBOut = tradeBPlayers.reduce((s,p)=>s+p.value,0)+tradeBPicks.reduce((s,p)=>s+p.val,0);
- const topVal = Math.max(...tradeAPlayers.map(p=>p.value),0,...tradeAPicks.map(p=>p.val),0,...tradeBPlayers.map(p=>p.value),0,...tradeBPicks.map(p=>p.val),0);
+ const topVal = Math.max(...tradeAPlayers.map(p=>p.value),...tradeAPicks.map(p=>p.val),...tradeBPlayers.map(p=>p.value),...tradeBPicks.map(p=>p.val),0);
  const deltaA = a.opt - A.opt, deltaB = b.opt - B.opt;
- let marketHTML='Select players to see value';
- if(valAOut>0||valBOut>0){
-   if(tradeAPlayers.length===1&&tradeBPlayers.length===1&&tradeAPicks.length===0&&tradeBPicks.length===0){
-     const pA=tradeAPlayers[0],pB=tradeBPlayers[0];
-     marketHTML = `<span class="text-white">${pA.name}</span> (${Math.round(pA.value).toLocaleString()}) vs <span class="text-white">${pB.name}</span> (${Math.round(pB.value).toLocaleString()}) — <span class="text-amber-300">Gap: ${Math.abs(Math.round(pA.value-pB.value)).toLocaleString()} pts</span>`;
-   }else{
-     marketHTML = `${Math.round(valAOut).toLocaleString()} vs ${Math.round(valBOut).toLocaleString()} — <span class="text-amber-300">Gap: ${Math.abs(Math.round(valAOut-valBOut)).toLocaleString()} pts</span>`;
+
+ let marketLine = 'Select players to see value';
+ if(valAOut>0 || valBOut>0){
+   if(tradeAPlayers.length===1 && tradeBPlayers.length===1 && tradeAPicks.length===0 && tradeBPicks.length===0){
+     const pA=tradeAPlayers[0], pB=tradeBPlayers[0];
+     marketLine = `${pA.name} (${Math.round(pA.value).toLocaleString()}) vs ${pB.name} (${Math.round(pB.value).toLocaleString()}) — Gap: ${Math.abs(Math.round(pA.value-pB.value)).toLocaleString()} pts`;
+   } else {
+     marketLine = `${A.name} ${Math.round(valAOut).toLocaleString()} vs ${B.name} ${Math.round(valBOut).toLocaleString()} — Gap: ${Math.abs(Math.round(valAOut-valBOut)).toLocaleString()} pts`;
    }
  }
- const gapPct = topVal>0?Math.abs(valAOut-valBOut)/topVal:0;
- let verdict='Add players';
- if(valAOut>0||valBOut>0){verdict=gapPct<0.05?'Fair market swap':gapPct<0.12?'Slight value lean':'Value gap too large for 1-for-1';if(topVal>=8500&&gapPct>0.07)verdict='Value gap too large for 1-for-1';}
- document.getElementById('verdict').innerHTML=`<div class="text-[13px] text-zinc-300"><span class="text-amber-200">Market Value:</span> ${marketHTML}</div><div class="text-[13px] text-zinc-300"><span class="text-amber-200">Lineup Impact:</span> ${A.name} <span class="${deltaA>=0?'text-emerald-400':'text-rose-400'}">${deltaA>=0?'+':''}${deltaA.toFixed(1)} ppg</span> | ${B.name} <span class="${deltaB>=0?'text-emerald-400':'text-rose-400'}">${deltaB>=0?'+':''}${deltaB.toFixed(1)} ppg</span></div><div class="text-amber-300 font-semibold mt-1">Verdict: ${verdict}</div>`;
+ const gapPct = topVal>0? Math.abs(valAOut-valBOut)/topVal : 0;
+ let verdict = 'Add players';
+ if(valAOut>0 || valBOut>0){
+   if(gapPct < 0.05) verdict = 'Fair market swap';
+   else if(gapPct < 0.12) verdict = 'Slight value lean';
+   else verdict = 'Value gap too large for 1-for-1';
+   if(topVal>=8500 && gapPct>0.07) verdict = 'Value gap too large for 1-for-1';
+ }
+
+ document.getElementById('verdict').innerHTML = `
+   <div class="text-[13px] text-zinc-300"><span class="text-amber-200">Market Value:</span> ${marketLine}</div>
+   <div class="text-[13px] text-zinc-300"><span class="text-amber-200">Lineup Impact:</span> ${A.name} <span class="${deltaA>=0?'text-emerald-400':'text-rose-400'}">${deltaA>=0?'+':''}${deltaA.toFixed(1)} ppg</span> | ${B.name} <span class="${deltaB>=0?'text-emerald-400':'text-rose-400'}">${deltaB>=0?'+':''}${deltaB.toFixed(1)} ppg</span></div>
+   <div class="text-amber-300 font-semibold mt-1">Verdict: ${verdict}</div>
+ `;
 }
 load();
 </script>
