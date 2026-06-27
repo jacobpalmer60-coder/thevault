@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vault TradeCalc Pro - Before Metrics</title>
+<title>Vault TradeCalc Pro - Instant Metrics</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -10,7 +10,7 @@
 body{font-family:Inter;background:#000;color:#e5e7eb}
 .display{font-family:Cinzel}
 .card{background:rgba(12,12,12,.92);border:1px solid rgba(250,204,21,.15);border-radius:16px}
-.team{padding:10px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,255,.08);transition:all 0.2s;font-size:14px}
+.team{padding:10px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,.08);transition:all 0.2s;font-size:14px}
 .team:hover{border-color:rgba(250,204,21,.4);background:rgba(250,204,21,.05)}
 .team.active{background:rgba(250,204,21,.12);border-color:#facc15;box-shadow:0 0 1px rgba(250,204,21,.2)}
 .player{padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;transition:all 0.15s;display:flex;justify-content:space-between}
@@ -64,7 +64,7 @@ body{font-family:Inter;background:#000;color:#e5e7eb}
   </div>
 
   <div class="card p-4 mb-4">
-    <div id="impact" class="min-h-[80px] flex items-center justify-center text-zinc-600 text-sm">Select players to see trade analysis</div>
+    <div id="impact" class="min-h-[80px] flex items-center justify-center text-zinc-600 text-sm">Select teams to see metrics</div>
     <div id="verdict" class="mt-3 text-center border-t border-amber-500/10 pt-3 hidden"></div>
     <div id="whyfit" class="mt-4 grid md:grid-cols-2 gap-4"></div>
   </div>
@@ -85,6 +85,7 @@ body{font-family:Inter;background:#000;color:#e5e7eb}
           </div>
         </div>
       </div>
+    </div>
     <div>
       <div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-2">Team B</div>
       <div id="gridB" class="grid grid-cols-3 gap-2 mb-3"></div>
@@ -246,22 +247,12 @@ function update(A,B){
  document.getElementById('tradeA').innerHTML=[...tradeA.map(p=>`${p.name} <span class="text-zinc-500">(${p.ppg.toFixed(1)})</span>`),...tradeAK.map(p=>`${p.season} R${p.round}`)].join('<br>')||'—';
  document.getElementById('tradeB').innerHTML=[...tradeB.map(p=>`${p.name} <span class="text-zinc-500">(${p.ppg.toFixed(1)})</span>`),...tradeBK.map(p=>`${p.season} R${p.round}`)].join('<br>')||'—';
 
- const hasSelection = tradeA.length + tradeB.length + tradeAK.length + tradeBK.length > 0;
  const aBefore=getStarters(A.pls),aAfter=getStarters(a.pls),bBefore=getStarters(B.pls),bAfter=getStarters(b.pls);
  const rl=(b,a)=>b.map((s,i)=>{const bp=s.player,ap=a[i].player;const changed=bp?.id!==ap?.id;const bppg=bp?` <span class="text-zinc-600">${bp.ppg.toFixed(1)}</span>`:'';const appg=ap?` <span class="${changed?'text-emerald-400':'text-amber-200/70'}">${ap.ppg.toFixed(1)}</span>`:'';return`<div class="opacity-50">${s.slot}</div><div class="${changed?'text-zinc-500 line-through':''}">${bp?bp.name:'—'}${bppg}</div><div class="flex items-center gap-1.5">${changed?'<span class="text-amber-400">→</span>':''}<span class="${changed?'text-emerald-400 font-medium':'text-zinc-300'}">${ap?ap.name:'—'}${appg}</span></div>`}).join('');
- document.getElementById('lineups').innerHTML=`<div><div class="mb-2 text-amber-200/80 font-medium">${A.name}</div><div class="grid grid-cols-[70px_1fr_1fr] gap-y-2 text-[12px] items-center">${rl(aBefore,aAfter)}</div></div><div><div class="mb-2 text-cyan-200/80 font-medium text-right">${B.name}</div><div class="grid grid-cols-[70px_1fr_1fr] gap-y-2 text-[12px] items-center">${rl(bBefore,bAfter)}</div></div>`;
+ document.getElementById('lineups').innerHTML=`<div><div class="mb-2 text-amber-200/80 font-medium">${A.name}</div><div class="grid grid-cols-[70px_1fr_1fr] gap-y-2 text-[12px] items-center">${rl(aBefore,aAfter)}</div></div><div class="mb-2 text-cyan-200/80 font-medium text-right">${B.name}</div><div class="grid grid-cols-[70px_1fr_1fr] gap-y-2 text-[12px] items-center">${rl(bBefore,bAfter)}</div></div>`;
 
  const impactEl = document.getElementById('impact');
  const verdictEl = document.getElementById('verdict');
-
- if(!hasSelection){
-   impactEl.innerHTML=`<div class="text-zinc-600">Select players or picks to see trade analysis</div>`;
-   impactEl.className = "min-h-[80px] flex items-center justify-center text-zinc-600 text-sm";
-   verdictEl.classList.add('hidden');
-   document.getElementById('whyfit').innerHTML='';
-   return;
- }
-
  impactEl.className = "grid md:grid-cols-2 gap-4 text-sm";
  const valA=tradeA.reduce((s,p)=>s+p.value,0)+tradeAK.length*500, valB=tradeB.reduce((s,p)=>s+p.value,0)+tradeBK.length*500;
  const dA=a.opt-A.opt, dB=b.opt-B.opt;
@@ -269,6 +260,7 @@ function update(A,B){
  const dLongA = Math.max(0, Math.min(100, 100 - (a.age - 24) * 8)) - A.long;
  const dLongB = Math.max(0, Math.min(100, 100 - (b.age - 24) * 8)) - B.long;
  const dProdA = ((a.opt / Math.max(1,A.opt)) * 100 - 100), dProdB = ((b.opt / Math.max(1,B.opt)) * 100 - 100);
+ const hasSelection = tradeA.length + tradeB.length + tradeAK.length + tradeBK.length > 0;
 
  impactEl.innerHTML=`
    <div class="bg-zinc-950/50 p-4 rounded-xl border border-amber-500/20">
@@ -276,29 +268,35 @@ function update(A,B){
        <div class="text-amber-300 font-medium">${A.name}</div>
        <div class="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-200">${A.arch}</div>
      </div>
-     <div class="text-[10px] text-zinc-500 mb-1.5">BEFORE → AFTER</div>
+     <div class="text-[10px] text-zinc-500 mb-1.5">${hasSelection? 'BEFORE → AFTER' : 'CURRENT METRICS'}</div>
      <div class="grid grid-cols-4 gap-2 text-[11px]">
        <div><div class="text-zinc-600">Value</div><div class="text-white">${Math.round(A.tot).toLocaleString()}</div></div>
-       <div><div class="text-zinc-600">Long</div><div class="${dLongA>=0?'text-emerald-400':'text-rose-400'}">${Math.round(A.long)} → ${Math.round(A.long+dLongA)}</div></div>
-       <div><div class="text-zinc-600">Prod</div><div class="${dProdA>=0?'text-emerald-400':'text-rose-400'}">${Math.round(A.prod)} → ${Math.round(A.prod+dProdA)}</div></div>
-       <div><div class="text-zinc-600">Age</div><div class="${dAgeA<=0?'text-emerald-400':'text-rose-400'}">${A.age.toFixed(1)} → ${a.age.toFixed(1)}</div></div>
+       <div><div class="text-zinc-600">Long</div><div class="${hasSelection? (dLongA>=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${Math.round(A.long)}${hasSelection? ` → ${Math.round(A.long+dLongA)}` : ''}</div></div>
+       <div><div class="text-zinc-600">Prod</div><div class="${hasSelection? (dProdA>=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${Math.round(A.prod)}${hasSelection? ` → ${Math.round(A.prod+dProdA)}` : ''}</div></div>
+       <div><div class="text-zinc-600">Age</div><div class="${hasSelection? (dAgeA<=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${A.age.toFixed(1)}${hasSelection? ` → ${a.age.toFixed(1)}` : ''}</div></div>
      </div>
-     <div class="mt-2 pt-2 border-t border-zinc-800 text-[10px] text-zinc-500">PPG: ${A.opt.toFixed(1)} → <span class="${dA>=0?'text-emerald-400':'text-rose-400'}">${a.opt.toFixed(1)}</span></div>
+     <div class="mt-2 pt-2 border-t border-zinc-800 text-[10px] text-zinc-500">PPG: ${A.opt.toFixed(1)}${hasSelection? ` → <span class="${dA>=0?'text-emerald-400':'text-rose-400'}">${a.opt.toFixed(1)}</span>` : ''}</div>
    </div>
    <div class="bg-zinc-950/50 p-4 rounded-xl border border-cyan-500/20">
      <div class="flex items-center justify-between mb-2">
        <div class="text-cyan-300 font-medium">${B.name}</div>
        <div class="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-200">${B.arch}</div>
      </div>
-     <div class="text-[10px] text-zinc-500 mb-1.5 text-right">BEFORE → AFTER</div>
+     <div class="text-[10px] text-zinc-500 mb-1.5 text-right">${hasSelection? 'BEFORE → AFTER' : 'CURRENT METRICS'}</div>
      <div class="grid grid-cols-4 gap-2 text-[11px] text-right">
        <div><div class="text-zinc-600">Value</div><div class="text-white">${Math.round(B.tot).toLocaleString()}</div></div>
-       <div><div class="text-zinc-600">Long</div><div class="${dLongB>=0?'text-emerald-400':'text-rose-400'}">${Math.round(B.long)} → ${Math.round(B.long+dLongB)}</div></div>
-       <div><div class="text-zinc-600">Prod</div><div class="${dProdB>=0?'text-emerald-400':'text-rose-400'}">${Math.round(B.prod)} → ${Math.round(B.prod+dProdB)}</div></div>
-       <div><div class="text-zinc-600">Age</div><div class="${dAgeB<=0?'text-emerald-400':'text-rose-400'}">${B.age.toFixed(1)} → ${b.age.toFixed(1)}</div></div>
+       <div><div class="text-zinc-600">Long</div><div class="${hasSelection? (dLongB>=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${Math.round(B.long)}${hasSelection? ` → ${Math.round(B.long+dLongB)}` : ''}</div></div>
+       <div><div class="text-zinc-600">Prod</div><div class="${hasSelection? (dProdB>=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${Math.round(B.prod)}${hasSelection? ` → ${Math.round(B.prod+dProdB)}` : ''}</div></div>
+       <div><div class="text-zinc-600">Age</div><div class="${hasSelection? (dAgeB<=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${B.age.toFixed(1)}${hasSelection? ` → ${b.age.toFixed(1)}` : ''}</div></div>
      </div>
-     <div class="mt-2 pt-2 border-t border-zinc-800 text-[10px] text-zinc-500 text-right">PPG: ${B.opt.toFixed(1)} → <span class="${dB>=0?'text-emerald-400':'text-rose-400'}">${b.opt.toFixed(1)}</span></div>
+     <div class="mt-2 pt-2 border-t border-zinc-800 text-[10px] text-zinc-500 text-right">PPG: ${B.opt.toFixed(1)}${hasSelection? ` → <span class="${dB>=0?'text-emerald-400':'text-rose-400'}">${b.opt.toFixed(1)}</span>` : ''}</div>
    </div>`;
+
+ if(!hasSelection){
+   verdictEl.classList.add('hidden');
+   document.getElementById('whyfit').innerHTML='';
+   return;
+ }
 
  const gap=Math.abs(valA-valB); const tradeSize=`${tradeA.length+tradeAK.length}-for-${tradeB.length+tradeBK.length}`;
  const aNames=[...tradeA.map(p=>p.name),...tradeAK.map(p=>`${p.season} R${p.round}`)].join(' + ')||'—';
