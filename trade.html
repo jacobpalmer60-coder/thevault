@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vault TradeCalc Pro - UI Fixed</title>
+<title>Vault TradeCalc Pro - Picks Fixed</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -10,16 +10,15 @@
 body{font-family:Inter;background:#000;color:#e5e7eb}
 .display{font-family:Cinzel}
 .card{background:rgba(12,12,12,.92);border:1px solid rgba(250,204,21,.15);border-radius:16px}
-.team{padding:10px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,.08);transition:all 0.2s;font-size:14px}
+.team{padding:10px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,255,.08);transition:all 0.2s;font-size:14px}
 .team:hover{border-color:rgba(250,204,21,.4);background:rgba(250,204,21,.05)}
 .team.active{background:rgba(250,204,21,.12);border-color:#facc15;box-shadow:0 0 0 1px rgba(250,204,21,.2)}
 .player{padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;transition:all 0.15s;display:flex;justify-content:space-between}
 .player:hover{background:rgba(255,255,255,.06)}
 .player.sel{background:rgba(250,204,21,.18);color:#fde047}
-.pick{padding:4px 6px;border-radius:5px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between}
+.pick{padding:4px 6px;border-radius:5px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between;align-items:center}
 .pick:hover{background:rgba(255,255,255,.04)}
 .pick.sel{background:rgba(250,204,21,.18);color:#fde047}
-.pick.used{opacity:0.4;text-decoration:line-through}
 #leftList::-webkit-scrollbar, #rightList::-webkit-scrollbar, #pa::-webkit-scrollbar, #pb::-webkit-scrollbar, #ka::-webkit-scrollbar, #kb::-webkit-scrollbar { width: 6px; }
 #leftList::-webkit-scrollbar-thumb, #rightList::-webkit-scrollbar-thumb, #pa::-webkit-scrollbar-thumb, #pb::-webkit-scrollbar-thumb, #ka::-webkit-scrollbar-thumb, #kb::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
 </style>
@@ -29,7 +28,7 @@ body{font-family:Inter;background:#000;color:#e5e7eb}
   <div class="flex items-center justify-between mb-4">
     <h1 class="display text-2xl text-amber-300">Vault Trade Calculator</h1>
     <div class="flex gap-2">
-      <button onclick="openFinder()" class="px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 rounded-xl text-sm font-medium text-amber-200 transition-all flex items-center gap-2">
+      <button onclick="openFinder()" class="px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 rounded-xl text-sm font-medium text-amber-200 transition-all flex items-center gap-2">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         Package Finder
       </button>
@@ -94,13 +93,13 @@ body{font-family:Inter;background:#000;color:#e5e7eb}
   </div>
 </div>
 
-<!-- PACKAGE FINDER MODAL (same as before) -->
+<!-- PACKAGE FINDER MODAL -->
 <div id="finderModal" class="fixed inset-0 bg-black/90 backdrop-blur-xl hidden z-50 flex items-center justify-center p-4">
   <div class="bg-[#0a0a0a] border border-amber-500/20 rounded-2xl w-full max-w-6xl h-[85vh] flex flex-col shadow-2xl shadow-amber-500/5">
     <div class="px-6 py-4 border-b border-zinc-800/50 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         </div>
         <div>
           <h2 class="text-lg font-medium text-white">Package Finder</h2>
@@ -150,39 +149,61 @@ const clean=v=>parseFloat(String(v||'').replace(/,/g,''))||0, norm=s=>String(s||
 let TEAMS=[],USERS=[], selA={p:new Set(),k:new Set()}, selB={p:new Set(),k:new Set()}, SLOTS=[], DRAFTS=[], CURRENT_YEAR=new Date().getFullYear();
 
 async function load(){
- const [lg,us,ro,pl,v,ppg,dr]=await Promise.all([
+ const [lg,us,ro,pl,v,ppg,dr,traded]=await Promise.all([
    fetch(`https://api.sleeper.app/v1/league/${L}`).then(r=>r.json()),
    fetch(`https://api.sleeper.app/v1/league/${L}/users`).then(r=>r.json()),
    fetch(`https://api.sleeper.app/v1/league/${L}/rosters`).then(r=>r.json()),
    fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),
    fetch(V).then(r=>r.text()),
    fetch(P).then(r=>r.text()),
-   fetch(`https://api.sleeper.app/v1/league/${L}/drafts`).then(r=>r.json())
+   fetch(`https://api.sleeper.app/v1/league/${L}/drafts`).then(r=>r.json()),
+   fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(r=>r.json()).catch(()=>[])
  ]);
+
  USERS=us; DRAFTS=dr; const isSF=lg.roster_positions.includes('SUPER_FLEX'); SLOTS=lg.roster_positions.filter(s=>!['BN','IR','TAXI'].includes(s));
  const vm=new Map(); Papa.parse(v,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.sleeper_id)vm.set(r.sleeper_id,clean(isSF?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05))});
  const pm=new Map(); Papa.parse(ppg,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.Player)pm.set(norm(r.Player),+r['Avg_PPR_0.5_TEP']||0)});
 
- // Load picks for each roster
+ // Check if 2026 draft is complete
+ const draft2026 = DRAFTS.find(d=>d.season=='2026');
+ const hasDrafted2026 = draft2026 && draft2026.status==='complete';
+
+ // Build picks for each team
  const picksByRoster = {};
- for(const r of ro){
-   try {
-     const picks = await fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(x=>x.json());
-     picksByRoster[r.roster_id] = picks.filter(p=>p.owner_id==r.roster_id);
-   } catch(e){ picksByRoster[r.roster_id]=[]; }
- }
+ ro.forEach(r=>{
+   const basePicks = [];
+   for(let yr=CURRENT_YEAR; yr<=CURRENT_YEAR+2; yr++){
+     if(yr===2026 && hasDrafted2026) continue;
+     for(let rd=1; rd<=3; rd++){
+       basePicks.push({season:yr, round:rd, roster_id:r.roster_id, owner_id:r.roster_id});
+     }
+   }
+   picksByRoster[r.roster_id] = basePicks;
+ });
+
+ // Apply traded picks
+ traded.forEach(tp=>{
+   const fromTeam = picksByRoster[tp.roster_id];
+   if(fromTeam){
+     const idx = fromTeam.findIndex(p=>p.season==tp.season && p.round==tp.round);
+     if(idx>=0) fromTeam.splice(idx,1);
+   }
+   const toTeam = picksByRoster[tp.owner_id];
+   if(toTeam){
+     toTeam.push({season:tp.season, round:tp.round, roster_id:tp.roster_id, owner_id:tp.owner_id});
+   }
+ });
 
  TEAMS=ro.map(r=>{
-   const pls=(r.players||[]).map(id=>{const p=pl[id]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id,name:n,pos:p.position||'',age:p.age||0,value:vm.get(String(id))||0,ppg:pm.get(norm(n))||0,rookie:p.years_exp===0}}).filter(p=>p.value>50);
-   const has2026Rookies = pls.some(p=>p.rookie && p.age<=23); // Rough check for 2026 class
+   const pls=(r.players||[]).map(id=>{const p=pl[id]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id,name:n,pos:p.position||'',age:p.age||0,value:vm.get(String(id))||0,ppg:pm.get(norm(n))||0}}).filter(p=>p.value>50);
    const picks = (picksByRoster[r.roster_id]||[]).map(pk=>({
      id:`${pk.season}-${pk.round}-${pk.roster_id}`,
      season:pk.season,
      round:pk.round,
      original:pk.roster_id,
-     used: has2026Rookies && pk.season==2026 // Mark 2026 picks as used if team has rookies
-   })).filter(p=>p.season>=CURRENT_YEAR).sort((a,b)=>a.season-b.season||a.round-b.round);
-   return{rid:r.roster_id,uid:r.owner_id,pls,picks,has2026Rookies}
+     isOwn: pk.roster_id==r.roster_id
+   })).sort((a,b)=>a.season-b.season||a.round-b.round);
+   return{rid:r.roster_id,uid:r.owner_id,pls,picks}
  });
 
  TEAMS.forEach(t=>{
@@ -193,7 +214,7 @@ async function load(){
  document.getElementById('teamA').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
  document.getElementById('teamB').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
  teamA.value=TEAMS[0].rid; teamB.value=TEAMS[1].rid;
- document.getElementById('status').textContent=`Ready • ${CURRENT_YEAR} season • ${DRAFTS.length} drafts found`;
+ document.getElementById('status').textContent=`Ready • ${hasDrafted2026?'2026 drafted':'2026 picks active'} • ${traded.length} trades`;
  renderGrids(); render();
 }
 
@@ -205,8 +226,8 @@ function render(){
   const A=TEAMS.find(t=>t.rid==teamA.value),B=TEAMS.find(t=>t.rid==teamB.value);
   document.getElementById('pa').innerHTML=[...A.pls].sort((a,b)=>b.value-a.value).map(p=>`<div class="player ${selA.p.has(p.id)?'sel':''}" onclick="tog('A','p','${p.id}')"><span>${p.name}</span><span class="text-zinc-500">${Math.round(p.value)}</span></div>`).join('');
   document.getElementById('pb').innerHTML=[...B.pls].sort((a,b)=>b.value-a.value).map(p=>`<div class="player ${selB.p.has(p.id)?'sel':''}" onclick="tog('B','p','${p.id}')"><span>${p.name}</span><span class="text-zinc-500">${Math.round(p.value)}</span></div>`).join('');
-  document.getElementById('ka').innerHTML=A.picks.map(pk=>`<div class="pick ${selA.k.has(pk.id)?'sel':''} ${pk.used?'used':''}" onclick="${pk.used?'':`tog('A','k','${pk.id}')`}" title="${pk.used?'Already drafted (has rookies)':''}"><span>${pk.season} R${pk.round}</span><span class="text-zinc-600">${pk.used?'✓':''}</span></div>`).join('')||'<div class="text-zinc-600 text-xs p-2">No picks</div>';
-  document.getElementById('kb').innerHTML=B.picks.map(pk=>`<div class="pick ${selB.k.has(pk.id)?'sel':''} ${pk.used?'used':''}" onclick="${pk.used?'':`tog('B','k','${pk.id}')`}" title="${pk.used?'Already drafted (has rookies)':''}"><span>${pk.season} R${pk.round}</span><span class="text-zinc-600">${pk.used?'✓':''}</span></div>`).join('')||'<div class="text-zinc-600 text-xs p-2">No picks</div>';
+  document.getElementById('ka').innerHTML=A.picks.map(pk=>`<div class="pick ${selA.k.has(pk.id)?'sel':''}" onclick="tog('A','k','${pk.id}')"><span>${pk.season} ${pk.isOwn?'':''}R${pk.round}</span><span class="text-[10px] text-zinc-600">${!pk.isOwn?'from '+TEAMS.find(t=>t.rid==pk.original)?.name.split(' ')[0]:''}</span></div>`).join('')||'<div class="text-zinc-600 text-xs p-2">No picks</div>';
+  document.getElementById('kb').innerHTML=B.picks.map(pk=>`<div class="pick ${selB.k.has(pk.id)?'sel':''}" onclick="tog('B','k','${pk.id}')"><span>${pk.season} ${pk.isOwn?'':''}R${pk.round}</span><span class="text-[10px] text-zinc-600">${!pk.isOwn?'from '+TEAMS.find(t=>t.rid==pk.original)?.name.split(' ')[0]:''}</span></div>`).join('')||'<div class="text-zinc-600 text-xs p-2">No picks</div>';
   update(A,B);
 }
 function tog(s,t,i){const sel=s==='A'?selA:selB;const set=t==='p'?sel.p:sel.k;set.has(i)?set.delete(i):set.add(i);render()}
@@ -256,10 +277,10 @@ function update(A,B){
  document.getElementById('whyfit').innerHTML='';
 }
 
-function openFinder(){ /* same as before */ const myDefault = TEAMS.find(t=>t.rid==teamA.value); const targetDefault = TEAMS.find(t=>t.rid==teamB.value); document.getElementById('myTeamSel').innerHTML = TEAMS.map(t=>`<option value="${t.rid}" ${t.rid==myDefault.rid?'selected':''}>${t.name}</option>`).join(''); document.getElementById('targetTeamSel').innerHTML = TEAMS.map(t=>`<option value="${t.rid}" ${t.rid==targetDefault.rid?'selected':''}>${t.name}</option>`).join(''); finderMyTeam = myDefault; finderTargetTeam = targetDefault; document.getElementById('myTeamSel').onchange = ()=>{finderMyTeam=TEAMS.find(t=>t.rid==myTeamSel.value); renderFinder()}; document.getElementById('targetTeamSel').onchange = ()=>{finderTargetTeam=TEAMS.find(t=>t.rid==targetTeamSel.value); finderSel.clear(); renderFinder()}; document.getElementById('searchLeft').oninput = renderFinder; document.getElementById('finderModal').classList.remove('hidden'); finderSel.clear(); renderFinder(); }
+function openFinder(){ const myDefault = TEAMS.find(t=>t.rid==teamA.value); const targetDefault = TEAMS.find(t=>t.rid==teamB.value); document.getElementById('myTeamSel').innerHTML = TEAMS.map(t=>`<option value="${t.rid}" ${t.rid==myDefault.rid?'selected':''}>${t.name}</option>`).join(''); document.getElementById('targetTeamSel').innerHTML = TEAMS.map(t=>`<option value="${t.rid}" ${t.rid==targetDefault.rid?'selected':''}>${t.name}</option>`).join(''); finderMyTeam = myDefault; finderTargetTeam = targetDefault; document.getElementById('myTeamSel').onchange = ()=>{finderMyTeam=TEAMS.find(t=>t.rid==myTeamSel.value); renderFinder()}; document.getElementById('targetTeamSel').onchange = ()=>{finderTargetTeam=TEAMS.find(t=>t.rid==targetTeamSel.value); finderSel.clear(); renderFinder()}; document.getElementById('searchLeft').oninput = renderFinder; document.getElementById('finderModal').classList.remove('hidden'); finderSel.clear(); renderFinder(); }
 function closeFinder(){ document.getElementById('finderModal').classList.add('hidden'); finderSel.clear(); }
 function toggleFinder(pid){ if(finderSel.has(pid)) finderSel.delete(pid); else if(finderSel.size<4) finderSel.add(pid); renderFinder(); }
-function renderFinder(){ const search = document.getElementById('searchLeft').value.toLowerCase(); const targetTeam = finderTargetTeam; const myTeam = finderMyTeam; const targetPlayers = targetTeam.pls.filter(p=>p.name.toLowerCase().includes(search) && p.value>100).sort((a,b)=>b.value-a.value); document.getElementById('leftList').innerHTML = targetPlayers.map(p=>{ const isSel = finderSel.has(p.id); return `<div class="group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${isSel?'bg-amber-500/15 ring-1 ring-amber-500/30':'hover:bg-zinc-900/50'}" onclick="toggleFinder('${p.id}')"><div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-[10px] font-medium text-zinc-400">${p.pos}</div><div class="flex-1 min-w-0"><div class="text-sm text-white truncate">${p.name}</div><div class="flex items-center gap-2 mt-0.5"><span class="text-[10px] text-zinc-600">${p.age}y • ${Math.round(p.ppg)} ppg</span></div></div><div class="text-right"><div class="text-sm font-medium text-zinc-300">${Math.round(p.value).toLocaleString()}</div></div>${isSel?'<div class="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center"><svg class="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>':''}</div>`; }).join(''); const selected = [...finderSel].map(id=>targetPlayers.find(p=>p.id===id)).filter(Boolean); document.getElementById('selectedPills').innerHTML = selected.map(p=>`<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/20"><span class="text-[11px] text-amber-200">${p.name}</span><button onclick="toggleFinder('${p.id}')" class="text-amber-400/60 hover:text-amber-400">×</button></div>`).join('') || '<span class="text-[11px] text-zinc-600">Select players from '+targetTeam.name+'</span>'; if(selected.length>0){ const totalVal = selected.reduce((s,p)=>s+p.value,0); const isMyPlayer = targetTeam.rid === myTeam.rid; let packages = []; if(isMyPlayer){ TEAMS.filter(t=>t.rid!==myTeam.rid).forEach(team=>{ genCombos(team.pls, totalVal, 4).forEach(c=>packages.push({team, players:c, total:c.reduce((s,p)=>s+p.value,0)})); }); } else { genCombos(myTeam.pls, totalVal, 4).forEach(c=>packages.push({team:myTeam, players:c, total:c.reduce((s,p)=>s+p.value,0)})); } packages.sort((a,b)=>{ if(a.players.length!==b.players.length) return a.players.length-b.players.length; return Math.abs(a.total-totalVal)-Math.abs(b.total-totalVal); }); document.getElementById('pkgCount').textContent = `${packages.length} matches`; document.getElementById('rightList').innerHTML = packages.slice(0,100).map(pkg=>{ const diff = ((pkg.total-totalVal)/totalVal*100); const absDiff = Math.abs(diff); const color = absDiff<2?'emerald':absDiff<5?'amber':'zinc'; const bg = absDiff<2?'bg-emerald-500/5 border-emerald-500/20':absDiff<5?'bg-amber-500/5 border-amber-500/20':'bg-zinc-900/50 border-zinc-800'; return `<div class="group p-3 rounded-xl border ${bg} hover:bg-zinc-900/80 cursor-pointer transition-all" onclick="applyPackage('${selected.map(p=>p.id).join(',')}','${targetTeam.rid}','${pkg.team.rid}','${pkg.players.map(p=>p.id).join(',')}')"><div class="flex items-start justify-between gap-3"><div class="flex-1"><div class="flex flex-wrap gap-1 mb-1.5">${pkg.players.map(p=>`<span class="text-xs px-2 py-0.5 rounded-md bg-black/50 text-zinc-300">${p.name}</span>`).join('')}</div><div class="flex items-center gap-2"><span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-500">${pkg.team.name}</span><span class="text-[10px] text-zinc-600">${pkg.players.length}-for-${selected.length}</span></div></div><div class="text-right"><div class="text-sm font-medium text-white">${Math.round(pkg.total).toLocaleString()}</div><div class="text-[11px] text-${color}-400">${diff>0?'+':''}${diff.toFixed(1)}%</div></div></div></div>`; }).join(''); } else { document.getElementById('rightList').innerHTML = '<div class="h-full flex items-center justify-center text-zinc-600 text-sm">Select players to see packages</div>'; document.getElementById('pkgCount').textContent = ''; } }
+function renderFinder(){ const search = document.getElementById('searchLeft').value.toLowerCase(); const targetTeam = finderTargetTeam; const myTeam = finderMyTeam; const targetPlayers = targetTeam.pls.filter(p=>p.name.toLowerCase().includes(search) && p.value>100).sort((a,b)=>b.value-a.value); document.getElementById('leftList').innerHTML = targetPlayers.map(p=>{ const isSel = finderSel.has(p.id); return `<div class="group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${isSel?'bg-amber-500/15 ring-1 ring-amber-500/30':'hover:bg-zinc-900/50'}" onclick="toggleFinder('${p.id}')"><div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-[10px] font-medium text-zinc-400">${p.pos}</div><div class="flex-1 min-w-0"><div class="text-sm text-white truncate">${p.name}</div><div class="flex items-center gap-2 mt-0.5"><span class="text-[10px] text-zinc-600">${p.age}y • ${Math.round(p.ppg)} ppg</span></div></div><div class="text-right"><div class="text-sm font-medium text-zinc-300">${Math.round(p.value).toLocaleString()}</div></div>${isSel?'<div class="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center"><svg class="w-3 h-3 text-black" fill="currentColor" viewBox="0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg></div>':''}</div>`; }).join(''); const selected = [...finderSel].map(id=>targetPlayers.find(p=>p.id===id)).filter(Boolean); document.getElementById('selectedPills').innerHTML = selected.map(p=>`<div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/20"><span class="text-[11px] text-amber-200">${p.name}</span><button onclick="toggleFinder('${p.id}')" class="text-amber-400/60 hover:text-amber-400">×</button></div>`).join('') || '<span class="text-[11px] text-zinc-600">Select players from '+targetTeam.name+'</span>'; if(selected.length>0){ const totalVal = selected.reduce((s,p)=>s+p.value,0); const isMyPlayer = targetTeam.rid === myTeam.rid; let packages = []; if(isMyPlayer){ TEAMS.filter(t=>t.rid!==myTeam.rid).forEach(team=>{ genCombos(team.pls, totalVal, 4).forEach(c=>packages.push({team, players:c, total:c.reduce((s,p)=>s+p.value,0)})); }); } else { genCombos(myTeam.pls, totalVal, 4).forEach(c=>packages.push({team:myTeam, players:c, total:c.reduce((s,p)=>s+p.value,0)})); } packages.sort((a,b)=>{ if(a.players.length!==b.players.length) return a.players.length-b.players.length; return Math.abs(a.total-totalVal)-Math.abs(b.total-totalVal); }); document.getElementById('pkgCount').textContent = `${packages.length} matches`; document.getElementById('rightList').innerHTML = packages.slice(0,100).map(pkg=>{ const diff = ((pkg.total-totalVal)/totalVal*100); const absDiff = Math.abs(diff); const color = absDiff<2?'emerald':absDiff<5?'amber':'zinc'; const bg = absDiff<2?'bg-emerald-500/5 border-emerald-500/20':absDiff<5?'bg-amber-500/5 border-amber-500/20':'bg-zinc-900/50 border-zinc-800'; return `<div class="group p-3 rounded-xl border ${bg} hover:bg-zinc-900/80 cursor-pointer transition-all" onclick="applyPackage('${selected.map(p=>p.id).join(',')}','${targetTeam.rid}','${pkg.team.rid}','${pkg.players.map(p=>p.id).join(',')}')"><div class="flex items-start justify-between gap-3"><div class="flex-1"><div class="flex flex-wrap gap-1 mb-1.5">${pkg.players.map(p=>`<span class="text-xs px-2 py-0.5 rounded-md bg-black/50 text-zinc-300">${p.name}</span>`).join('')}</div><div class="flex items-center gap-2"><span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-500">${pkg.team.name}</span><span class="text-[10px] text-zinc-600">${pkg.players.length}-for-${selected.length}</span></div></div><div class="text-right"><div class="text-sm font-medium text-white">${Math.round(pkg.total).toLocaleString()}</div><div class="text-[11px] text-${color}-400">${diff>0?'+':''}${diff.toFixed(1)}%</div></div></div>`; }).join(''); } else { document.getElementById('rightList').innerHTML = '<div class="h-full flex items-center justify-center text-zinc-600 text-sm">Select players to see packages</div>'; document.getElementById('pkgCount').textContent = ''; } }
 function genCombos(players, target, max){ const pool=players.filter(p=>p.value>100).sort((a,b)=>b.value-a.value).slice(0,24); const out=[], tol=target*0.05; function add(arr,i){ const sum=arr.reduce((s,p)=>s+p.value,0); if(arr.length>0 && Math.abs(sum-target)<=tol) out.push([...arr]); if(arr.length>=max) return; for(let j=i;j<pool.length;j++){arr.push(pool[j]);add(arr,j+1);arr.pop();} } add([],0); return out; }
 function applyPackage(targetIds, targetRid, pkgRid, pkgIds){ const targetTeam = TEAMS.find(t=>t.rid==targetRid); const pkgTeam = TEAMS.find(t=>t.rid==pkgRid); const isTargetMyTeam = targetTeam.rid === finderMyTeam.rid; if(isTargetMyTeam){ teamA.value = targetTeam.rid; teamB.value = pkgTeam.rid; selA = {p:new Set(targetIds.split(',')), k:new Set()}; selB = {p:new Set(pkgIds.split(',')), k:new Set()}; } else { teamA.value = pkgTeam.rid; teamB.value = targetTeam.rid; selA = {p:new Set(pkgIds.split(',')), k:new Set()}; selB = {p:new Set(targetIds.split(',')), k:new Set()}; } closeFinder(); renderGrids(); render(); }
 function resetTrade(){ selA={p:new Set(),k:new Set()}; selB={p:new Set(),k:new Set()}; render(); }
