@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vault TradeCalc Pro - Fixed</title>
+<title>Vault TradeCalc Pro - Fixed Prod/Long</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -108,7 +108,9 @@ body{font-family:Inter;background:#000;color:#e5e7eb}
 <select id="teamA" class="hidden"></select><select id="teamB" class="hidden"></select>
 
 <script>
-const L='1313454100225990656';
+// Get league ID from URL param or cache
+const urlParams = new URLSearchParams(window.location.search);
+const L = urlParams.get('league') || urlParams.get('league_id') || localStorage.getItem('vault_league_id') || '1313454100225990656';
 const V='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
 const P='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
 const clean=v=>parseFloat(String(v||'').replace(/,/g,''))||0, norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
@@ -126,6 +128,7 @@ function getArch(t){
 }
 
 let TEAMS=[],USERS=[], selA={p:new Set(),k:new Set()}, selB={p:new Set(),k:new Set()}, SLOTS=[], DRAFTS=[], CURRENT_YEAR=new Date().getFullYear();
+let LEAGUE_BASELINES = {}; // Store for consistent Production/Longevity
 
 async function load(){
  const [lg,us,ro,pl,v,ppg,dr,traded]=await Promise.all([
@@ -186,24 +189,52 @@ async function load(){
    const sum = v.reduce((s,p)=>s+p.value,0);
    const age = sum? v.reduce((s,p)=>s+p.value*p.age,0)/sum : 0;
    const opt = getStarters(pls).reduce((s,x)=>s+(x.player?.ppg||0),0);
-   const pickVal = picks.length * 650;
+   const picksValue = picks.length * 650;
 
-   return{rid:r.roster_id,uid:r.owner_id,pls,picks,tot,age,opt,pickVal}
+   return{rid:r.roster_id,uid:r.owner_id,pls,picks,tot,age,opt,picksValue}
  });
 
  const sortedVal = [...TEAMS].sort((a,b)=>b.tot-a.tot);
  const sortedPPG = [...TEAMS].sort((a,b)=>b.opt-a.opt);
- const leagueAvgPPG = TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length;
 
+ // Calculate league baselines (MATCHES APP EXACTLY)
+ const leagueAvgOpt = TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length;
+ const maxVal = Math.max(...TEAMS.map(t=>t.tot));
+ const maxPicks = Math.max(...TEAMS.map(t=>t.picksValue));
+
+ // First pass: calculate raw longevity scores
+ const longRaws = [];
  TEAMS.forEach(t=>{
    t.valP = 100 * (1 - sortedVal.findIndex(x=>x.rid===t.rid) / (TEAMS.length-1));
    t.ppgP = 100 * (1 - sortedPPG.findIndex(x=>x.rid===t.rid) / (TEAMS.length-1));
-   // Fixed: Production and Longevity now match league scale (90-115)
-   t.prod = Math.round((t.opt / leagueAvgPPG) * 100);
-   t.long = Math.round((t.tot + t.pickVal) / 575);
+
+   // Production: vs league average (100 = avg) - MATCHES APP
+   t.prod = Math.round((t.opt / leagueAvgOpt) * 100);
+
+   // Longevity: 60% Value + 20% Age + 20% Picks - MATCHES APP
+   const valScore = maxVal? (t.tot / maxVal) * 100 : 50;
+   const ageScore = Math.max(0, Math.min(100, 100 - ((t.age - 23) * 8)));
+   const pickScore = maxPicks? (t.picksValue / maxPicks) * 100 : 50;
+   t.longRaw = valScore * 0.6 + ageScore * 0.2 + pickScore * 0.2;
+   longRaws.push(t.longRaw);
+ });
+
+ const leagueAvgLong = longRaws.reduce((a,b)=>a+b,0) / longRaws.length;
+
+ // Second pass: normalize longevity to 100 = avg
+ TEAMS.forEach(t=>{
+   t.long = Math.round((t.longRaw / leagueAvgLong) * 100);
    t.arch = getArch(t);
    t.name = (USERS.find(u=>u.user_id===t.uid)?.metadata?.team_name)||USERS.find(u=>u.user_id===t.uid)?.display_name||`Team ${t.rid}`;
  });
+
+ // Store baselines for trade calculations (don't recalculate)
+ LEAGUE_BASELINES = {
+   avgOpt: leagueAvgOpt,
+   maxVal: maxVal,
+   maxPicks: maxPicks,
+   avgLong: leagueAvgLong
+ };
 
  document.getElementById('teamA').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
  document.getElementById('teamB').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
@@ -237,9 +268,15 @@ function update(A,B){
    t.age = sum? v.reduce((s,p)=>s+p.value*p.age,0)/sum : 0;
    t.opt = getStarters(t.pls).reduce((s,x)=>s+(x.player?.ppg||0),0);
    t.tot = t.pls.reduce((s,p)=>s+p.value,0);
-   t.pickVal = t.picks.length * 650;
-   t.prod = Math.round((t.opt / 147.5) * 100);
-   t.long = Math.round((t.tot + t.pickVal) / 575);
+   t.picksValue = t.picks.length * 650;
+
+   // Use LEAGUE BASELINES (don't recalculate) - MATCHES APP
+   t.prod = Math.round((t.opt / LEAGUE_BASELINES.avgOpt) * 100);
+   const valScore = LEAGUE_BASELINES.maxVal? (t.tot / LEAGUE_BASELINES.maxVal) * 100 : 50;
+   const ageScore = Math.max(0, Math.min(100, 100 - ((t.age - 23) * 8)));
+   const pickScore = LEAGUE_BASELINES.maxPicks? (t.picksValue / LEAGUE_BASELINES.maxPicks) * 100 : 50;
+   const longRaw = valScore * 0.6 + ageScore * 0.2 + pickScore * 0.2;
+   t.long = Math.round((longRaw / LEAGUE_BASELINES.avgLong) * 100);
  });
 
  const tradeA=[...selA.p].map(id=>A.pls.find(p=>p.id===id)).filter(Boolean);
@@ -257,7 +294,6 @@ function update(A,B){
  const aBefore=getStarters(A.pls),aAfter=getStarters(a.pls),bBefore=getStarters(B.pls),bAfter=getStarters(b.pls);
  const rl=(b,a)=>b.map((s,i)=>{const bp=s.player,ap=a[i].player;const changed=bp?.id!==ap?.id;const bppg=bp?` <span class="text-zinc-600">${bp.ppg.toFixed(1)}</span>`:'';const appg=ap?` <span class="${changed?'text-emerald-400':'text-amber-200/70'}">${ap.ppg.toFixed(1)}</span>`:'';return`<div class="opacity-50">${s.slot}</div><div class="${changed?'text-zinc-500 line-through':''}">${bp?bp.name:'—'}${bppg}</div><div class="flex items-center gap-1.5">${changed?'<span class="text-amber-400">→</span>':''}<span class="${changed?'text-emerald-400 font-medium':'text-zinc-300'}">${ap?ap.name:'—'}${appg}</span></div>`}).join('');
 
- // Fixed: Proper two-column layout
  document.getElementById('lineups').innerHTML=`
    <div>
      <div class="mb-2 text-amber-200/80 font-medium">${A.name}</div>
@@ -280,7 +316,7 @@ function update(A,B){
  const hasSelection = tradeA.length + tradeB.length + tradeAK.length + tradeBK.length > 0;
 
  impactEl.innerHTML=`
-   <div class="bg-zinc-950/50 p-4 rounded-xl border-amber-500/20">
+   <div class="bg-zinc-950/50 p-4 rounded-xl border border-amber-500/20">
      <div class="flex items-center justify-between mb-2">
        <div class="text-amber-300 font-medium">${A.name}</div>
        <div class="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-200">${A.arch}</div>
@@ -335,7 +371,7 @@ function update(A,B){
  const bFit = (B.arch.includes('Contender') && dProdB>0) || (B.arch.includes('Rebuilder') && dLongB>0) || (B.arch.includes('Riser') && dAgeB<0);
 
  document.getElementById('whyfit').innerHTML=`
-   <div class="bg-black/30 p-3 rounded-lg border border-amber-500/10">
+   <div class="bg-black/30 p-3 rounded-lg border-amber-500/10">
      <div class="text-amber-200 font-medium text-[13px] mb-1">${A.name} — ${A.arch}</div>
      <div class="text-[12px] text-zinc-400">${aFit? '✓ Fits timeline' : '⚠ Conflicts with build'}: ${dProdA>0?`+${dProdA} production helps win-now`:dLongA>0?`+${dLongA} longevity aids rebuild`:`Age ${dAgeA>0?'+':''}${dAgeA.toFixed(1)}y moves ${dAgeA<0?'younger':'older'}`}. ${tradeA[0]&&tradeB[0]?`Swapping ${tradeA[0].age}y for ${tradeB[0].age}y ${tradeB[0].age<tradeA[0].age?'lowers':'raises'} core age.`:''}</div>
    </div>
@@ -345,12 +381,7 @@ function update(A,B){
    </div>`;
 }
 
-function openFinder(){ /* finder code unchanged */ }
-function closeFinder(){ document.getElementById('finderModal').classList.add('hidden'); }
-function toggleFinder(pid){ if(finderSel.has(pid)) finderSel.delete(pid); else if(finderSel.size<4) finderSel.add(pid); renderFinder(); }
-function renderFinder(){ /*... */ }
-function genCombos(players, target, max){ const pool=players.filter(p=>p.value>100).sort((a,b)=>b.value-a.value).slice(0,24); const out=[], tol=target*0.05; function add(arr,i){ const sum=arr.reduce((s,p)=>s+p.value,0); if(arr.length>0 && Math.abs(sum-target)<=tol) out.push([...arr]); if(arr.length>=max) return; for(let j=i;j<pool.length;j++){arr.push(pool[j]);add(arr,j+1);arr.pop();} } add([],0); return out; }
-function applyPackage(targetIds, targetRid, pkgRid, pkgIds){ const targetTeam = TEAMS.find(t=>t.rid==targetRid); const pkgTeam = TEAMS.find(t=>t.rid==pkgRid); const isTargetMyTeam = targetTeam.rid === finderMyTeam.rid; if(isTargetMyTeam){ teamA.value = targetTeam.rid; teamB.value = pkgTeam.rid; selA = {p:new Set(targetIds.split(',')), k:new Set()}; selB = {p:new Set(pkgIds.split(',')), k:new Set()}; } else { teamA.value = pkgTeam.rid; teamB.value = targetTeam.rid; selA = {p:new Set(pkgIds.split(',')), k:new Set()}; selB = {p:new Set(targetIds.split(',')), k:new Set()}; } closeFinder(); renderGrids(); render(); }
+function openFinder(){}
 function resetTrade(){ selA={p:new Set(),k:new Set()}; selB={p:new Set(),k:new Set()}; render(); }
 
 load();
