@@ -1,248 +1,235 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vault Trade Calculator</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trade Calculator</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-body{font-family:'Inter',system-ui;background:#020617}
+body{font-family:'Inter',system-ui;background:#050507;color:#e4e4e7}
 .mono{font-family:'JetBrains Mono',monospace}
-.card{background:rgba(15,23,42,.6);backdrop-filter:blur(16px);border:1px solid rgba(51,65,85,.5)}
-.card:hover{border-color:rgba(71,85,105,.7)}
-*::-webkit-scrollbar{width:6px} *::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+.scroll::-webkit-scrollbar{width:4px}.scroll::-webkit-scrollbar-thumb{background:#27272a;border-radius:2px}
 </style>
 </head>
-<body class="text-slate-200">
-<div class="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_rgba(14,165,233,0.15),transparent_50%),radial-gradient(ellipse_at_bottom_right,_rgba(168,85,247,0.1),transparent_50%)]"></div>
+<body class="min-h-screen">
+<div class="fixed inset-0 -z-10">
+  <div class="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(120,119,198,0.15),transparent)]"></div>
+</div>
 
-<div class="max-w-[1600px] mx-auto p-6">
-  <div class="flex items-center justify-between mb-6">
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-500 to-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
-      </div>
-      <div>
-        <h1 class="text-[24px] font-semibold tracking-tight">Trade Calculator</h1>
-        <p class="text-[13px] text-slate-400 -mt-0.5" id="status">Loading league data...</p>
-      </div>
+<div class="max-w-[1400px] mx-auto p-6 lg:p-8">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-[28px] font-semibold tracking-tight">Trade Calculator</h1>
+      <p id="status" class="text-[13px] text-zinc-500 mt-1">Connecting...</p>
     </div>
-    <div class="flex gap-2">
-      <button onclick="openFinder()" class="h-10 px-4 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 border-sky-500/20 text-sky-400 text-[14px] font-medium transition-all flex items-center gap-2">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        Find Package
-      </button>
-      <button onclick="resetTrade()" class="h-10 w-10 rounded-xl bg-slate-800/50 hover:bg-slate-700/50 border-slate-700 grid place-items-center text-slate-400 transition-all">↻</button>
+    <div class="flex items-center gap-2">
+      <div class="h-8 px-3 rounded-lg bg-zinc-900 border-zinc-800 flex items-center gap-2 text-[12px] text-zinc-500">
+        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+        Live Values
+      </div>
     </div>
   </div>
 
-  <div class="card rounded-2xl p-5 mb-5">
-    <div class="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
-      <div>
-        <div class="flex items-center gap-2 mb-2.5">
-          <span id="archA" class="text-[11px] px-2.5 py-1 rounded-lg bg-violet-500/15 text-violet-300 border-violet-500/20 font-medium"></span>
-          <span class="text-[12px] text-slate-500" id="giveA"></span>
+  <!-- Trade Bar -->
+  <div id="tradeBar" class="hidden mb-6 p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800 backdrop-blur-xl">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <div>
+          <div class="text-[11px] text-zinc-500 uppercase tracking-wider mb-1">Giving</div>
+          <div id="giveA" class="text-[15px] font-medium"></div>
         </div>
-        <div id="tradeA" class="min-h-[44px]"></div>
-      </div>
-      <div class="w-10 h-10 rounded-full bg-slate-800/80 border-slate-700 grid place-items-center">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-500"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+        <div class="text-zinc-700">→</div>
+        <div>
+          <div class="text-[11px] text-zinc-500 uppercase tracking-wider mb-1">Receiving</div>
+          <div id="giveB" class="text-[15px] font-medium"></div>
+        </div>
       </div>
       <div class="text-right">
-        <div class="flex items-center gap-2 mb-2.5 justify-end">
-          <span class="text-[12px] text-slate-500" id="giveB"></span>
-          <span id="archB" class="text-[11px] px-2.5 py-1 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/20 font-medium"></span>
-        </div>
-        <div id="tradeB" class="min-h-[44px]"></div>
+        <div class="text-[11px] text-zinc-500 uppercase tracking-wider mb-1">Difference</div>
+        <div id="diff" class="text-[22px] font-semibold mono"></div>
       </div>
     </div>
   </div>
 
-  <div class="grid lg:grid-cols-2 gap-5 mb-5">
-    <div class="card rounded-2xl p-5">
-      <h3 class="text-[12px] font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-        Team Metrics
-      </h3>
-      <div id="impact"></div>
-      <div id="verdict" class="hidden mt-4 pt-4 border-t border-slate-800"></div>
-    </div>
-    <div class="card rounded-2xl p-5">
-      <h3 class="text-[12px] font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-        <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-        Lineup Impact
-      </h3>
-      <div id="lineups" class="text-[13px]"></div>
-    </div>
-  </div>
-
+  <!-- Main Grid -->
   <div class="grid lg:grid-cols-2 gap-5">
-    <div>
+    <!-- Team A -->
+    <div class="group">
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-[13px] font-medium text-slate-300">Team A</h3>
-        <div id="gridA" class="flex gap-1.5 flex-wrap"></div>
-      </div>
-      <div class="card rounded-2xl p-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <div class="text-[11px] text-slate-500 uppercase tracking-wide mb-2.5 font-medium">Players</div>
-            <div id="pa" class="space-y-1 max-h-[320px] overflow-auto pr-1"></div>
-          </div>
-          <div>
-            <div class="text-[11px] text-slate-500 uppercase tracking-wide mb-2.5 font-medium">Draft Picks</div>
-            <div id="ka" class="space-y-1 max-h-[320px] overflow-auto pr-1"></div>
-          </div>
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600 to-violet-700 flex items-center justify-center text-[13px] font-semibold">A</div>
+          <select id="teamA" class="bg-transparent text-[15px] font-medium outline-none cursor-pointer hover:text-white transition-colors"></select>
         </div>
+        <div class="text-[12px] text-zinc-600 mono" id="totalA"></div>
+      </div>
+      <div class="rounded-2xl bg-zinc-900/40 border border-zinc-800 overflow-hidden backdrop-blur-xl group-hover:border-zinc-700/50 transition-colors">
+        <div id="playersA" class="scroll max-h-[520px] overflow-auto p1"></div>
       </div>
     </div>
-    <div>
+
+    <!-- Team B -->
+    <div class="group">
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-[13px] font-medium text-slate-300">Team B</h3>
-        <div id="gridB" class="flex gap-1.5 flex-wrap justify-end"></div>
-      </div>
-      <div class="card rounded-2xl p-4">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <div class="text-[11px] text-slate-500 uppercase tracking-wide mb-2.5 font-medium">Players</div>
-            <div id="pb" class="space-y-1 max-h-[320px] overflow-auto pr-1"></div>
-          </div>
-          <div>
-            <div class="text-[11px] text-slate-500 uppercase tracking-wide mb-2.5 font-medium">Draft Picks</div>
-            <div id="kb" class="space-y-1 max-h-[320px] overflow-auto pr-1"></div>
-          </div>
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-600 to-cyan-700 flex items-center justify-center text-[13px] font-semibold">B</div>
+          <select id="teamB" class="bg-transparent text-[15px] font-medium outline-none cursor-pointer hover:text-white transition-colors"></select>
         </div>
+        <div class="text-[12px] text-zinc-600 mono" id="totalB"></div>
+      </div>
+      <div class="rounded-2xl bg-zinc-900/40 border border-zinc-800 overflow-hidden backdrop-blur-xl group-hover:border-zinc-700/50 transition-colors">
+        <div id="playersB" class="scroll max-h-[520px] overflow-auto p-1"></div>
       </div>
     </div>
   </div>
 </div>
-
-<div id="finderModal" class="fixed inset-0 z-50 hidden">
-  <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onclick="closeFinder()"></div>
-  <div class="relative h-full flex items-center justify-center p-6">
-    <div class="card rounded-3xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
-      <div class="flex items-center justify-between p-6 border-b border-slate-800">
-        <h2 class="text-[20px] font-semibold">Package Finder</h2>
-        <button onclick="closeFinder()" class="w-9 h-9 rounded-xl hover:bg-slate-800 grid place-items-center text-slate-500">✕</button>
-      </div>
-      <div class="flex-1 grid md:grid-cols-[300px_1fr] min-h-0">
-        <div class="p-6 border-r border-slate-800 space-y-4 overflow-auto">
-          <div><label class="text-[12px] text-slate-400 mb-2 block">Target Team</label><select id="finderTargetTeam" class="w-full h-10 px-3 bg-slate-900/50 border-slate-700 rounded-xl text-[14px]"></select></div>
-          <div><label class="text-[12px] text-slate-400 mb-2 block">Target Player</label><select id="finderTarget" class="w-full h-10 px-3 bg-slate-900/50 border-slate-700 rounded-xl text-[14px]"></select></div>
-          <div><label class="text-[12px] text-slate-400 mb-2 block">Your Team</label><select id="finderMyTeam" class="w-full h-10 px-3 bg-slate-900/50 border-slate-700 rounded-xl text-[14px]"></select></div>
-          <div class="grid grid-cols-2 gap-3">
-            <div><div class="text-[11px] text-emerald-400 mb-2 font-medium">Include</div><div id="finderInclude" class="h-[120px] overflow-auto bg-slate-950/50 rounded-xl border-slate-800 p-2"></div></div>
-            <div><div class="text-[11px] text-rose-400 mb-2 font-medium">Exclude</div><div id="finderExclude" class="h-[120px] overflow-auto bg-slate-950/50 rounded-xl border border-slate-800 p-2"></div></div>
-          </div>
-          <button onclick="findPackages()" class="w-full h-11 rounded-xl bg-gradient-to-r from-sky-500 to-violet-600 text-white font-medium hover:shadow-lg hover:shadow-violet-500/25 transition-all">Find All Packages</button>
-        </div>
-        <div class="p-6 flex flex-col min-h-0">
-          <div class="flex items-center justify-between mb-4"><span class="text-[12px] text-slate-500 uppercase tracking-wider font-medium">Results</span><span class="text-[12px] mono text-slate-500" id="finderCount"></span></div>
-          <div id="finderResults" class="flex-1 overflow-auto space-y-1.5 -mr-3 pr-3"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<select id="teamA" class="hidden"></select><select id="teamB" class="hidden"></select>
 
 <script>
-const L='1313454100225990656';
-const V='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
-const P='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
-const PICKS='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
-const clean=v=>parseFloat(String(v||'').replace(/,/g,''))||0;
-const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+const LEAGUE_ID = new URLSearchParams(window.location.search).get('league_id') || '1313454100225990656';
+const VALUES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
 
-let TEAMS=[],USERS=[],selA={p:new Set(),k:new Set()},selB={p:new Set(),k:new Set()},SLOTS=[],BASE={};
+let teams = [];
+let selectedA = new Set();
+let selectedB = new Set();
 
-async function load(){
- try{
-  const [lg,us,ro,pl,v,ppg,dr,traded,pickCsv]=await Promise.all([
-   fetch(`https://api.sleeper.app/v1/league/${L}`).then(r=>r.json()),
-   fetch(`https://api.sleeper.app/v1/league/${L}/users`).then(r=>r.json()),
-   fetch(`https://api.sleeper.app/v1/league/${L}/rosters`).then(r=>r.json()),
-   fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),
-   fetch(V).then(r=>r.text()),
-   fetch(P).then(r=>r.text()),
-   fetch(`https://api.sleeper.app/v1/league/${L}/drafts`).then(r=>r.json()),
-   fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(r=>r.json()).catch(()=>[]),
-   fetch(PICKS).then(r=>r.text())
-  ]);
+async function init() {
+  try {
+    const [league, users, rosters, players, csv] = await Promise.all([
+      fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}`).then(r => r.json()),
+      fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/users`).then(r => r.json()),
+      fetch(`https://api.sleeper.app/v1/league/${LEAGUE_ID}/rosters`).then(r => r.json()),
+      fetch('https://api.sleeper.app/v1/players/nfl').then(r => r.json()),
+      fetch(VALUES_URL).then(r => r.text())
+    ]);
 
-  USERS=us; SLOTS=lg.roster_positions.filter(s=>!['BN','IR','TAXI'].includes(s));
-  const isSF=lg.roster_positions.includes('SUPER_FLEX');
-  const vm=new Map(); Papa.parse(v,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.sleeper_id)vm.set(r.sleeper_id,clean(isSF?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05))});
-  const pm=new Map(); Papa.parse(ppg,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.Player)pm.set(norm(r.Player),+r['Avg_PPR_0.5_TEP']||0)});
-  const pickMap=new Map(); Papa.parse(pickCsv,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.season)pickMap.set(`${r.season}-${r.round}-${(r.slot||'mid')}`,isSF?clean(r.sf_value):clean(r.qb_value))});
+    const values = new Map();
+    Papa.parse(csv, {
+      header: true,
+      skipEmptyLines: true,
+      complete: ({data}) => data.forEach(r => r.sleeper_id && values.set(r.sleeper_id, +r.val_1qb_ppr_tep05 || 0))
+    });
 
-  const picksByRoster={}; ro.forEach(r=>{picksByRoster[r.roster_id]=[];for(let y=2025;y<=2027;y++)for(let rd=1;rd<=4;rd++)picksByRoster[r.roster_id].push({season:y,round:rd,roster_id:r.roster_id,owner_id:r.roster_id})});
-  traded.forEach(tp=>{const f=picksByRoster[tp.roster_id];if(f){const i=f.findIndex(p=>p.season==tp.season&&p.round==tp.round);if(i>=0)f.splice(i,1)}const t=picksByRoster[tp.owner_id];if(t)t.push({season:tp.season,round:tp.round,roster_id:tp.roster_id,owner_id:tp.owner_id})});
+    teams = rosters.map(r => {
+      const user = users.find(u => u.user_id === r.owner_id);
+      const pls = (r.players || []).map(id => {
+        const p = players[id];
+        if (!p) return null;
+        return {
+          id,
+          name: `${p.first_name} ${p.last_name}`,
+          pos: p.position,
+          team: p.team,
+          value: values.get(id) || 0
+        };
+      }).filter(Boolean).filter(p => p.value > 100).sort((a,b) => b.value - a.value);
 
-  TEAMS=ro.map(r=>{
-   const pls=(r.players||[]).map(id=>{const p=pl[id]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id,name:n,pos:p.position||'',age:p.age||0,value:vm.get(String(id))||0,ppg:pm.get(norm(n))||0}}).filter(p=>p.value>50);
-   const picks=(picksByRoster[r.roster_id]||[]).map(pk=>({...pk,id:`${pk.season}-${pk.round}-${pk.roster_id}`})).sort((a,b)=>a.season-b.season||a.round-b.round);
-   const tot=pls.reduce((s,p)=>s+p.value,0); const sum=pls.reduce((s,p)=>s+p.value*p.age,0); const age=tot?sum/tot:0;
-   const starters=(()=>{const pool=[...pls].sort((a,b)=>b.ppg-a.ppg);const used=new Set();return SLOTS.map(s=>{const pos=s==='FLEX'?['RB','WR','TE']:s==='SUPER_FLEX'?['QB','RB','WR','TE']:[s];const i=pool.findIndex(p=>!used.has(p.id)&&pos.includes(p.pos));if(i>=0){used.add(pool[i].id);return pool[i]}return null})().filter(Boolean);
-   const opt=starters.reduce((s,p)=>s+p.ppg,0);
-   return{rid:r.roster_id,uid:r.owner_id,pls,picks,tot,age,opt,starters}
-  });
+      return {
+        id: r.roster_id,
+        name: user?.metadata?.team_name || user?.display_name || `Team ${r.roster_id}`,
+        players: pls,
+        total: pls.reduce((s,p) => s + p.value, 0)
+      };
+    }).sort((a,b) => b.total - a.total);
 
-  const sorted=TEAMS.slice().sort((a,b)=>b.opt-a.opt); const tier=new Map(sorted.map((t,i)=>[t.rid,i<4?'early':i<8?'mid':'late']));
-  TEAMS.forEach(t=>{let pv=0;t.picks.forEach(p=>{p.tier=tier.get(p.original)||'mid';p.value=pickMap.get(`${p.season}-${p.round}-${p.tier}`)||0;pv+=p.value});t.picksValue=pv});
+    const selA = document.getElementById('teamA');
+    const selB = document.getElementById('teamB');
 
-  const avgOpt=TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length; const maxVal=Math.max(...TEAMS.map(t=>t.tot)); const maxPicks=Math.max(...TEAMS.map(t=>t.picksValue));
-  TEAMS.forEach(t=>{t.prod=Math.round((t.opt/avgOpt)*100); const vs=maxVal?(t.tot/maxVal)*100:50; const as=Math.max(0,100-((t.age-23)*8)); const ps=maxPicks?(t.picksValue/maxPicks)*100:50; t.longRaw=vs*0.6+as*0.2+ps*0.2});
-  const avgLong=TEAMS.reduce((s,t)=>s+t.longRaw,0)/TEAMS.length; TEAMS.forEach(t=>{t.long=Math.round((t.longRaw/avgLong)*100); t.arch=t.prod>=75&&t.long>=75?'Elite':t.prod>=70?'Win-Now':t.long>=70?'Rebuild':'Mid'; t.name=(USERS.find(u=>u.user_id===t.uid)?.display_name)||`Team ${t.rid}`});
+    teams.forEach(t => {
+      selA.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+      selB.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+    });
 
-  BASE={avgOpt,maxVal,maxPicks,avgLong,tier,pickMap};
-  document.getElementById('teamA').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
-  document.getElementById('teamB').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
-  teamA.value=TEAMS[0].rid; teamB.value=TEAMS[1].rid;
-  document.getElementById('status').textContent=`${TEAMS.length} teams loaded`;
-  renderGrids(); render();
- }catch(e){console.error(e);document.getElementById('status').textContent='Error';}
+    selA.value = teams[0].id;
+    selB.value = teams[1]?.id || teams[0].id;
+
+    selA.onchange = () => { selectedA.clear(); render('A'); };
+    selB.onchange = () => { selectedB.clear(); render('B'); };
+
+    document.getElementById('status').textContent = `${teams.length} teams • ${league.name}`;
+    document.getElementById('status').className = 'text-[13px] text-emerald-400/80 mt-1';
+
+    render('A');
+    render('B');
+
+  } catch (e) {
+    document.getElementById('status').textContent = 'Failed to load';
+    console.error(e);
+  }
 }
 
-function getStarters(pls){const pool=[...pls].sort((a,b)=>b.ppg-a.ppg);const used=new Set();return SLOTS.map(s=>{const pos=s==='FLEX'?['RB','WR','TE']:s==='SUPER_FLEX'?['QB','RB','WR','TE']:[s];const i=pool.findIndex(p=>!used.has(p.id)&&pos.includes(p.pos));if(i>=0){used.add(pool[i].id);return{slot:s,player:pool[i]}}return{slot:s,player:null}})}
-function renderGrids(){gridA.innerHTML=TEAMS.map(t=>`<button class="px-3 h-8 rounded-xl text-[13px] font-medium transition-all ${t.rid==teamA.value?'bg-white text-slate-900':'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 border border-slate-700/50'}" onclick="setTeam('A',${t.rid})">${t.name}</button>`).join('');gridB.innerHTML=TEAMS.map(t=>`<button class="px-3 h-8 rounded-xl text-[13px] font-medium transition-all ${t.rid==teamB.value?'bg-white text-slate-900':'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 border border-slate-700/50'}" onclick="setTeam('B',${t.rid})">${t.name}</button>`).join('');}
-function setTeam(s,r){if(s==='A'){teamA.value=r;selA={p:new Set(),k:new Set()}}else{teamB.value=r;selB={p:new Set(),k:new Set()}}renderGrids();render()}
-function tog(s,t,i){const sel=s==='A'?selA:selB;const set=t==='p'?sel.p:sel.k;set.has(i)?set.delete(i):set.add(i);render()}
+function render(side) {
+  const teamId = document.getElementById(`team${side}`).value;
+  const team = teams.find(t => t.id == teamId);
+  const selected = side === 'A'? selectedA : selectedB;
+  const container = document.getElementById(`players${side}`);
 
-function render(){
- const A=TEAMS.find(t=>t.rid==teamA.value),B=TEAMS.find(t=>t.rid==teamB.value); if(!A||!B)return;
- pa.innerHTML=A.pls.sort((a,b)=>b.value-a.value).map(p=>`<div class="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all ${selA.p.has(p.id)?'bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/30':'hover:bg-slate-800/60'}" onclick="tog('A','p','${p.id}')"><span class="text-[14px]">${p.name}</span><span class="text-[12px] mono text-slate-500">${Math.round(p.value)}</span></div>`).join('');
- pb.innerHTML=B.pls.sort((a,b)=>b.value-a.value).map(p=>`<div class="flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all ${selB.p.has(p.id)?'bg-sky-500/20 text-sky-300 ring-1 ring-sky-500/30':'hover:bg-slate-800/60'}" onclick="tog('B','p','${p.id}')"><span class="text-[14px]">${p.name}</span><span class="text-[12px] mono text-slate-500">${Math.round(p.value)}</span></div>`).join('');
- ka.innerHTML=A.picks.map(p=>`<div class="flex items-center justify-between px-3 py-1.5 rounded-lg cursor-pointer ${selA.k.has(p.id)?'bg-violet-500/20 text-violet-300':'hover:bg-slate-800/60'}" onclick="tog('A','k','${p.id}')"><span class="text-[13px]">${p.season} R${p.round}</span><span class="text-[11px] ${p.tier==='early'?'text-emerald-400':p.tier==='mid'?'text-amber-400':'text-slate-500'}">${p.tier}</span></div>`).join('');
- kb.innerHTML=B.picks.map(p=>`<div class="flex items-center justify-between px-3 py-1.5 rounded-lg cursor-pointer ${selB.k.has(p.id)?'bg-violet-500/20 text-violet-300':'hover:bg-slate-800/60'}" onclick="tog('B','k','${p.id}')"><span class="text-[13px]">${p.season} R${p.round}</span><span class="text-[11px] ${p.tier==='early'?'text-emerald-400':p.tier==='mid'?'text-amber-400':'text-slate-500'}">${p.tier}</span></div>`).join('');
+  document.getElementById(`total${side}`).textContent = `${team.players.length} players • ${Math.round(team.total).toLocaleString()}`;
 
- const a={...A,pls:[...A.pls]},b={...B,pls:[...B.pls]}; selA.p.forEach(id=>{const i=a.pls.findIndex(p=>p.id===id);if(i>=0){b.pls.push(a.pls[i]);a.pls.splice(i,1)}}); selB.p.forEach(id=>{const i=b.pls.findIndex(p=>p.id===id);if(i>=0){a.pls.push(b.pls[i]);b.pls.splice(i,1)}});
- [a,b].forEach(t=>{const v=t.pls.filter(p=>p.value>0);const s=v.reduce((x,p)=>x+p.value,0);t.age=s?v.reduce((x,p)=>x+p.value*p.age,0)/s:0;t.opt=getStarters(t.pls).reduce((x,y)=>x+(y.player?.ppg||0),0);t.tot=t.pls.reduce((x,p)=>x+p.value,0);t.prod=Math.round((t.opt/BASE.avgOpt)*100);const vs=BASE.maxVal?(t.tot/BASE.maxVal)*100:50;const as=Math.max(0,100-((t.age-23)*8));const ps=BASE.maxPicks?((t.picksValue||0)/BASE.maxPicks)*100:50;t.long=Math.round(((vs*0.6+as*0.2+ps*0.2)/BASE.avgLong)*100)});
+  container.innerHTML = team.players.map((p, i) => {
+    const isSel = selected.has(p.id);
+    return `
+      <div onclick="toggle('${side}','${p.id}')" class="group/item flex items-center gap-3 px-3 py-2.5 mx-1 my-1 rounded-xl cursor-pointer transition-all ${isSel? 'bg-white/10 ring-1 ring-white/20' : 'hover:bg-white/[0.03]'}">
+        <div class="text-[11px] text-zinc-600 w-5 text-right mono">${i+1}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-baseline gap-2">
+            <span class="text-[14px] truncate ${isSel? 'text-white' : 'text-zinc-200 group-hover/item:text-white'}">${p.name}</span>
+            <span class="text-[11px] text-zinc-600">${p.pos}</span>
+            <span class="text-[11px] text-zinc-700">${p.team || ''}</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-[13px] mono font-medium ${isSel? 'text-white' : 'text-zinc-400'}">${Math.round(p.value).toLocaleString()}</div>
+        </div>
+        <div class="w-4 h-4 rounded-md border-2 flex items-center justify-center transition-all ${isSel? 'bg-white border-white' : 'border-zinc-700 group-hover/item:border-zinc-600'}">
+          ${isSel? '<svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M3 6l2 2 4-4" stroke="black" stroke-width="2" stroke-linecap="round"/></svg>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
 
- const tA=[...selA.p].map(id=>A.pls.find(p=>p.id===id)).filter(Boolean),tB=[...selB.p].map(id=>B.pls.find(p=>p.id===id)).filter(Boolean);
- archA.textContent=A.arch;giveA.textContent=A.name;archB.textContent=B.arch;giveB.textContent=B.name;
- tradeA.innerHTML=tA.length?`<div class="space-y-1">${tA.map(p=>`<div class="text-[15px]">${p.name} <span class="text-slate-500 text-[13px]">${p.ppg.toFixed(1)}</span></div>`).join('')}</div>`:'<span class="text-slate-600 text-[14px]">Select players</span>';
- tradeB.innerHTML=tB.length?`<div class="space-y-1 text-right">${tB.map(p=>`<div class="text-[15px]">${p.name} <span class="text-slate-500 text-[13px]">${p.ppg.toFixed(1)}</span></div>`).join('')}</div>`:'<span class="text-slate-600 text-[14px]">Select players</span>';
-
- const aB=getStarters(A.pls),aA=getStarters(a.pls),bB=getStarters(B.pls),bA=getStarters(b.pls);
- const line=(b,a)=>b.map((s,i)=>{const bp=s.player,ap=a[i].player,ch=bp?.id!==ap?.id;return`<div class="grid grid-cols-[52px_1fr_1fr] gap-2 py-1.5 border-b border-slate-800/50 last:border-0"><div class="text-[11px] text-slate-500 font-medium">${s.slot}</div><div class="text-[13px] ${ch?'text-slate-500 line-through':''}">${bp?.name||'—'}${bp?`<span class="ml-2 text-[11px] text-slate-600">${bp.age}y • ${Math.round(bp.value)} • ${bp.ppg.toFixed(1)}</span>`:''}</div><div class="text-[13px] ${ch?'text-emerald-400 font-medium':''}">${ap?.name||'—'}${ap?`<span class="ml-2 text-[11px] text-slate-600">${ap.age}y • ${Math.round(ap.value)} • ${ap.ppg.toFixed(1)}</span>`:''}</div></div>`}).join('');
- lineups.innerHTML=`<div class="grid grid-cols-2 gap-6"><div><div class="text-[12px] text-slate-400 mb-3 font-medium">${A.name}</div>${line(aB,aA)}</div><div><div class="text-[12px] text-slate-400 mb-3 font-medium text-right">${B.name}</div>${line(bB,bA)}</div></div>`;
-
- const has=tA.length||tB.length; const vA=tA.reduce((s,p)=>s+p.value,0),vB=tB.reduce((s,p)=>s+p.value,0);
- impact.innerHTML=`<div class="grid grid-cols-2 gap-8">
-  <div><div class="flex items-center gap-2 mb-4"><div class="w-2 h-2 rounded-full bg-violet-400"></div><span class="font-medium">${A.name}</span><span class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">${A.arch}</span></div><div class="space-y-3"><div class="grid grid-cols-2 gap-4"><div><div class="text-[11px] text-slate-500 mb-1">Total Value</div><div class="text-[20px] font-medium mono">${Math.round(A.tot).toLocaleString()}</div></div><div><div class="text-[11px] text-slate-500 mb-1">Age</div><div class="text-[20px] font-medium mono">${A.age.toFixed(1)}</div></div></div><div class="grid grid-cols-3 gap-3 pt-3 border-t border-slate-800"><div><div class="text-[10px] text-slate-500">PROD</div><div class="text-[15px] mono font-medium ${has&&a.prod!==A.prod?(a.prod>A.prod?'text-emerald-400':'text-amber-400'):''}">${A.prod}${has&&a.prod!==A.prod?` → ${a.prod}`:''}</div></div><div class="text-[10px] text-slate-500">LONG</div><div class="text-[15px] mono font-medium ${has&&a.long!==A.long?(a.long>A.long?'text-emerald-400':'text-amber-400'):''}">${A.long}${has&&a.long!==A.long?` → ${a.long}`:''}</div></div><div class="text-[10px] text-slate-500">PPG</div><div class="text-[15px] mono font-medium">${A.opt.toFixed(1)}${has&&a.opt!==A.opt?` → ${a.opt.toFixed(1)}`:''}</div></div>
-  <div><div class="flex items-center gap-2 mb-4 justify-end"><span class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">${B.arch}</span><span class="font-medium">${B.name}</span><div class="w-2 h-2 rounded-full bg-cyan-400"></div></div><div class="space-y-3"><div class="grid grid-cols-2 gap-4 text-right"><div><div class="text-[11px] text-slate-500 mb-1">Total Value</div><div class="text-[20px] font-medium mono">${Math.round(B.tot).toLocaleString()}</div></div><div class="text-[11px] text-slate-500 mb-1">Age</div><div class="text-[20px] font-medium mono">${B.age.toFixed(1)}</div></div><div class="grid grid-cols-3 gap-3 pt-3 border-t border-slate-800 text-right"><div><div class="text-[10px] text-slate-500">PROD</div><div class="text-[15px] mono font-medium ${has&&b.prod!==B.prod?(b.prod>B.prod?'text-emerald-400':'text-amber-400'):''}">${B.prod}${has&&b.prod!==B.prod?` → ${b.prod}`:''}</div></div><div class="text-[10px] text-slate-500">LONG</div><div class="text-[15px] mono font-medium ${has&&b.long!==B.long?(b.long>B.long?'text-emerald-400':'text-amber-400'):''}">${B.long}${has&&b.long!==B.long?` → ${b.long}`:''}</div></div><div class="text-[10px] text-slate-500">PPG</div><div class="text-[15px] mono font-medium">${B.opt.toFixed(1)}${has&&b.opt!==B.opt?` → ${b.opt.toFixed(1)}`:''}</div></div>
- </div>`;
-
- const gap=Math.abs(vA-vB); verdict.className=has?'mt-4 pt-4 border-t border-slate-800':'hidden'; if(has) verdict.innerHTML=`<div class="flex items-center justify-between"><div class="flex items-baseline gap-3"><span class="text-[13px] text-slate-400">Trade Value</span><span class="mono text-[16px] font-medium">${Math.round(vA).toLocaleString()} <span class="text-slate-600 mx-2">⇄</span> ${Math.round(vB).toLocaleString()}</span></div><div class="flex items-center gap-3"><span class="px-3 py-1 rounded-full text-[12px] font-medium ${gap<200?'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20':gap<500?'bg-amber-500/15 text-amber-400 border-amber-500/20':'bg-slate-800 text-slate-400'}">${gap<200?'Fair Deal':gap<500?'Close':'Review Needed'}</span><span class="text-[13px] mono text-slate-500">Δ ${gap.toLocaleString()}</span></div></div>`;
+  updateTrade();
 }
 
-function resetTrade(){selA={p:new Set(),k:new Set()};selB={p:new Set(),k:new Set()};render()}
-function openFinder(){finderModal.classList.remove('hidden');}
-function closeFinder(){finderModal.classList.add('hidden')}
+function toggle(side, id) {
+  const set = side === 'A'? selectedA : selectedB;
+  set.has(id)? set.delete(id) : set.add(id);
+  render(side);
+}
 
-load();
+function updateTrade() {
+  const teamA = teams.find(t => t.id == document.getElementById('teamA').value);
+  const teamB = teams.find(t => t.id == document.getElementById('teamB').value);
+
+  const aPlayers = [...selectedA].map(id => teamA.players.find(p => p.id === id)).filter(Boolean);
+  const bPlayers = [...selectedB].map(id => teamB.players.find(p => p.id === id)).filter(Boolean);
+
+  const aVal = aPlayers.reduce((s,p) => s + p.value, 0);
+  const bVal = bPlayers.reduce((s,p) => s + p.value, 0);
+
+  const bar = document.getElementById('tradeBar');
+
+  if (aPlayers.length || bPlayers.length) {
+    bar.classList.remove('hidden');
+    document.getElementById('giveA').innerHTML = aPlayers.length
+     ? aPlayers.map(p => `<span class="inline-flex items-center gap-1.5 mr-3"><span>${p.name}</span><span class="text-zinc-600 text-[13px]">${Math.round(p.value).toLocaleString()}</span></span>`).join('')
+      : '<span class="text-zinc-600">Nothing selected</span>';
+
+    document.getElementById('giveB').innerHTML = bPlayers.length
+     ? bPlayers.map(p => `<span class="inline-flex items-center gap-1.5 ml-3"><span class="text-zinc-600 text-[13px]">${Math.round(p.value).toLocaleString()}</span><span>${p.name}</span></span>`).join('')
+      : '<span class="text-zinc-600">Nothing selected</span>';
+
+    const diff = Math.abs(aVal - bVal);
+    const diffEl = document.getElementById('diff');
+    diffEl.textContent = diff.toLocaleString();
+    diffEl.className = 'text-[22px] font-semibold mono ' + (diff < 300? 'text-emerald-400' : diff < 800? 'text-amber-400' : 'text-zinc-500');
+  } else {
+    bar.classList.add('hidden');
+  }
+}
+
+init();
 </script>
 </body>
 </html>
