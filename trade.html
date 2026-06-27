@@ -2,137 +2,137 @@
 <html lang="en" class="dark">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Vault TradeCalc Pro - With Package Finder</title>
+<title>Vault — Trade Calculator</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fragment+Mono&display=swap" rel="stylesheet">
 <style>
-body{font-family:Inter;background:#000;color:#e5e7eb}
-.display{font-family:Cinzel}
-.card{background:rgba(12,12,12,.92);border:1px solid rgba(250,204,21,.15);border-radius:16px}
-.team{padding:10px;border-radius:10px;cursor:pointer;border:1px solid rgba(255,255,.08);transition:all 0.2s;font-size:14px}
-.team:hover{border-color:rgba(250,204,21,.4);background:rgba(250,204,21,.05)}
-.team.active{background:rgba(250,204,21,.12);border-color:#facc15;box-shadow:0 0 1px rgba(250,204,21,.2)}
-.player{padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px;transition:all 0.15s;display:flex;justify-content:space-between}
-.player:hover{background:rgba(255,255,255,.06)}
-.player.sel{background:rgba(250,204,21,.18);color:#fde047}
-.pick{padding:4px 6px;border-radius:5px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between;align-items:center}
-.pick:hover{background:rgba(255,255,255,.04)}
-.pick.sel{background:rgba(250,204,21,.18);color:#fde047}
-#leftList::-webkit-scrollbar, #rightList::-webkit-scrollbar, #pa::-webkit-scrollbar, #pb::-webkit-scrollbar, #ka::-webkit-scrollbar, #kb::-webkit-scrollbar, #finderResults::-webkit-scrollbar { width: 6px; }
-#leftList::-webkit-scrollbar-thumb, #rightList::-webkit-scrollbar-thumb, #pa::-webkit-scrollbar-thumb, #pb::-webkit-scrollbar-thumb, #ka::-webkit-scrollbar-thumb, #kb::-webkit-scrollbar-thumb, #finderResults::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
-.modal-backdrop{background:rgba(0,0,0,.85);backdrop-filter:blur(8px)}
+:root{color-scheme:dark}
+body{font-family:'Inter',system-ui;background:#09090b}
+.mono{font-family:'Fragment Mono',monospace}
+.glass{background:rgba(24,24,27,.7);backdrop-filter:blur(24px);border:1px solid rgba(63,63,70,.5)}
+*::-webkit-scrollbar{width:5px;height:5px} *::-webkit-scrollbar-thumb{background:#27272a;border-radius:3px}
 </style>
 </head>
-<body class="p-4">
-<div class="max-w-[1700px] mx-auto">
-  <div class="flex items-center justify-between mb-4">
-    <h1 class="display text-2xl text-amber-300">Vault Trade Calculator</h1>
-    <div class="flex gap-2">
-      <button onclick="openFinder()" class="px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 rounded-xl text-sm font-medium text-amber-200 transition-all flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        Package Finder
+<body class="text-zinc-200 antialiased">
+<div class="fixed inset-0 -z-10"><div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(251,191,36,0.08),transparent_50%)]"></div></div>
+
+<div class="max-w-[1600px] mx-auto p-4 md:p-6 lg:p-8">
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-zinc-900 border-zinc-800 flex items-center justify-center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-amber-400"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12m0 0l4-4m-4 4l-4"/></svg>
+      </div>
+      <div>
+        <h1 class="text-[22px] font-semibold tracking-tight">Trade Calculator</h1>
+        <p class="text-[12px] text-zinc-500 -mt-0.5" id="status">Loading...</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="openFinder()" class="h-9 px-3.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-[13px] font-medium transition-colors flex items-center gap-1.5">
+        <svg width="14" height="14" viewBox="0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Find Package
       </button>
-      <button onclick="resetTrade()" class="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border-zinc-800 rounded-xl text-sm text-zinc-400 transition-all">Reset</button>
+      <button onclick="resetTrade()" class="h-9 w-9 rounded-lg bg-zinc-900 hover:bg-zinc-800 border-zinc-800 grid place-items-center text-zinc-500 hover:text-zinc-300 transition-colors">
+        <svg width="16" height="16" viewBox="0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 18 0 9 0 0-18 0"/><path d="M9 9h6v6"/></svg>
+      </button>
     </div>
   </div>
 
-  <div id="status" class="text-amber-200/60 text-sm mb-3">Loading league...</div>
-
-  <div class="card p-4 mb-4">
-    <div class="grid md:grid-cols-3 gap-4">
-      <div>
-        <div class="flex items-center gap-2 mb-1">
-          <span id="archA" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border-amber-500/20 font-medium"></span>
-          <span class="text-[11px] uppercase tracking-widest text-amber-200/50" id="giveA">Team A gives</span>
+  <div class="glass rounded-2xl p-4 mb-4">
+    <div class="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 mb-2">
+          <span id="archA" class="text-[10px] px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 font-medium"></span>
+          <span class="text-[11px] text-zinc-500" id="giveA">Team A</span>
         </div>
-        <div id="tradeA" class="space-y-1 text-sm min-h-[24px]"></div>
+        <div id="tradeA" class="text-[14px] leading-snug min-h-[40px]"></div>
       </div>
-      <div class="flex flex-col items-center justify-center"><div class="text-[10px] opacity-50 uppercase">Trade</div><div class="text-2xl text-amber-300">⇄</div></div>
-      <div>
-        <div class="flex items-center gap-2 mb-1 justify-end">
-          <span class="text-[11px] uppercase tracking-widest text-amber-200/50" id="giveB">Team B gives</span>
-          <span id="archB" class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border-cyan-500/20 font-medium"></span>
+      <div class="w-8 h-8 rounded-full bg-zinc-900 border-zinc-800 grid place-items-center">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-zinc-600"><path d="M7 16V4M7 4L3 8M7 4l4 4M17 8v12m0 0l4-4m-4 4l-4"/></svg>
+      </div>
+      <div class="min-w-0 text-right">
+        <div class="flex items-center gap-2 mb-2 justify-end">
+          <span class="text-[11px] text-zinc-500" id="giveB">Team B</span>
+          <span id="archB" class="text-[10px] px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 font-medium"></span>
         </div>
-        <div id="tradeB" class="space-y-1 text-sm min-h-[24px] text-right"></div>
+        <div id="tradeB" class="text-[14px] leading-snug min-h-[40px]"></div>
       </div>
     </div>
   </div>
 
-  <div class="card p-4 mb-4">
-    <div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-2">Starting Lineups — PPG Change</div>
-    <div id="lineups" class="grid md:grid-cols-2 gap-8 text-[13px]"></div>
+  <div class="grid lg:grid-cols-[1.1fr_0.9fr] gap-4 mb-4">
+    <div class="glass rounded-2xl p-4">
+      <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-3">Impact Analysis</div>
+      <div id="impact" class="min-h-[100px] grid place-items-center text-zinc-600 text-[13px]">Select teams</div>
+      <div id="verdict" class="hidden mt-3 pt-3 border-t border-zinc-800"></div>
+    </div>
+    <div class="glass rounded-2xl p-4">
+      <div class="text-[11px] font-medium text-zinc-500 uppercase tracking-wider mb-3">Lineup Changes</div>
+      <div id="lineups" class="text-[12px]"></div>
+    </div>
   </div>
 
-  <div class="card p-4 mb-4">
-    <div id="impact" class="min-h-[80px] flex items-center justify-center text-zinc-600 text-sm">Select teams to see metrics</div>
-    <div id="verdict" class="mt-3 text-center border-t border-amber-500/10 pt-3 hidden"></div>
-    <div id="whyfit" class="mt-4 grid md:grid-cols-2 gap-4"></div>
-  </div>
-
-  <div class="grid lg:grid-cols-2 gap-5">
+  <div class="grid lg:grid-cols-2 gap-4">
     <div>
-      <div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-2">Team A</div>
-      <div id="gridA" class="grid grid-cols-3 gap-2 mb-3"></div>
-      <div class="card p-3">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <div class="text-[11px] opacity-60 mb-2 uppercase tracking-wide">Players</div>
-            <div id="pa" class="space-y-0.5 max-h-[320px] overflow-auto pr-1"></div>
+      <div class="flex items-center justify-between mb-2.5">
+        <div class="text-[12px] font-medium text-zinc-400">Team A</div>
+        <div id="gridA" class="flex gap-1.5 flex-wrap"></div>
+      </div>
+      <div class="glass rounded-2xl overflow-hidden">
+        <div class="grid grid-cols-2 divide-x divide-zinc-800">
+          <div class="p-3">
+            <div class="text-[10px] font-medium text-zinc-600 uppercase tracking-wider mb-2 px-1">Players</div>
+            <div id="pa" class="space-y-0.5 max-h-[300px] overflow-auto -mr-1 pr-1"></div>
           </div>
-          <div>
-            <div class="text-[11px] opacity-60 mb-2 uppercase tracking-wide">Picks</div>
-            <div id="ka" class="space-y-0.5 max-h-[320px] overflow-auto pr-1"></div>
+          <div class="p-3">
+            <div class="text-[10px] font-medium text-zinc-600 uppercase tracking-wider mb-2 px-1">Picks</div>
+            <div id="ka" class="space-y-0.5 max-h-[300px] overflow-auto -mr-1 pr-1"></div>
           </div>
         </div>
       </div>
     </div>
     <div>
-      <div class="text-[11px] uppercase tracking-widest text-amber-200/50 mb-2">Team B</div>
-      <div id="gridB" class="grid grid-cols-3 gap-2 mb-3"></div>
-      <div class="card p-3">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <div class="text-[11px] opacity-60 mb-2 uppercase tracking-wide">Players</div>
-            <div id="pb" class="space-y-0.5 max-h-[320px] overflow-auto pr-1"></div>
+      <div class="flex items-center justify-between mb-2.5">
+        <div class="text-[12px] font-medium text-zinc-400">Team B</div>
+        <div id="gridB" class="flex gap-1.5 flex-wrap justify-end"></div>
+      </div>
+      <div class="glass rounded-2xl overflow-hidden">
+        <div class="grid grid-cols-2 divide-x divide-zinc-800">
+          <div class="p-3">
+            <div class="text-[10px] font-medium text-zinc-600 uppercase tracking-wider mb-2 px-1">Players</div>
+            <div id="pb" class="space-y-0.5 max-h-[300px] overflow-auto -mr-1 pr-1"></div>
           </div>
-          <div>
-            <div class="text-[11px] opacity-60 mb-2 uppercase tracking-wide">Picks</div>
-            <div id="kb" class="space-y-0.5 max-h-[320px] overflow-auto pr-1"></div>
+          <div class="p-3">
+            <div class="text-[10px] font-medium text-zinc-600 uppercase tracking-wider mb-2 px-1">Picks</div>
+            <div id="kb" class="space-y-0.5 max-h-[300px] overflow-auto -mr-1 pr-1"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
+  <div id="whyfit" class="mt-4 grid md:grid-cols-2 gap-3"></div>
 </div>
 
-<!-- Package Finder Modal -->
 <div id="finderModal" class="fixed inset-0 z-50 hidden">
-  <div class="modal-backdrop absolute inset-0" onclick="closeFinder()"></div>
-  <div class="relative z-10 max-w-5xl mx-auto mt-12 p-6">
-    <div class="card p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="display text-xl text-amber-300">Package Finder</h2>
-        <button onclick="closeFinder()" class="text-zinc-500 hover:text-zinc-300">✕</button>
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-xl" onclick="closeFinder()"></div>
+  <div class="relative z-10 h-full flex items-center justify-center p-4 pointer-events-none">
+    <div class="glass rounded-2xl w-full max-w-5xl max-h-[85vh] flex flex-col pointer-events-auto">
+      <div class="flex items-center justify-between p-5 border-b border-zinc-800">
+        <h2 class="text-[18px] font-semibold">Package Finder</h2>
+        <button onclick="closeFinder()" class="w-8 h-8 rounded-lg hover:bg-zinc-800 grid place-items-center text-zinc-500">✕</button>
       </div>
-
-      <div class="grid md:grid-cols-2 gap-6">
-        <div>
-          <label class="text-[11px] uppercase tracking-widest text-zinc-500 mb-2 block">Target Player</label>
-          <select id="finderTarget" class="w-full px-3 py-2 bg-zinc-950 border-zinc-800 rounded-lg text-sm mb-3"></select>
-
-          <label class="text-[11px] uppercase tracking-widest text-zinc-500 mb-2 block">Your Team</label>
-          <select id="finderMyTeam" class="w-full px-3 py-2 bg-zinc-950 border-zinc-800 rounded-lg text-sm mb-3"></select>
-
-          <div class="text-[11px] text-zinc-600 mb-2">Select up to 4 players to package:</div>
-          <div id="finderMyPlayers" class="space-y-1 max-h-[200px] overflow-auto pr-2 mb-3"></div>
-
-          <button onclick="findPackages()" class="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 border-amber-500/30 rounded-lg text-sm text-amber-200">Find Matching Packages</button>
+      <div class="flex-1 grid md:grid-cols-[280px_1fr] gap-0 min-h-0">
+        <div class="p-5 border-r border-zinc-800 space-y-3.5 overflow-auto">
+          <div><label class="text-[11px] text-zinc-500 mb-1.5 block">Target</label><select id="finderTargetTeam" class="w-full h-8 px-2.5 bg-zinc-950 border-zinc-800 rounded-lg text-[13px] mb-2"></select><select id="finderTarget" class="w-full h-8 px-2.5 bg-zinc-950 border-zinc-800 rounded-lg text-[13px]"></select></div>
+          <div><label class="text-[11px] text-zinc-500 mb-1.5 block">Your Team</label><select id="finderMyTeam" class="w-full h-8 px-2.5 bg-zinc-950 border border-zinc-800 rounded-lg text-[13px]"></select></div>
+          <div class="grid grid-cols-2 gap-2.5 pt-1"><div><div class="text-[10px] text-emerald-400/70 mb-1.5">Include</div><div id="finderInclude" class="h-[96px] overflow-auto bg-zinc-950 rounded-lg border border-zinc-800 p-1"></div></div><div><div class="text-[10px] text-rose-400/70 mb-1.5">Exclude</div><div id="finderExclude" class="h-[96px] overflow-auto bg-zinc-950 rounded-lg border border-zinc-800 p-1"></div></div></div>
+          <button onclick="findPackages()" class="w-full h-9 rounded-lg bg-white text-black text-[13px] font-medium hover:bg-zinc-200 transition-colors">Find Packages</button>
         </div>
-
-        <div>
-          <div class="text-[11px] uppercase tracking-widest text-zinc-500 mb-2">Matching Packages (±5% value)</div>
-          <div id="finderResults" class="space-y-2 max-h-[350px] overflow-auto pr-2"></div>
+        <div class="p-5 flex-col min-h-0">
+          <div class="flex items-center justify-between mb-3"><div class="text-[11px] text-zinc-500 uppercase tracking-wider">Results</div><div class="text-[11px] mono text-zinc-600" id="finderCount"></div></div>
+          <div id="finderResults" class="flex-1 overflow-auto -mr-2 pr-2 space-y-1"></div>
         </div>
       </div>
     </div>
@@ -142,419 +142,74 @@ body{font-family:Inter;background:#000;color:#e5e7eb}
 <select id="teamA" class="hidden"></select><select id="teamB" class="hidden"></select>
 
 <script>
-const urlParams = new URLSearchParams(window.location.search);
-const L = urlParams.get('league') || urlParams.get('league_id') || localStorage.getItem('vault_league_id') || '1313454100225990656';
+const urlParams=new URLSearchParams(window.location.search);
+const L=urlParams.get('league')||urlParams.get('league_id')||localStorage.getItem('vault_league_id')||'1313454100225990656';
 const V='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=4113168&single=true&output=csv';
 const P='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=118408869&single=true&output=csv';
 const PICKS='https://docs.google.com/spreadsheets/d/e/2PACX-1vRqxhqyuKK6vu_EoYta5FZ_KdOB8M54Q_qBwJKOUF5KcgbTt2dmHn_FuLj9d-FS8-ta5T0zkU0QEGcN/pub?gid=972793131&single=true&output=csv';
-const clean=v=>parseFloat(String(v||'').replace(/,/g,''))||0, norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
+const clean=v=>parseFloat(String(v||'').replace(/,/g,''))||0,norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'');
 
-function getArch(t){
-  const {valP,ppgP,age} = t;
-  if(valP>=75 && ppgP>=75 && age>=24 && age<=27.5) return 'Elite Contender';
-  if(ppgP>=70 && age>=27.5) return 'Aging Contender';
-  if(ppgP>=60 && ppgP<75 && age>=26) return 'Win-Now Fringe';
-  if(age<25.5 && valP>=45 && ppgP>=40 && ppgP<65) return 'Young Riser';
-  if(ppgP<40 && age<26 && valP>=35) return 'Pick-Rich Rebuilder';
-  if(valP>=70 && ppgP<=45) return 'Volatile';
-  if(valP<=25 && ppgP<=25) return 'Stripped Rebuilder';
-  return 'Stuck Middle';
-}
+function getArch(t){const{valP,ppgP,age}=t;if(valP>=75&&ppgP>=75&&age>=24&&age<=27.5)return'Elite';if(ppgP>=70&&age>=27.5)return'Aging';if(ppgP>=60&&ppgP<75&&age>=26)return'Fringe';if(age<25.5&&valP>=45&&ppgP>=40&&ppgP<65)return'Riser';if(ppgP<40&&age<26&&valP>=35)return'Rebuild';if(valP>=70&&ppgP<=45)return'Volatile';if(valP<=25&&ppgP<=25)return'Stripped';return'Mid';}
 
-let TEAMS=[],USERS=[], selA={p:new Set(),k:new Set()}, selB={p:new Set(),k:new Set()}, SLOTS=[], DRAFTS=[], CURRENT_YEAR=new Date().getFullYear();
-let LEAGUE_BASELINES = {};
-let finderSel = new Set();
+let TEAMS=[],USERS=[],selA={p:new Set(),k:new Set()},selB={p:new Set(),k:new Set()},SLOTS=[],DRAFTS=[],CURRENT_YEAR=new Date().getFullYear();
+let LEAGUE_BASELINES={},finderInclude=new Set(),finderExclude=new Set();
 
 async function load(){
- const [lg,us,ro,pl,v,ppg,dr,traded,picksCsv]=await Promise.all([
-   fetch(`https://api.sleeper.app/v1/league/${L}`).then(r=>r.json()),
-   fetch(`https://api.sleeper.app/v1/league/${L}/users`).then(r=>r.json()),
-   fetch(`https://api.sleeper.app/v1/league/${L}/rosters`).then(r=>r.json()),
-   fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),
-   fetch(V).then(r=>r.text()),
-   fetch(P).then(r=>r.text()),
-   fetch(`https://api.sleeper.app/v1/league/${L}/drafts`).then(r=>r.json()),
-   fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(r=>r.json()).catch(()=>[]),
-   fetch(PICKS).then(r=>r.text())
- ]);
-
- USERS=us; DRAFTS=dr; const isSF=lg.roster_positions.includes('SUPER_FLEX'); SLOTS=lg.roster_positions.filter(s=>!['BN','IR','TAXI'].includes(s));
- const vm=new Map(); Papa.parse(v,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.sleeper_id)vm.set(r.sleeper_id,clean(isSF?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05))});
- const pm=new Map(); Papa.parse(ppg,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.Player)pm.set(norm(r.Player),+r['Avg_PPR_0.5_TEP']||0)});
- const pickVals=Papa.parse(picksCsv,{header:true,skipEmptyLines:true}).data;
- const pickMap=new Map(); pickVals.forEach(r=>{if(r.season) pickMap.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`, isSF?clean(r.sf_value):clean(r.qb_value))});
-
- const draft2026 = DRAFTS.find(d=>d.season=='2026');
- const hasDrafted2026 = draft2026 && draft2026.status==='complete';
-
- const picksByRoster = {};
- ro.forEach(r=>{
-   const basePicks = [];
-   for(let yr=CURRENT_YEAR; yr<=CURRENT_YEAR+2; yr++){
-     if(yr===2026 && hasDrafted2026) continue;
-     for(let rd=1; rd<=4; rd++){
-       basePicks.push({season:yr, round:rd, roster_id:r.roster_id, owner_id:r.roster_id});
-     }
-   }
-   picksByRoster[r.roster_id] = basePicks;
- });
-
- traded.forEach(tp=>{
-   if(tp.season==2026 && hasDrafted2026) return;
-   const fromTeam = picksByRoster[tp.roster_id];
-   if(fromTeam){
-     const idx = fromTeam.findIndex(p=>p.season==tp.season && p.round==tp.round);
-     if(idx>=0) fromTeam.splice(idx,1);
-   }
-   const toTeam = picksByRoster[tp.owner_id];
-   if(toTeam){
-     toTeam.push({season:tp.season, round:tp.round, roster_id:tp.roster_id, owner_id:tp.owner_id});
-   }
- });
-
- TEAMS=ro.map(r=>{
-   const pls=(r.players||[]).map(id=>{const p=pl[id]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id,name:n,pos:p.position||'',age:p.age||0,value:vm.get(String(id))||0,ppg:pm.get(norm(n))||0}}).filter(p=>p.value>50);
-   const picks = (picksByRoster[r.roster_id]||[]).map(pk=>({
-     id:`${pk.season}-${pk.round}-${pk.roster_id}`,
-     season:pk.season,
-     round:pk.round,
-     original:pk.roster_id,
-     isOwn: pk.roster_id==r.roster_id
-   })).sort((a,b)=>a.season-b.season||a.round-b.round);
-
-   const tot = pls.reduce((s,p)=>s+p.value,0);
-   const v = pls.filter(p=>p.value>0);
-   const sum = v.reduce((s,p)=>s+p.value,0);
-   const age = sum? v.reduce((s,p)=>s+p.value*p.age,0)/sum : 0;
-   const opt = getStarters(pls).reduce((s,x)=>s+(x.player?.ppg||0),0);
-
-   return{rid:r.roster_id,uid:r.owner_id,pls,picks,tot,age,opt}
- });
-
- const sortedVal = [...TEAMS].sort((a,b)=>b.tot-a.tot);
- const sortedPPG = [...TEAMS].sort((a,b)=>b.opt-a.opt);
-
- const sortedByOpt = [...TEAMS].sort((a,b)=>b.opt-a.opt);
- const n = sortedByOpt.length;
- const late = n===10?3:4, mid=4;
- const tierMap = new Map(sortedByOpt.map((t,i)=>[t.rid, i<late?'late':i<late+mid?'mid':'early']));
-
- TEAMS.forEach(t=>{
-   let picksValue = 0;
-   t.picks.forEach(p=>{
-     const tier = tierMap.get(p.original) || 'mid';
-     p.tier = tier;
-     p.value = pickMap.get(`${p.season}-${p.round}-${tier}`) || 0;
-     picksValue += p.value;
-   });
-   t.picksValue = picksValue;
- });
-
- const leagueAvgOpt = TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length;
- const maxVal = Math.max(...TEAMS.map(t=>t.tot));
- const maxPicks = Math.max(...TEAMS.map(t=>t.picksValue));
-
- const longRaws = [];
- TEAMS.forEach(t=>{
-   t.valP = 100 * (1 - sortedVal.findIndex(x=>x.rid===t.rid) / (TEAMS.length-1));
-   t.ppgP = 100 * (1 - sortedPPG.findIndex(x=>x.rid===t.rid) / (TEAMS.length-1));
-   t.prod = Math.round((t.opt / leagueAvgOpt) * 100);
-   const valScore = maxVal? (t.tot / maxVal) * 100 : 50;
-   const ageScore = Math.max(0, Math.min(100, 100 - ((t.age - 23) * 8)));
-   const pickScore = maxPicks? (t.picksValue / maxPicks) * 100 : 50;
-   t.longRaw = valScore * 0.6 + ageScore * 0.2 + pickScore * 0.2;
-   longRaws.push(t.longRaw);
- });
-
- const leagueAvgLong = longRaws.reduce((a,b)=>a+b,0) / longRaws.length;
-
- TEAMS.forEach(t=>{
-   t.long = Math.round((t.longRaw / leagueAvgLong) * 100);
-   t.arch = getArch(t);
-   t.name = (USERS.find(u=>u.user_id===t.uid)?.metadata?.team_name)||USERS.find(u=>u.user_id===t.uid)?.display_name||`Team ${t.rid}`;
- });
-
- LEAGUE_BASELINES = { avgOpt: leagueAvgOpt, maxVal, maxPicks, avgLong: leagueAvgLong, tierMap, pickMap };
-
- document.getElementById('teamA').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
- document.getElementById('teamB').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
- teamA.value=TEAMS[0].rid; teamB.value=TEAMS[1].rid;
- document.getElementById('status').textContent=`Ready • ${hasDrafted2026?'2026 drafted':'2026 picks active'} • ${traded.length} trades`;
- renderGrids(); render(); initFinder();
+ try{
+ const [lg,us,ro,pl,v,ppg,dr,traded,picksCsv]=await Promise.all([fetch(`https://api.sleeper.app/v1/league/${L}`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/users`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/rosters`).then(r=>r.json()),fetch('https://api.sleeper.app/v1/players/nfl').then(r=>r.json()),fetch(V).then(r=>r.text()),fetch(P).then(r=>r.text()),fetch(`https://api.sleeper.app/v1/league/${L}/drafts`).then(r=>r.json()),fetch(`https://api.sleeper.app/v1/league/${L}/traded_picks`).then(r=>r.json()).catch(()=>[]),fetch(PICKS).then(r=>r.text())]);
+ USERS=us;DRAFTS=dr;const isSF=lg.roster_positions.includes('SUPER_FLEX');SLOTS=lg.roster_positions.filter(s=>!['BN','IR','TAXI'].includes(s));
+ const vm=new Map();Papa.parse(v,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.sleeper_id)vm.set(r.sleeper_id,clean(isSF?r.val_sf_ppr_tep05:r.val_1qb_ppr_tep05))});
+ const pm=new Map();Papa.parse(ppg,{header:true,skipEmptyLines:true}).data.forEach(r=>{if(r.Player)pm.set(norm(r.Player),+r['Avg_PPR_0.5_TEP']||0)});
+ const pickVals=Papa.parse(picksCsv,{header:true,skipEmptyLines:true}).data;const pickMap=new Map();pickVals.forEach(r=>{if(r.season)pickMap.set(`${r.season}-${r.round}-${(r.slot||'mid').toLowerCase()}`,isSF?clean(r.sf_value):clean(r.qb_value))});
+ const draft2026=DRAFTS.find(d=>d.season=='2026');const hasDrafted2026=draft2026&&draft2026.status==='complete';
+ const picksByRoster={};ro.forEach(r=>{const basePicks=[];for(let yr=CURRENT_YEAR;yr<=CURRENT_YEAR+2;yr++){if(yr===2026&&hasDrafted2026)continue;for(let rd=1;rd<=4;rd++){basePicks.push({season:yr,round:rd,roster_id:r.roster_id,owner_id:r.roster_id});}}picksByRoster[r.roster_id]=basePicks;});
+ traded.forEach(tp=>{if(tp.season==2026&&hasDrafted2026)return;const fromTeam=picksByRoster[tp.roster_id];if(fromTeam){const idx=fromTeam.findIndex(p=>p.season==tp.season&&p.round==tp.round);if(idx>=0)fromTeam.splice(idx,1);}const toTeam=picksByRoster[tp.owner_id];if(toTeam){toTeam.push({season:tp.season,round:tp.round,roster_id:tp.roster_id,owner_id:tp.owner_id});}});
+ TEAMS=ro.map(r=>{const pls=(r.players||[]).map(id=>{const p=pl[id]||{};const n=`${p.first_name||''} ${p.last_name||''}`.trim();return{id,name:n,pos:p.position||'',age:p.age||0,value:vm.get(String(id))||0,ppg:pm.get(norm(n))||0}}).filter(p=>p.value>50);const picks=(picksByRoster[r.roster_id]||[]).map(pk=>({id:`${pk.season}-${pk.round}-${pk.roster_id}`,season:pk.season,round:pk.round,original:pk.roster_id,isOwn:pk.roster_id==r.roster_id})).sort((a,b)=>a.season-b.season||a.round-b.round);const tot=pls.reduce((s,p)=>s+p.value,0);const v=pls.filter(p=>p.value>0);const sum=v.reduce((s,p)=>s+p.value,0);const age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;const opt=getStarters(pls).reduce((s,x)=>s+(x.player?.ppg||0),0);return{rid:r.roster_id,uid:r.owner_id,pls,picks,tot,age,opt}});
+ const sortedVal=[...TEAMS].sort((a,b)=>b.tot-a.tot);const sortedPPG=[...TEAMS].sort((a,b)=>b.opt-a.opt);
+ const sortedByOpt=[...TEAMS].sort((a,b)=>b.opt-a.opt);const n=sortedByOpt.length;const late=n===10?3:4,mid=4;const tierMap=new Map(sortedByOpt.map((t,i)=>[t.rid,i<late?'late':i<late+mid?'mid':'early']));
+ TEAMS.forEach(t=>{let picksValue=0;t.picks.forEach(p=>{const tier=tierMap.get(p.original)||'mid';p.tier=tier;p.value=pickMap.get(`${p.season}-${p.round}-${tier}`)||0;picksValue+=p.value;});t.picksValue=picksValue;});
+ const leagueAvgOpt=TEAMS.reduce((s,t)=>s+t.opt,0)/TEAMS.length;const maxVal=Math.max(...TEAMS.map(t=>t.tot));const maxPicks=Math.max(...TEAMS.map(t=>t.picksValue));
+ const longRaws=[];TEAMS.forEach(t=>{t.valP=100*(1-sortedVal.findIndex(x=>x.rid===t.rid)/(TEAMS.length-1));t.ppgP=100*(1-sortedPPG.findIndex(x=>x.rid===t.rid)/(TEAMS.length-1));t.prod=Math.round((t.opt/leagueAvgOpt)*100);const valScore=maxVal?(t.tot/maxVal)*100:50;const ageScore=Math.max(0,Math.min(100,100-((t.age-23)*8)));const pickScore=maxPicks?(t.picksValue/maxPicks)*100:50;t.longRaw=valScore*0.6+ageScore*0.2+pickScore*0.2;longRaws.push(t.longRaw);});
+ const leagueAvgLong=longRaws.reduce((a,b)=>a+b,0)/longRaws.length;
+ TEAMS.forEach(t=>{t.long=Math.round((t.longRaw/leagueAvgLong)*100);t.arch=getArch(t);t.name=(USERS.find(u=>u.user_id===t.uid)?.metadata?.team_name)||USERS.find(u=>u.user_id===t.uid)?.display_name||`Team ${t.rid}`;});
+ LEAGUE_BASELINES={avgOpt:leagueAvgOpt,maxVal,maxPicks,avgLong:leagueAvgLong,tierMap,pickMap};
+ document.getElementById('teamA').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');document.getElementById('teamB').innerHTML=TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');teamA.value=TEAMS[0].rid;teamB.value=TEAMS[1].rid;document.getElementById('status').textContent=`${TEAMS.length} teams • Ready`;renderGrids();render();
+ }catch(e){document.getElementById('status').textContent='Error loading';console.error(e);}
 }
 
 function getStarters(pls){const pool=[...pls].sort((a,b)=>b.ppg-a.ppg);const used=new Set();const out=[];for(const s of SLOTS){let pos=[s];if(s==='FLEX')pos=['RB','WR','TE'];if(s==='SUPER_FLEX')pos=['QB','RB','WR','TE'];const i=pool.findIndex(p=>!used.has(p.id)&&pos.includes(p.pos));if(i>=0){used.add(pool[i].id);out.push({slot:s,player:pool[i]})}else out.push({slot:s,player:null})}return out}
-function renderGrids(){document.getElementById('gridA').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamA.value?'active':''}" onclick="setTeam('A',${t.rid})">${t.name}</div>`).join('');document.getElementById('gridB').innerHTML=TEAMS.map(t=>`<div class="team ${t.rid==teamB.value?'active':''}" onclick="setTeam('B',${t.rid})">${t.name}</div>`).join('')}
+function renderGrids(){document.getElementById('gridA').innerHTML=TEAMS.map(t=>`<button class="px-2.5 h-7 rounded-lg text-[12px] font-medium transition-all ${t.rid==teamA.value?'bg-white text-black':'bg-zinc-900 text-zinc-500 hover:text-zinc-300 border-zinc-800'}" onclick="setTeam('A',${t.rid})">${t.name.split(' ')[0]}</button>`).join('');document.getElementById('gridB').innerHTML=TEAMS.map(t=>`<button class="px-2.5 h-7 rounded-lg text-[12px] font-medium transition-all ${t.rid==teamB.value?'bg-white text-black':'bg-zinc-900 text-zinc-500 hover:text-zinc-300 border-zinc-800'}" onclick="setTeam('B',${t.rid})">${t.name.split(' ')[0]}</button>`).join('');}
 function setTeam(s,r){if(s==='A'){teamA.value=r;selA={p:new Set(),k:new Set()}}else{teamB.value=r;selB={p:new Set(),k:new Set()}}renderGrids();render()}
-
-function render(){
-  const A=TEAMS.find(t=>t.rid==teamA.value),B=TEAMS.find(t=>t.rid==teamB.value);
-  document.getElementById('pa').innerHTML=[...A.pls].sort((a,b)=>b.value-a.value).map(p=>`<div class="player ${selA.p.has(p.id)?'sel':''}" onclick="tog('A','p','${p.id}')"><span>${p.name}</span><span class="text-zinc-500">${Math.round(p.value)}</span></div>`).join('');
-  document.getElementById('pb').innerHTML=[...B.pls].sort((a,b)=>b.value-a.value).map(p=>`<div class="player ${selB.p.has(p.id)?'sel':''}" onclick="tog('B','p','${p.id}')"><span>${p.name}</span><span class="text-zinc-500">${Math.round(p.value)}</span></div>`).join('');
-  document.getElementById('ka').innerHTML=A.picks.map(pk=>`<div class="pick ${selA.k.has(pk.id)?'sel':''}" onclick="tog('A','k','${pk.id}')"><span>${pk.season} R${pk.round}</span><span class="text-[10px] ${pk.tier==='early'?'text-emerald-400':pk.tier==='mid'?'text-amber-400':'text-rose-400'}">${pk.tier}</span></div>`).join('')||'<div class="text-zinc-600 text-xs p-2">No picks</div>';
-  document.getElementById('kb').innerHTML=B.picks.map(pk=>`<div class="pick ${selB.k.has(pk.id)?'sel':''}" onclick="tog('B','k','${pk.id}')"><span>${pk.season} R${pk.round}</span><span class="text-[10px] ${pk.tier==='early'?'text-emerald-400':pk.tier==='mid'?'text-amber-400':'text-rose-400'}">${pk.tier}</span></div>`).join('')||'<div class="text-zinc-600 text-xs p-2">No picks</div>';
-  update(A,B);
-}
+function render(){const A=TEAMS.find(t=>t.rid==teamA.value),B=TEAMS.find(t=>t.rid==teamB.value);if(!A||!B)return;document.getElementById('pa').innerHTML=[...A.pls].sort((a,b)=>b.value-a.value).map(p=>`<div class="group flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${selA.p.has(p.id)?'bg-amber-500/15 text-amber-200':'hover:bg-zinc-800/50'}" onclick="tog('A','p','${p.id}')"><span class="text-[13px] truncate">${p.name}</span><span class="text-[11px] mono text-zinc-600 group-hover:text-zinc-500">${Math.round(p.value)}</span></div>`).join('');document.getElementById('pb').innerHTML=[...B.pls].sort((a,b)=>b.value-a.value).map(p=>`<div class="group flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${selB.p.has(p.id)?'bg-amber-500/15 text-amber-200':'hover:bg-zinc-800/50'}" onclick="tog('B','p','${p.id}')"><span class="text-[13px] truncate">${p.name}</span><span class="text-[11px] mono text-zinc-600 group-hover:text-zinc-500">${Math.round(p.value)}</span></div>`).join('');document.getElementById('ka').innerHTML=A.picks.map(pk=>`<div class="flex items-center justify-between px-2 py-1 rounded-md cursor-pointer transition-colors ${selA.k.has(pk.id)?'bg-amber-500/15':'hover:bg-zinc-800/50'}" onclick="tog('A','k','${pk.id}')"><span class="text-[12px]">${pk.season} R${pk.round}</span><span class="text-[10px] ${pk.tier==='early'?'text-emerald-400':pk.tier==='mid'?'text-zinc-500':'text-zinc-600'}">${pk.tier[0]}</span></div>`).join('')||'<div class="text-zinc-700 text-[12px] px-2 py-4 text-center">No picks</div>';document.getElementById('kb').innerHTML=B.picks.map(pk=>`<div class="flex items-center justify-between px-2 py-1 rounded-md cursor-pointer transition-colors ${selB.k.has(pk.id)?'bg-amber-500/15':'hover:bg-zinc-800/50'}" onclick="tog('B','k','${pk.id}')"><span class="text-[12px]">${pk.season} R${pk.round}</span><span class="text-[10px] ${pk.tier==='early'?'text-emerald-400':pk.tier==='mid'?'text-zinc-500':'text-zinc-600'}">${pk.tier[0]}</span></div>`).join('')||'<div class="text-zinc-700 text-[12px] px-2 py-4 text-center">No picks</div>';update(A,B);}
 function tog(s,t,i){const sel=s==='A'?selA:selB;const set=t==='p'?sel.p:sel.k;set.has(i)?set.delete(i):set.add(i);render()}
 
 function update(A,B){
  const a=JSON.parse(JSON.stringify(A)),b=JSON.parse(JSON.stringify(B));
- selA.p.forEach(id=>{const i=a.pls.findIndex(p=>p.id===id);if(i>=0){b.pls.push(a.pls[i]);a.pls.splice(i,1)}});
- selB.p.forEach(id=>{const i=b.pls.findIndex(p=>p.id===id);if(i>=0){a.pls.push(b.pls[i]);b.pls.splice(i,1)}});
-
- [a,b].forEach(t=>{
-   const v = t.pls.filter(p=>p.value>0);
-   const sum = v.reduce((s,p)=>s+p.value,0);
-   t.age = sum? v.reduce((s,p)=>s+p.value*p.age,0)/sum : 0;
-   t.opt = getStarters(t.pls).reduce((s,x)=>s+(x.player?.ppg||0),0);
-   t.tot = t.pls.reduce((s,p)=>s+p.value,0);
-   let picksValue = 0;
-   t.picks.forEach(p=>{
-     const tier = LEAGUE_BASELINES.tierMap.get(p.original) || 'mid';
-     p.value = LEAGUE_BASELINES.pickMap.get(`${p.season}-${p.round}-${tier}`) || 0;
-     picksValue += p.value;
-   });
-   t.picksValue = picksValue;
-   t.prod = Math.round((t.opt / LEAGUE_BASELINES.avgOpt) * 100);
-   const valScore = LEAGUE_BASELINES.maxVal? (t.tot / LEAGUE_BASELINES.maxVal) * 100 : 50;
-   const ageScore = Math.max(0, Math.min(100, 100 - ((t.age - 23) * 8)));
-   const pickScore = LEAGUE_BASELINES.maxPicks? (t.picksValue / LEAGUE_BASELINES.maxPicks) * 100 : 50;
-   const longRaw = valScore * 0.6 + ageScore * 0.2 + pickScore * 0.2;
-   t.long = Math.round((longRaw / LEAGUE_BASELINES.avgLong) * 100);
- });
-
- const tradeA=[...selA.p].map(id=>A.pls.find(p=>p.id===id)).filter(Boolean);
- const tradeB=[...selB.p].map(id=>B.pls.find(p=>p.id===id)).filter(Boolean);
- const tradeAK=[...selA.k].map(id=>A.picks.find(p=>p.id===id)).filter(Boolean);
- const tradeBK=[...selB.k].map(id=>B.picks.find(p=>p.id===id)).filter(Boolean);
-
- document.getElementById('archA').textContent = A.arch;
- document.getElementById('giveA').textContent = `${A.name} gives`;
- document.getElementById('archB').textContent = B.arch;
- document.getElementById('giveB').textContent = `${B.name} gives`;
- document.getElementById('tradeA').innerHTML=[...tradeA.map(p=>`${p.name} <span class="text-zinc-500">(${p.ppg.toFixed(1)})</span>`),...tradeAK.map(p=>`${p.season} R${p.round}`)].join('<br>')||'—';
- document.getElementById('tradeB').innerHTML=[...tradeB.map(p=>`${p.name} <span class="text-zinc-500">(${p.ppg.toFixed(1)})</span>`),...tradeBK.map(p=>`${p.season} R${p.round}`)].join('<br>')||'—';
-
+ selA.p.forEach(id=>{const i=a.pls.findIndex(p=>p.id===id);if(i>=0){b.pls.push(a.pls[i]);a.pls.splice(i,1)}});selB.p.forEach(id=>{const i=b.pls.findIndex(p=>p.id===id);if(i>=0){a.pls.push(b.pls[i]);b.pls.splice(i,1)}});
+ [a,b].forEach(t=>{const v=t.pls.filter(p=>p.value>0);const sum=v.reduce((s,p)=>s+p.value,0);t.age=sum?v.reduce((s,p)=>s+p.value*p.age,0)/sum:0;t.opt=getStarters(t.pls).reduce((s,x)=>s+(x.player?.ppg||0),0);t.tot=t.pls.reduce((s,p)=>s+p.value,0);let picksValue=0;t.picks.forEach(p=>{const tier=LEAGUE_BASELINES.tierMap.get(p.original)||'mid';p.value=LEAGUE_BASELINES.pickMap.get(`${p.season}-${p.round}-${tier}`)||0;picksValue+=p.value;});t.picksValue=picksValue;t.prod=Math.round((t.opt/LEAGUE_BASELINES.avgOpt)*100);const valScore=LEAGUE_BASELINES.maxVal?(t.tot/LEAGUE_BASELINES.maxVal)*100:50;const ageScore=Math.max(0,Math.min(100,100-((t.age-23)*8)));const pickScore=LEAGUE_BASELINES.maxPicks?(t.picksValue/LEAGUE_BASELINES.maxPicks)*100:50;const longRaw=valScore*0.6+ageScore*0.2+pickScore*0.2;t.long=Math.round((longRaw/LEAGUE_BASELINES.avgLong)*100);});
+ const tradeA=[...selA.p].map(id=>A.pls.find(p=>p.id===id)).filter(Boolean);const tradeB=[...selB.p].map(id=>B.pls.find(p=>p.id===id)).filter(Boolean);const tradeAK=[...selA.k].map(id=>A.picks.find(p=>p.id===id)).filter(Boolean);const tradeBK=[...selB.k].map(id=>B.picks.find(p=>p.id===id)).filter(Boolean);
+ document.getElementById('archA').textContent=A.arch;document.getElementById('giveA').textContent=A.name;document.getElementById('archB').textContent=B.arch;document.getElementById('giveB').textContent=B.name;
+ document.getElementById('tradeA').innerHTML=tradeA.length||tradeAK.length?`<div class="space-y-0.5">${[...tradeA.map(p=>`<div>${p.name} <span class="text-zinc-600">${p.ppg.toFixed(1)}</span></div>`),...tradeAK.map(p=>`<div class="text-zinc-500">${p.season} R${p.round}</div>`)].join('')}</div>`:'<span class="text-zinc-600">Select players</span>';
+ document.getElementById('tradeB').innerHTML=tradeB.length||tradeBK.length?`<div class="space-y-0.5">${[...tradeB.map(p=>`<div>${p.name} <span class="text-zinc-600">${p.ppg.toFixed(1)}</span></div>`),...tradeBK.map(p=>`<div class="text-zinc-500">${p.season} R${p.round}</div>`)].join('')}</div>`:'<span class="text-zinc-600">Select players</span>';
  const aBefore=getStarters(A.pls),aAfter=getStarters(a.pls),bBefore=getStarters(B.pls),bAfter=getStarters(b.pls);
- const rl=(b,a)=>b.map((s,i)=>{const bp=s.player,ap=a[i].player;const changed=bp?.id!==ap?.id;const bppg=bp?` <span class="text-zinc-600">${bp.ppg.toFixed(1)}</span>`:'';const appg=ap?` <span class="${changed?'text-emerald-400':'text-amber-200/70'}">${ap.ppg.toFixed(1)}</span>`:'';return`<div class="opacity-50">${s.slot}</div><div class="${changed?'text-zinc-500 line-through':''}">${bp?bp.name:'—'}${bppg}</div><div class="flex items-center gap-1.5">${changed?'<span class="text-amber-400">→</span>':''}<span class="${changed?'text-emerald-400 font-medium':'text-zinc-300'}">${ap?ap.name:'—'}${appg}</span></div>`}).join('');
-
- document.getElementById('lineups').innerHTML=`
-   <div>
-     <div class="mb-2 text-amber-200/80 font-medium">${A.name}</div>
-     <div class="grid grid-cols-[70px_1fr_1fr] gap-y-2 text-[12px] items-center">${rl(aBefore,aAfter)}</div>
-   </div>
-   <div>
-     <div class="mb-2 text-cyan-200/80 font-medium text-right">${B.name}</div>
-     <div class="grid grid-cols-[70px_1fr_1fr] gap-y-2 text-[12px] items-center">${rl(bBefore,bAfter)}</div>
-   </div>`;
-
- const impactEl = document.getElementById('impact');
- const verdictEl = document.getElementById('verdict');
- impactEl.className = "grid md:grid-cols-2 gap-4 text-sm";
- const valA=tradeA.reduce((s,p)=>s+p.value,0)+tradeAK.reduce((s,p)=>s+(p.value||0),0), valB=tradeB.reduce((s,p)=>s+p.value,0)+tradeBK.reduce((s,p)=>s+(p.value||0),0);
- const dA=a.opt-A.opt, dB=b.opt-B.opt;
- const dAgeA = a.age - A.age, dAgeB = b.age - B.age;
- const dLongA = a.long - A.long;
- const dLongB = b.long - B.long;
- const dProdA = a.prod - A.prod, dProdB = b.prod - B.prod;
- const hasSelection = tradeA.length + tradeB.length + tradeAK.length + tradeBK.length > 0;
-
- impactEl.innerHTML=`
-   <div class="bg-zinc-950/50 p-4 rounded-xl border-amber-500/20">
-     <div class="flex items-center justify-between mb-2">
-       <div class="text-amber-300 font-medium">${A.name}</div>
-       <div class="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-200">${A.arch}</div>
-     </div>
-     <div class="text-[10px] text-zinc-500 mb-1.5">${hasSelection? 'BEFORE → AFTER' : 'CURRENT METRICS'}</div>
-     <div class="grid grid-cols-4 gap-2 text-[11px]">
-       <div><div class="text-zinc-600">Value</div><div class="text-white">${Math.round(A.tot).toLocaleString()}</div></div>
-       <div><div class="text-zinc-600">Long</div><div class="${hasSelection? (dLongA>=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${A.long}${hasSelection? ` → ${a.long}` : ''}</div></div>
-       <div><div class="text-zinc-600">Prod</div><div class="${hasSelection? (dProdA>=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${A.prod}${hasSelection? ` → ${a.prod}` : ''}</div></div>
-       <div><div class="text-zinc-600">Age</div><div class="${hasSelection? (dAgeA<=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${A.age.toFixed(1)}${hasSelection? ` → ${a.age.toFixed(1)}` : ''}</div></div>
-     </div>
-     <div class="mt-2 pt-2 border-t border-zinc-800 text-[10px] text-zinc-500">PPG: ${A.opt.toFixed(1)}${hasSelection? ` → <span class="${dA>=0?'text-emerald-400':'text-rose-400'}">${a.opt.toFixed(1)}</span>` : ''}</div>
-   </div>
-   <div class="bg-zinc-950/50 p-4 rounded-xl border border-cyan-500/20">
-     <div class="flex items-center justify-between mb-2">
-       <div class="text-cyan-300 font-medium">${B.name}</div>
-       <div class="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-200">${B.arch}</div>
-     </div>
-     <div class="text-[10px] text-zinc-500 mb-1.5 text-right">${hasSelection? 'BEFORE → AFTER' : 'CURRENT METRICS'}</div>
-     <div class="grid grid-cols-4 gap-2 text-[11px] text-right">
-       <div><div class="text-zinc-600">Value</div><div class="text-white">${Math.round(B.tot).toLocaleString()}</div></div>
-       <div><div class="text-zinc-600">Long</div><div class="${hasSelection? (dLongB>=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${B.long}${hasSelection? ` → ${b.long}` : ''}</div></div>
-       <div><div class="text-zinc-600">Prod</div><div class="${hasSelection? (dProdB>=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${B.prod}${hasSelection? ` → ${b.prod}` : ''}</div></div>
-       <div><div class="text-zinc-600">Age</div><div class="${hasSelection? (dAgeB<=0?'text-emerald-400':'text-rose-400') : 'text-white'}">${B.age.toFixed(1)}${hasSelection? ` → ${b.age.toFixed(1)}` : ''}</div></div>
-     </div>
-     <div class="mt-2 pt-2 border-t border-zinc-800 text-[10px] text-zinc-500 text-right">PPG: ${B.opt.toFixed(1)}${hasSelection? ` → <span class="${dB>=0?'text-emerald-400':'text-rose-400'}">${b.opt.toFixed(1)}</span>` : ''}</div>
-   </div>`;
-
- if(!hasSelection){
-   verdictEl.classList.add('hidden');
-   document.getElementById('whyfit').innerHTML='';
-   return;
- }
-
- const gap=Math.abs(valA-valB); const tradeSize=`${tradeA.length+tradeAK.length}-for-${tradeB.length+tradeBK.length}`;
- const aNames=[...tradeA.map(p=>p.name),...tradeAK.map(p=>`${p.season} R${p.round}`)].join(' + ')||'—';
- const bNames=[...tradeB.map(p=>p.name),...tradeBK.map(p=>`${p.season} R${p.round}`)].join(' + ')||'—';
- const fairness = gap<200?'Fair':gap<500?'Slight edge':gap<1000?'Review':'Unbalanced';
-
- verdictEl.classList.remove('hidden');
- verdictEl.innerHTML=`<div class="space-y-2">
-   <div class="text-[13px]"><span class="text-zinc-500">Value:</span> <span class="text-white">${aNames}</span> <span class="text-zinc-600">(${Math.round(valA).toLocaleString()})</span> <span class="mx-2 text-zinc-700">vs</span> <span class="text-white">${bNames}</span> <span class="text-zinc-600">(${Math.round(valB).toLocaleString()})</span></div>
-   <div class="flex items-center justify-center gap-6 text-[12px] flex-wrap">
-     <div><span class="text-zinc-500">Gap:</span> <span class="text-amber-300 ml-1">${gap.toLocaleString()}</span></div>
-     <div><span class="text-zinc-500">PPG:</span> <span class="${dA<0?'text-rose-400':'text-emerald-400'} ml-1">${dA>0?'+':''}${dA.toFixed(1)}</span> / <span class="${dB<0?'text-rose-400':'text-emerald-400'}">${dB>0?'+':''}${dB.toFixed(1)}</span></div>
-     <div><span class="text-zinc-500">Age Δ:</span> <span class="${dAgeA>0?'text-rose-400':'text-emerald-400'} ml-1">${dAgeA>0?'+':''}${dAgeA.toFixed(1)}y</span> / <span class="${dAgeB>0?'text-rose-400':'text-emerald-400'}">${dAgeB>0?'+':''}${dAgeB.toFixed(1)}y</span></div>
-   </div>
-   <div class="text-amber-300 font-medium">${tradeSize} • ${fairness} • ${gap<500?'✓':'⚠'}</div>
- </div>`;
-
- const aFit = (A.arch.includes('Contender') && dProdA>0) || (A.arch.includes('Rebuilder') && dLongA>0) || (A.arch.includes('Riser') && dAgeA<0);
- const bFit = (B.arch.includes('Contender') && dProdB>0) || (B.arch.includes('Rebuilder') && dLongB>0) || (B.arch.includes('Riser') && dAgeB<0);
-
- document.getElementById('whyfit').innerHTML=`
-   <div class="bg-black/30 p-3 rounded-lg border-amber-500/10">
-     <div class="text-amber-200 font-medium text-[13px] mb-1">${A.name} — ${A.arch}</div>
-     <div class="text-[12px] text-zinc-400">${aFit? '✓ Fits timeline' : '⚠ Conflicts with build'}: ${dProdA>0?`+${dProdA} production helps win-now`:dLongA>0?`+${dLongA} longevity aids rebuild`:`Age ${dAgeA>0?'+':''}${dAgeA.toFixed(1)}y moves ${dAgeA<0?'younger':'older'}`}. ${tradeA[0]&&tradeB[0]?`Swapping ${tradeA[0].age}y for ${tradeB[0].age}y ${tradeB[0].age<tradeA[0].age?'lowers':'raises'} core age.`:''}</div>
-   </div>
-   <div class="bg-black/30 p-3 rounded-lg border-cyan-500/10">
-     <div class="text-cyan-200 font-medium text-[13px] mb-1">${B.name} — ${B.arch}</div>
-     <div class="text-[12px] text-zinc-400">${bFit? '✓ Fits timeline' : '⚠ Conflicts with build'}: ${dProdB>0?`+${dProdB} production helps win-now`:dLongB>0?`+${dLongB} longevity aids rebuild`:`Age ${dAgeB>0?'+':''}${dAgeB.toFixed(1)}y moves ${dAgeB<0?'younger':'older'}`}. ${tradeA[0]&&tradeB[0]?`Swapping ${tradeB[0].age}y for ${tradeA[0].age}y ${tradeA[0].age<tradeB[0].age?'lowers':'raises'} core age.`:''}</div>
-   </div>`;
+ const lineup=(bef,aft)=>`<div class="space-y-1">${bef.map((s,i)=>{const b=s.player,a=aft[i].player,chg=b?.id!==a?.id;return`<div class="grid grid-cols-[56px_1fr_1fr] gap-2 items-baseline"><div class="text-[10px] text-zinc-600">${s.slot}</div><div class="truncate ${chg?'line-through text-zinc-600':''}">${b?.name||'—'}</div><div class="truncate ${chg?'text-emerald-400':''}">${a?.name||'—'}</div></div>`}).join('')}</div>`;
+ document.getElementById('lineups').innerHTML=`<div class="grid grid-cols-2 gap-6"><div><div class="text-[11px] text-zinc-500 mb-2">${A.name}</div>${lineup(aBefore,aAfter)}</div><div><div class="text-[11px] text-zinc-500 mb-2 text-right">${B.name}</div>${lineup(bBefore,bAfter)}</div></div>`;
+ const valA=tradeA.reduce((s,p)=>s+p.value,0)+tradeAK.reduce((s,p)=>s+(p.value||0),0),valB=tradeB.reduce((s,p)=>s+p.value,0)+tradeBK.reduce((s,p)=>s+(p.value||0),0);const has=tradeA.length+tradeB.length+tradeAK.length+tradeBK.length>0;
+ const dProdA=a.prod-A.prod,dProdB=b.prod-B.prod,dLongA=a.long-A.long,dLongB=b.long-B.long;
+ document.getElementById('impact').innerHTML=has?`<div class="grid grid-cols-2 gap-6"><div><div class="flex items-baseline justify-between mb-3"><div class="text-[13px] font-medium">${A.name}</div><div class="text-[11px] text-zinc-600">${A.arch}</div></div><div class="grid grid-cols-3 gap-3"><div><div class="text-[10px] text-zinc-600 mb-0.5">Prod</div><div class="text-[15px] font-medium mono ${dProdA>=0?'text-emerald-400':'text-rose-400'}">${A.prod}→${a.prod}</div></div><div class="text-[10px] text-zinc-600 mb-0.5">Long</div><div class="text-[15px] font-medium mono ${dLongA>=0?'text-emerald-400':'text-rose-400'}">${A.long}→${a.long}</div></div><div class="text-[10px] text-zinc-600 mb-0.5">Age</div><div class="text-[15px] font-medium mono">${A.age.toFixed(1)}→${a.age.toFixed(1)}</div></div></div><div class="flex items-baseline justify-between mb-3"><div class="text-[13px] font-medium">${B.name}</div><div class="text-[11px] text-zinc-600">${B.arch}</div></div><div class="grid grid-cols-3 gap-3 text-right"><div><div class="text-[10px] text-zinc-600 mb-0.5">Prod</div><div class="text-[15px] font-medium mono ${dProdB>=0?'text-emerald-400':'text-rose-400'}">${B.prod}→${b.prod}</div></div><div><div class="text-[10px] text-zinc-600 mb-0.5">Long</div><div class="text-[15px] font-medium mono ${dLongB>=0?'text-emerald-400':'text-rose-400'}">${B.long}→${b.long}</div></div><div><div class="text-[10px] text-zinc-600 mb-0.5">Age</div><div class="text-[15px] font-medium mono">${B.age.toFixed(1)}→${b.age.toFixed(1)}</div></div></div></div>`:`<div class="text-center py-8"><div class="text-[13px] text-zinc-600">Select players to analyze trade impact</div></div>`;
+ const gap=Math.abs(valA-valB);document.getElementById('verdict').className=has?'mt-3 pt-3 border-t border-zinc-800':'hidden';if(has){document.getElementById('verdict').innerHTML=`<div class="flex items-center justify-between"><div class="flex items-baseline gap-3"><span class="text-[12px] text-zinc-500">Value</span><span class="mono text-[14px]">${Math.round(valA).toLocaleString()} <span class="text-zinc-600">vs</span> ${Math.round(valB).toLocaleString()}</span></div><div class="flex items-center gap-2"><span class="text-[11px] px-2 py-0.5 rounded-md ${gap<200?'bg-emerald-500/10 text-emerald-400':gap<500?'bg-amber-500/10 text-amber-400':'bg-zinc-800 text-zinc-400'}">${gap<200?'Fair':gap<500?'Close':'Review'}</span><span class="text-[11px] text-zinc-600 mono">${gap.toLocaleString()}</span></div></div>`;}
+ document.getElementById('whyfit').innerHTML='';
 }
 
-function resetTrade(){ selA={p:new Set(),k:new Set()}; selB={p:new Set(),k:new Set()}; render(); }
+function resetTrade(){selA={p:new Set(),k:new Set()};selB={p:new Set(),k:new Set()};render();}
 
-// Package Finder Functions
-function initFinder(){
-  const targetSel = document.getElementById('finderTarget');
-  const myTeamSel = document.getElementById('finderMyTeam');
-
-  // Populate with all players
-  const allPlayers = [];
-  TEAMS.forEach(t=>{
-    t.pls.forEach(p=>{
-      allPlayers.push({...p, teamId: t.rid, teamName: t.name});
-    });
-  });
-  allPlayers.sort((a,b)=>b.value-a.value);
-
-  targetSel.innerHTML = allPlayers.map(p=>`<option value="${p.id}|${p.teamId}">${p.name} (${p.teamName}) - ${Math.round(p.value)}</option>`).join('');
-  myTeamSel.innerHTML = TEAMS.map(t=>`<option value="${t.rid}">${t.name}</option>`).join('');
-
-  myTeamSel.onchange = updateFinderPlayers;
-  updateFinderPlayers();
-}
-
-function updateFinderPlayers(){
-  const teamId = document.getElementById('finderMyTeam').value;
-  const team = TEAMS.find(t=>t.rid==teamId);
-  const container = document.getElementById('finderMyPlayers');
-
-  container.innerHTML = team.pls.sort((a,b)=>b.value-a.value).slice(0,20).map(p=>`
-    <div class="flex items-center gap-2 p-1.5 hover:bg-zinc-900 rounded cursor-pointer" onclick="toggleFinderPlayer('${p.id}')">
-      <input type="checkbox" id="fp_${p.id}" class="pointer-events-none">
-      <span class="flex-1 text-[12px]">${p.name}</span>
-      <span class="text-[11px] text-zinc-600">${Math.round(p.value)}</span>
-    </div>
-  `).join('');
-}
-
-function toggleFinderPlayer(pid){
-  const cb = document.getElementById(`fp_${pid}`);
-  cb.checked =!cb.checked;
-  if(cb.checked) finderSel.add(pid); else finderSel.delete(pid);
-  if(finderSel.size > 4){
-    cb.checked = false;
-    finderSel.delete(pid);
-    alert('Max 4 players');
-  }
-}
-
-function openFinder(){
-  document.getElementById('finderModal').classList.remove('hidden');
-  initFinder();
-}
-
-function closeFinder(){
-  document.getElementById('finderModal').classList.add('hidden');
-  finderSel.clear();
-}
-
-function findPackages(){
-  const targetVal = document.getElementById('finderTarget').value.split('|');
-  const targetPlayerId = targetVal[0];
-  const targetTeamId = targetVal[1];
-
-  const targetTeam = TEAMS.find(t=>t.rid==targetTeamId);
-  const targetPlayer = targetTeam.pls.find(p=>p.id===targetPlayerId);
-  const targetValue = targetPlayer.value;
-
-  const myTeamId = document.getElementById('finderMyTeam').value;
-  const myTeam = TEAMS.find(t=>t.rid==myTeamId);
-
-  const selectedPlayers = [...finderSel].map(id=>myTeam.pls.find(p=>p.id===id)).filter(Boolean);
-  const selectedValue = selectedPlayers.reduce((s,p)=>s+p.value,0);
-
-  // Find all 2-4 player combos from my team that match target value ±5%
-  const candidates = myTeam.pls.filter(p=>p.value>100).sort((a,b)=>b.value-a.value).slice(0,25);
-  const combos = [];
-  const tol = targetValue * 0.05;
-
-  function findCombos(arr, start, combo){
-    const sum = combo.reduce((s,p)=>s+p.value,0);
-    if(combo.length>=2 && combo.length<=4 && Math.abs(sum-targetValue)<=tol){
-      combos.push([...combo]);
-    }
-    if(combo.length>=4) return;
-    for(let i=start;i<arr.length;i++){
-      combo.push(arr[i]);
-      findCombos(arr, i+1, combo);
-      combo.pop();
-    }
-  }
-  findCombos(candidates, 0, []);
-
-  combos.sort((a,b)=>{
-    const diffA = Math.abs(a.reduce((s,p)=>s+p.value,0) - targetValue);
-    const diffB = Math.abs(b.reduce((s,p)=>s+p.value,0) - targetValue);
-    return diffA - diffB;
-  });
-
-  const results = document.getElementById('finderResults');
-  if(combos.length===0){
-    results.innerHTML = '<div class="text-zinc-600 text-sm p-4 text-center">No matching packages found within 5%</div>';
-    return;
-  }
-
-  results.innerHTML = combos.slice(0,20).map(combo=>{
-    const total = combo.reduce((s,p)=>s+p.value,0);
-    const diff = total - targetValue;
-    const pct = ((diff/targetValue)*100).toFixed(1);
-    return `
-      <div class="p-3 bg-zinc-950/50 border border-zinc-800 rounded-lg hover:border-amber-500/30 cursor-pointer" onclick="applyPackage('${targetPlayerId}','${targetTeamId}','${combo.map(p=>p.id).join(',')}','${myTeamId}')">
-        <div class="flex justify-between items-start mb-1">
-          <div class="text-[12px]">${combo.map(p=>p.name).join(' + ')}</div>
-          <div class="text-[11px] ${Math.abs(diff)<targetValue*0.02?'text-emerald-400':'text-amber-400'}">${diff>0?'+':''}${Math.round(diff)} (${pct}%)</div>
-        </div>
-        <div class="text-[10px] text-zinc-600">${combo.length} players • ${Math.round(total).toLocaleString()} total value</div>
-      </div>
-    `;
-  }).join('');
-}
-
-function applyPackage(targetId, targetTeamId, packageIds, myTeamId){
-  // Set up the trade
-  teamA.value = targetTeamId;
-  teamB.value = myTeamId;
-  selA = {p: new Set([targetId]), k: new Set()};
-  selB = {p: new Set(packageIds.split(',')), k: new Set()};
-  closeFinder();
-  renderGrids();
-  render();
-}
+function initFinder(){const tt=document.getElementById('finderTargetTeam'),t=document.getElementById('finderTarget'),mt=document.getElementById('finderMyTeam');tt.innerHTML=TEAMS.map(x=>`<option value="${x.rid}">${x.name}</option>`).join('');mt.innerHTML=TEAMS.map(x=>`<option value="${x.rid}">${x.name}</option>`).join('');tt.onchange=()=>{const tm=TEAMS.find(x=>x.rid==tt.value);t.innerHTML=tm.pls.sort((a,b)=>b.value-a.value).map(p=>`<option value="${p.id}">${p.name} — ${Math.round(p.value)}</option>`).join('');};mt.onchange=updateFinderLists;tt.onchange();mt.value=TEAMS[0].rid;updateFinderLists();}
+function updateFinderLists(){const tm=TEAMS.find(t=>t.rid==document.getElementById('finderMyTeam').value);const inc=document.getElementById('finderInclude'),exc=document.getElementById('finderExclude');const pls=tm.pls.filter(p=>p.value>200).sort((a,b)=>b.value-a.value).slice(0,12);inc.innerHTML=pls.map(p=>`<label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-zinc-800 cursor-pointer"><input type="checkbox" onchange="toggleFinderFilter('include','${p.id}',this.checked)" class="w-3 h-3 rounded border-zinc-700"><span class="text-[11px] truncate">${p.name}</span></label>`).join('');exc.innerHTML=pls.map(p=>`<label class="flex items-center gap-1.5 px-1.5 py-1 rounded hover:bg-zinc-800 cursor-pointer"><input type="checkbox" onchange="toggleFinderFilter('exclude','${p.id}',this.checked)" class="w-3 h-3 rounded border-zinc-700"><span class="text-[11px] truncate">${p.name}</span></label>`).join('');}
+function toggleFinderFilter(t,pid,c){const s=t==='include'?finderInclude:finderExclude;if(c)s.add(pid);else s.delete(pid);}
+function openFinder(){document.getElementById('finderModal').classList.remove('hidden');finderInclude.clear();finderExclude.clear();initFinder();}
+function closeFinder(){document.getElementById('finderModal').classList.add('hidden');}
+function findPackages(){const tid=document.getElementById('finderTargetTeam').value,pid=document.getElementById('finderTarget').value,mid=document.getElementById('finderMyTeam').value;const tt=TEAMS.find(t=>t.rid==tid),tp=tt.pls.find(p=>p.id===pid),mt=TEAMS.find(t=>t.rid==mid);const tv=tp.value,isOwn=tid===mid;let cands=mt.pls.filter(p=>p.value>100&&p.id!==pid&&!finderExclude.has(p.id)&&(!isOwn||p.id!==pid)).sort((a,b)=>b.value-a.value);const must=[...finderInclude].map(id=>cands.find(p=>p.id===id)).filter(Boolean);cands=cands.filter(p=>!finderInclude.has(p.id));const combos=[],tol=tv*0.15;function gen(arr,s,combo){const tot=combo.reduce((x,p)=>x+p.value,0)+must.reduce((x,p)=>x+p.value,0);const all=[...must,...combo];if(all.length>=1&&all.length<=4&&Math.abs(tot-tv)<=tol)combos.push({players:all,total:tot,diff:tot-tv});if(combo.length>=4)return;for(let i=s;i<arr.length;i++){combo.push(arr[i]);gen(arr,i+1,combo);combo.pop();}}gen(cands,0,[]);combos.sort((a,b)=>{const da=Math.abs(a.diff),db=Math.abs(b.diff);if(Math.abs(da-db)>20)return da-db;return a.players.length-b.players.length;});const uniq=[];const seen=new Set();combos.forEach(c=>{const k=c.players.map(p=>p.id).sort().join(',');if(!seen.has(k)){seen.add(k);uniq.push(c);}});document.getElementById('finderCount').textContent=`${uniq.length}`;const res=document.getElementById('finderResults');if(!uniq.length){res.innerHTML='<div class="text-center py-12 text-zinc-600 text-[13px]">No matches</div>';return;}res.innerHTML=uniq.map(c=>{const pct=((c.diff/tv)*100).toFixed(1),close=Math.abs(c.diff)<tv*0.05;return`<button onclick="applyPackage('${pid}','${tid}','${c.players.map(p=>p.id).join(',')}','${mid}')" class="w-full text-left p-2.5 rounded-xl hover:bg-zinc-900 border-transparent hover:border-zinc-800 transition-all group"><div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="text-[13px] leading-snug truncate group-hover:text-white">${c.players.map(p=>p.name).join(' + ')}</div><div class="text-[11px] text-zinc-600 mt-0.5">${c.players.length} pl • ${c.players.map(p=>p.pos).join('')}</div></div><div class="text-right shrink-0"><div class="text-[12px] mono ${close?'text-emerald-400':'text-zinc-500'}">${c.diff>0?'+':''}${Math.round(c.diff)}</div><div class="text-[10px] text-zinc-600">${pct}%</div></div></div></button>`}).join('');}
+function applyPackage(tid,ttid,pids,mid){teamA.value=ttid;teamB.value=mid;selA={p:new Set([tid]),k:new Set()};selB={p:new Set(pids.split(',')),k:new Set()};closeFinder();renderGrids();render();}
 
 load();
 </script>
